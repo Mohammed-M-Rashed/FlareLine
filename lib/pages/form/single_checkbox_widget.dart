@@ -7,11 +7,7 @@ class SingleCheckboxWidget extends StatelessWidget {
 
   final List<Map<String, dynamic>> checkBoxList = [
     {
-      'name': 'Info',
-      'color': GlobalColors.info,
-    },
-    {
-      'name': 'Success',
+      'name': 'نجح',
       'color': GlobalColors.success,
     },
     {
@@ -23,7 +19,7 @@ class SingleCheckboxWidget extends StatelessWidget {
       'color': GlobalColors.primary,
     },
     {
-      'name': 'Error',
+      'name': 'خطأ',
       'color': GlobalColors.danger,
     }
   ];

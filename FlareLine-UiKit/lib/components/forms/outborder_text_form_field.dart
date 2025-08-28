@@ -51,7 +51,7 @@ class OutBorderTextFormField extends StatelessWidget {
           ),
         SizedBox(
           width: double.maxFinite,
-          height: maxLines == 1 ? 50 : null,
+          height: maxLines == 1 ? 42 : null, // Reduced height from 50 to 42
           child: Stack(
             children: [
               Align(
@@ -86,7 +86,7 @@ class OutBorderTextFormField extends StatelessWidget {
                             width: 1)),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
-                      vertical: 6,
+                      vertical: 4, // Reduced vertical padding from 6 to 4
                     ),
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                     hintText: hintText,

@@ -129,10 +129,10 @@ class _DataProvider extends ChangeNotifier {
 
   List<Channel> getEmployeeData() {
     return [
-      Channel('Google', '3.5K', 'Paid', r'$5,768'),
-      Channel('Google', '3.5K', 'Paid', r'$5,768'),
-      Channel('Google', '3.5K', 'Unpaid', r'$5,768'),
-      Channel('Google', '3.5K', 'Peding', r'$5,768'),
+      Channel('Google', '3.5K', 'مدفوع', r'$5,768'),
+      Channel('Google', '3.5K', 'مدفوع', r'$5,768'),
+      Channel('Google', '3.5K', 'غير مدفوع', r'$5,768'),
+      Channel('Google', '3.5K', 'معلق', r'$5,768'),
     ];
   }
 

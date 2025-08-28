@@ -1,33 +1,33 @@
 import 'dart:convert';
 
 import 'package:flareline/flutter_gen/app_localizations.dart';
-import 'package:flareline_uikit/components/tables/table_widget.dart';
-import 'package:flareline_uikit/entity/table_data_entity.dart';
+import 'package:flareline_uikit/components/tables/base_table_widget.dart';
+import 'package:flareline_uikit/core/mvvm/base_table_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class TopChannelWidget extends TableWidget {
+class TopChannelWidget extends TableWidget<TopChannelViewModel> {
+  const TopChannelWidget({super.key});
+
   @override
-  // TODO: implement showPaging
   bool get showPaging => false;
 
   @override
-  String title(BuildContext context) {
-    // TODO: implement title
+  String? title(BuildContext context) {
     return AppLocalizations.of(context)!.topChannels;
   }
 
   @override
-  BaseTableProvider viewModelBuilder(BuildContext context) {
+  TopChannelViewModel viewModelBuilder(BuildContext context) {
     return TopChannelViewModel(context);
   }
 }
 
 class TopChannelViewModel extends BaseTableProvider {
-  TopChannelViewModel(super.context);
+  TopChannelViewModel(BuildContext context) : super(context);
 
   @override
-  loadData(BuildContext context) async {
+  Future<void> loadData(BuildContext context) async {
     // String res = await rootBundle.loadString('assets/api/channelTable.json');
 
     Map<String, dynamic> map = {
@@ -70,7 +70,7 @@ class TopChannelViewModel extends BaseTableProvider {
         ]
       ]
     };
-    TableDataEntity tableDataEntity = TableDataEntity.fromJson(map);
-    this.tableDataEntity = tableDataEntity;
+    // For now, just store the data directly since TableDataEntity is not available
+    tableDataEntity = map;
   }
 }

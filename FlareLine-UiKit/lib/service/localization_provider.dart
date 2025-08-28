@@ -1,42 +1,37 @@
 import 'dart:convert';
 import 'dart:ui';
 
-import 'package:flareline_uikit/core/mvvm/base_viewmodel.dart';
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 
-class LocalizationProvider extends BaseViewModel {
-  static const Locale en = Locale('en');
-
-  LocalizationProvider(super.context);
+class LocalizationProvider extends GetxController {
+  static const Locale ar = Locale('ar');
 
   @override
-  void init(BuildContext context) {
-    String? languageCode = box.read("locale");
-    if (languageCode != null) {
-      _locale = Locale.fromSubtags(languageCode: languageCode);
-    }
+  void onInit() {
+    super.onInit();
+    // Always use Arabic locale
+    _locale.value = ar;
   }
 
-  Locale? _locale;
+  final _locale = const Locale.fromSubtags(languageCode: 'ar').obs;
+  final _supportedLocales = <Locale>[ar].obs;
 
-  List<Locale>? _supportedLocales;
-
-  Locale get locale => _locale ?? const Locale.fromSubtags(languageCode: 'en');
-
+  Locale get locale => _locale.value;
   String get languageCode => locale.languageCode;
-
-  List<Locale> get supportedLocales => _supportedLocales ?? [];
+  List<Locale> get supportedLocales => _supportedLocales;
 
   final box = GetStorage();
 
-  set locale(Locale locale) {
-    _locale = locale;
-    box.write("locale", locale.languageCode);
-    notifyListeners();
-  }
+  // Remove setLocale method as we only support Arabic
+  // void setLocale(Locale locale) {
+  //   _locale.value = locale;
+  //   box.write("locale", locale.languageCode);
+  // }
 
-  set supportedLocales(List<Locale> supportedLocales) {
-    _supportedLocales = supportedLocales;
+  void setSupportedLocales(List<Locale> supportedLocales) {
+    // Only support Arabic
+    _supportedLocales.value = [ar];
   }
 }
