@@ -3,14 +3,15 @@ import 'package:flareline_uikit/components/toolbar/toolbar.dart';
 import 'package:flareline_uikit/service/localization_provider.dart';
 import 'package:flareline_uikit/widget/flareline_layout.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
+import 'package:flareline/core/auth/auth_provider.dart';
 
 abstract class LayoutWidget extends FlarelineLayoutWidget {
   const LayoutWidget({super.key});
 
   @override
   String sideBarAsset(BuildContext context) {
-    return 'assets/routes/menu_route_${context.watch<LocalizationProvider>().languageCode}.json';
+    return 'assets/routes/menu_route_ar.json';
   }
 
   @override
@@ -23,22 +24,40 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
   }
 
   Widget _userInfoWidget(BuildContext context) {
-
-    return const Row(
-      children: [
-        Column(
+    return GetBuilder<AuthController>(
+      builder: (authController) {
+        return Row(
           children: [
-            Text('Demo'),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  authController.userData?.name ?? 
+                  (authController.userEmail.isNotEmpty ? authController.userEmail : 'زائر'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  authController.userData?.roles.firstOrNull?.displayName ?? 'مستخدم',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            const CircleAvatar(
+              backgroundImage: AssetImage('assets/user/user-01.png'),
+              radius: 22,
+            )
           ],
-        ),
-        SizedBox(
-          width: 10,
-        ),
-        CircleAvatar(
-          backgroundImage:AssetImage('assets/user/user-02.png'),
-          radius: 22,
-        )
-      ],
+        );
+      },
     );
   }
 }

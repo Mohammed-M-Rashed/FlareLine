@@ -1,0 +1,23 @@
+[
+  {
+    "groupName": "أدوات التطوير",
+    "menuList": [
+      {
+        "name": "أدوات التطوير",
+        "icon": "assets/toolbar/code.svg",
+        "url": "https://github.com"
+      },
+      {
+        "name": "أدوات التصميم",
+        "icon": "assets/toolbar/design.svg",
+        "url": "https://figma.com"
+      },
+      {
+        "name": "أدوات الإنتاجية",
+        "icon": "assets/toolbar/productivity.svg",
+        "url": "https://notion.so"
+      }
+    ]
+  }
+]
+

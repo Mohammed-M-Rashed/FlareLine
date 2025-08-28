@@ -6,15 +6,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
-import 'app_localizations_en.dart';
-import 'app_localizations_es.dart';
-import 'app_localizations_fr.dart';
-import 'app_localizations_id.dart';
-import 'app_localizations_ja.dart';
-import 'app_localizations_ko.dart';
-import 'app_localizations_th.dart';
-import 'app_localizations_vi.dart';
-import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -70,7 +61,8 @@ import 'app_localizations_zh.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -78,7 +70,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -90,7 +83,8 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -98,897 +92,887 @@ abstract class AppLocalizations {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[
-    Locale('ar'),
-    Locale('en'),
-    Locale('es'),
-    Locale('fr'),
-    Locale('id'),
-    Locale('ja'),
-    Locale('ko'),
-    Locale('th'),
-    Locale('vi'),
-    Locale('zh')
-  ];
+  static const List<Locale> supportedLocales = <Locale>[Locale('ar')];
 
   /// No description provided for @alertsPageTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Alerts'**
+  /// In ar, this message translates to:
+  /// **'تحذيرات'**
   String get alertsPageTitle;
 
   /// No description provided for @alertsTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Attention Needed'**
+  /// In ar, this message translates to:
+  /// **'هناك حاجة للاهتمام'**
   String get alertsTitle;
 
   /// No description provided for @alertsMessage.
   ///
-  /// In en, this message translates to:
-  /// **'Lorem Ipsum is simply dummy text of the printing and typesetting industry'**
+  /// In ar, this message translates to:
+  /// **'ليس لورم إيبسوم مجرد نص وهمية لصناعة الطباعة والطباعة'**
   String get alertsMessage;
 
   /// No description provided for @appName.
   ///
-  /// In en, this message translates to:
-  /// **'FlareLine'**
+  /// In ar, this message translates to:
+  /// **'فلارلاين'**
   String get appName;
 
   /// No description provided for @slogan.
   ///
-  /// In en, this message translates to:
-  /// **'Simple web, develop faster'**
+  /// In ar, this message translates to:
+  /// **'تطوير ويب بسيط أسرع'**
   String get slogan;
 
   /// No description provided for @signIn.
   ///
-  /// In en, this message translates to:
-  /// **'Sign In'**
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول'**
   String get signIn;
 
   /// No description provided for @email.
   ///
-  /// In en, this message translates to:
-  /// **'Email'**
+  /// In ar, this message translates to:
+  /// **'البريد الإلكتروني'**
   String get email;
 
   /// No description provided for @emailHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your email'**
+  /// In ar, this message translates to:
+  /// **'أدخل بريدك الإلكتروني'**
   String get emailHint;
 
   /// No description provided for @password.
   ///
-  /// In en, this message translates to:
-  /// **'Password'**
+  /// In ar, this message translates to:
+  /// **'كلمة المرور'**
   String get password;
 
   /// No description provided for @passwordHint.
   ///
-  /// In en, this message translates to:
-  /// **'6+ Characters'**
+  /// In ar, this message translates to:
+  /// **'6+ أحرف'**
   String get passwordHint;
 
   /// No description provided for @signInWithGithub.
   ///
-  /// In en, this message translates to:
-  /// **'Sign in with Github'**
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول باستخدام Github'**
   String get signInWithGithub;
 
   /// No description provided for @signInWithGoogle.
   ///
-  /// In en, this message translates to:
-  /// **'Sign in with Google'**
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول باستخدام Google'**
   String get signInWithGoogle;
 
   /// No description provided for @signInWithMicrosoft.
   ///
-  /// In en, this message translates to:
-  /// **'Sign in with Microsoft'**
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول باستخدام Microsoft'**
   String get signInWithMicrosoft;
 
   /// No description provided for @signInWithTwitter.
   ///
-  /// In en, this message translates to:
-  /// **'Sign in with Twitter'**
+  /// In ar, this message translates to:
+  /// **'تسجيل الدخول باستخدام Twitter'**
   String get signInWithTwitter;
 
   /// No description provided for @dontHaveAccount.
   ///
-  /// In en, this message translates to:
-  /// **'Don\'t have any account?'**
+  /// In ar, this message translates to:
+  /// **'ليس لديك حساب؟'**
   String get dontHaveAccount;
 
   /// No description provided for @signUp.
   ///
-  /// In en, this message translates to:
-  /// **'Sign Up'**
+  /// In ar, this message translates to:
+  /// **'التسجيل'**
   String get signUp;
 
   /// No description provided for @startForFree.
   ///
-  /// In en, this message translates to:
-  /// **'Start for free'**
+  /// In ar, this message translates to:
+  /// **'البدء مجانًا'**
   String get startForFree;
 
   /// No description provided for @signUpTip.
   ///
-  /// In en, this message translates to:
-  /// **'Sign Up to FlareLine'**
+  /// In ar, this message translates to:
+  /// **'التسجيل في فلارلاين'**
   String get signUpTip;
 
   /// No description provided for @retypePassword.
   ///
-  /// In en, this message translates to:
-  /// **'Re-type Password'**
+  /// In ar, this message translates to:
+  /// **'أعد إدخال كلمة المرور'**
   String get retypePassword;
 
   /// No description provided for @retypePasswordHint.
   ///
-  /// In en, this message translates to:
-  /// **'Re-enter your password'**
+  /// In ar, this message translates to:
+  /// **'أعد إدخال كلمة المرور الخاصة بك'**
   String get retypePasswordHint;
 
   /// No description provided for @createAccount.
   ///
-  /// In en, this message translates to:
-  /// **'Create Account'**
+  /// In ar, this message translates to:
+  /// **'إنشاء حساب'**
   String get createAccount;
 
   /// No description provided for @signUpWithGoogle.
   ///
-  /// In en, this message translates to:
-  /// **'Sign up with Google'**
+  /// In ar, this message translates to:
+  /// **'التسجيل باستخدام Google'**
   String get signUpWithGoogle;
 
   /// No description provided for @haveAnAccount.
   ///
-  /// In en, this message translates to:
-  /// **'Already have an account?'**
+  /// In ar, this message translates to:
+  /// **'هل لديك حساب بالفعل؟'**
   String get haveAnAccount;
 
   /// No description provided for @normalButton.
   ///
-  /// In en, this message translates to:
-  /// **'Normal Button'**
+  /// In ar, this message translates to:
+  /// **'زر عادي'**
   String get normalButton;
 
   /// No description provided for @buttonWithIcon.
   ///
-  /// In en, this message translates to:
-  /// **'Button With Icon'**
+  /// In ar, this message translates to:
+  /// **'زر مع أيقونة'**
   String get buttonWithIcon;
 
   /// No description provided for @buttonsPageTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Buttons'**
+  /// In ar, this message translates to:
+  /// **'الأزرار'**
   String get buttonsPageTitle;
 
   /// No description provided for @btnName.
   ///
-  /// In en, this message translates to:
-  /// **'Button'**
+  /// In ar, this message translates to:
+  /// **'زر'**
   String get btnName;
 
   /// No description provided for @calendarPageTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Calendar'**
+  /// In ar, this message translates to:
+  /// **'التقويم'**
   String get calendarPageTitle;
 
   /// No description provided for @chartPageTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Chart'**
+  /// In ar, this message translates to:
+  /// **'الرسم البياني'**
   String get chartPageTitle;
 
   /// No description provided for @totalViews.
   ///
-  /// In en, this message translates to:
-  /// **'Total views'**
+  /// In ar, this message translates to:
+  /// **'المشاهدات الإجمالية'**
   String get totalViews;
 
   /// No description provided for @totalProfit.
   ///
-  /// In en, this message translates to:
-  /// **'Total Profit'**
+  /// In ar, this message translates to:
+  /// **'الربح الإجمالي'**
   String get totalProfit;
 
   /// No description provided for @totalProduct.
   ///
-  /// In en, this message translates to:
-  /// **'Total Product'**
+  /// In ar, this message translates to:
+  /// **'المنتجات الإجمالية'**
   String get totalProduct;
 
   /// No description provided for @totalUsers.
   ///
-  /// In en, this message translates to:
-  /// **'Total Users'**
+  /// In ar, this message translates to:
+  /// **'المستخدمين الإجماليين'**
   String get totalUsers;
 
   /// No description provided for @formElements.
   ///
-  /// In en, this message translates to:
-  /// **'FormElements'**
+  /// In ar, this message translates to:
+  /// **'عناصر النموذج'**
   String get formElements;
 
   /// No description provided for @inputFields.
   ///
-  /// In en, this message translates to:
-  /// **'Input Fields'**
+  /// In ar, this message translates to:
+  /// **'حقول الإدخال'**
   String get inputFields;
 
   /// No description provided for @defaultInput.
   ///
-  /// In en, this message translates to:
-  /// **'Default Input'**
+  /// In ar, this message translates to:
+  /// **'الإدخال الافتراضي'**
   String get defaultInput;
 
   /// No description provided for @activeInput.
   ///
-  /// In en, this message translates to:
-  /// **'Active Input'**
+  /// In ar, this message translates to:
+  /// **'الإدخال النشط'**
   String get activeInput;
 
   /// No description provided for @disabledLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Disabled Label'**
+  /// In ar, this message translates to:
+  /// **'العلامة المعطلة'**
   String get disabledLabel;
 
   /// No description provided for @toggleSwitchInput.
   ///
-  /// In en, this message translates to:
-  /// **'Toggle switch input'**
+  /// In ar, this message translates to:
+  /// **'تبديل الإدخال'**
   String get toggleSwitchInput;
 
   /// No description provided for @switchLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Switch Label'**
+  /// In ar, this message translates to:
+  /// **'علامة التبديل'**
   String get switchLabel;
 
   /// No description provided for @timeAndDate.
   ///
-  /// In en, this message translates to:
-  /// **'Time and date'**
+  /// In ar, this message translates to:
+  /// **'الوقت والتاريخ'**
   String get timeAndDate;
 
   /// No description provided for @datePicker.
   ///
-  /// In en, this message translates to:
-  /// **'Date Picker'**
+  /// In ar, this message translates to:
+  /// **'محدد التاريخ'**
   String get datePicker;
 
   /// No description provided for @selectDate.
   ///
-  /// In en, this message translates to:
-  /// **'Select date'**
+  /// In ar, this message translates to:
+  /// **'اختر التاريخ'**
   String get selectDate;
 
   /// No description provided for @fileUpload.
   ///
-  /// In en, this message translates to:
-  /// **'File upload'**
+  /// In ar, this message translates to:
+  /// **'رفع الملف'**
   String get fileUpload;
 
   /// No description provided for @attachFile.
   ///
-  /// In en, this message translates to:
-  /// **'Attach file'**
+  /// In ar, this message translates to:
+  /// **'إرفاق الملف'**
   String get attachFile;
 
   /// No description provided for @selectImage.
   ///
-  /// In en, this message translates to:
-  /// **'Select Image'**
+  /// In ar, this message translates to:
+  /// **'اختر الصورة'**
   String get selectImage;
 
   /// No description provided for @textareaFields.
   ///
-  /// In en, this message translates to:
-  /// **'Textarea Fields'**
+  /// In ar, this message translates to:
+  /// **'حقول النص'**
   String get textareaFields;
 
   /// No description provided for @defaultTextarea.
   ///
-  /// In en, this message translates to:
-  /// **'Default Textarea'**
+  /// In ar, this message translates to:
+  /// **'النص الافتراضي'**
   String get defaultTextarea;
 
   /// No description provided for @activeTextarea.
   ///
-  /// In en, this message translates to:
-  /// **'Active Textarea'**
+  /// In ar, this message translates to:
+  /// **'النص النشط'**
   String get activeTextarea;
 
   /// No description provided for @disabledTextarea.
   ///
-  /// In en, this message translates to:
-  /// **'Disabled Textarea'**
+  /// In ar, this message translates to:
+  /// **'النص المعطل'**
   String get disabledTextarea;
 
   /// No description provided for @checkboxAndRadis.
   ///
-  /// In en, this message translates to:
-  /// **'Checkbox and radio'**
+  /// In ar, this message translates to:
+  /// **'خانات الاختيار والراديو'**
   String get checkboxAndRadis;
 
   /// No description provided for @selectInput.
   ///
-  /// In en, this message translates to:
-  /// **'Select input'**
+  /// In ar, this message translates to:
+  /// **'اختر الإدخال'**
   String get selectInput;
 
   /// No description provided for @selectCountry.
   ///
-  /// In en, this message translates to:
-  /// **'Select country'**
+  /// In ar, this message translates to:
+  /// **'اختر الدولة'**
   String get selectCountry;
 
   /// No description provided for @multiselect.
   ///
-  /// In en, this message translates to:
-  /// **'Multiselect Dropdown'**
+  /// In ar, this message translates to:
+  /// **'قائمة منسدلة متعددة الاختيار'**
   String get multiselect;
 
   /// No description provided for @ok.
   ///
-  /// In en, this message translates to:
-  /// **'OK'**
+  /// In ar, this message translates to:
+  /// **'حسنًا'**
   String get ok;
 
   /// No description provided for @cancel.
   ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
+  /// In ar, this message translates to:
+  /// **'إلغاء'**
   String get cancel;
 
   /// No description provided for @formLayoutPageTitle.
   ///
-  /// In en, this message translates to:
-  /// **'FormLayout'**
+  /// In ar, this message translates to:
+  /// **'تخطيط النموذج'**
   String get formLayoutPageTitle;
 
   /// No description provided for @contactForm.
   ///
-  /// In en, this message translates to:
-  /// **'Contact Form'**
+  /// In ar, this message translates to:
+  /// **'نموذج الاتصال'**
   String get contactForm;
 
   /// No description provided for @firstName.
   ///
-  /// In en, this message translates to:
-  /// **'First name'**
+  /// In ar, this message translates to:
+  /// **'الاسم الأول'**
   String get firstName;
 
   /// No description provided for @firstNameHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your first name'**
+  /// In ar, this message translates to:
+  /// **'أدخل اسمك الأول'**
   String get firstNameHint;
 
   /// No description provided for @lastName.
   ///
-  /// In en, this message translates to:
-  /// **'Last name'**
+  /// In ar, this message translates to:
+  /// **'الاسم الأخير'**
   String get lastName;
 
   /// No description provided for @lastNameHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your last name'**
+  /// In ar, this message translates to:
+  /// **'أدخل اسمك الأخير'**
   String get lastNameHint;
 
   /// No description provided for @subject.
   ///
-  /// In en, this message translates to:
-  /// **'Subject'**
+  /// In ar, this message translates to:
+  /// **'الموضوع'**
   String get subject;
 
   /// No description provided for @subjectHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your subject'**
+  /// In ar, this message translates to:
+  /// **'أدخل موضوعك'**
   String get subjectHint;
 
   /// No description provided for @selectSubjectHint.
   ///
-  /// In en, this message translates to:
-  /// **'Select your subject'**
+  /// In ar, this message translates to:
+  /// **'اختر موضوعك'**
   String get selectSubjectHint;
 
   /// No description provided for @message.
   ///
-  /// In en, this message translates to:
-  /// **'Message'**
+  /// In ar, this message translates to:
+  /// **'الرسالة'**
   String get message;
 
   /// No description provided for @messageHint.
   ///
-  /// In en, this message translates to:
-  /// **'Type your message'**
+  /// In ar, this message translates to:
+  /// **'اكتب رسالتك'**
   String get messageHint;
 
   /// No description provided for @sendMessage.
   ///
-  /// In en, this message translates to:
-  /// **'Send Message'**
+  /// In ar, this message translates to:
+  /// **'إرسال الرسالة'**
   String get sendMessage;
 
   /// No description provided for @rememberMe.
   ///
-  /// In en, this message translates to:
-  /// **'Remember me'**
+  /// In ar, this message translates to:
+  /// **'تذكرني'**
   String get rememberMe;
 
   /// No description provided for @forgetPwd.
   ///
-  /// In en, this message translates to:
-  /// **'Forget password?'**
+  /// In ar, this message translates to:
+  /// **'نسيت كلمة المرور؟'**
   String get forgetPwd;
 
   /// No description provided for @signInForm.
   ///
-  /// In en, this message translates to:
-  /// **'Sign In Form?'**
+  /// In ar, this message translates to:
+  /// **'نموذج تسجيل الدخول؟'**
   String get signInForm;
 
   /// No description provided for @signUpForm.
   ///
-  /// In en, this message translates to:
-  /// **'Sign Up Form?'**
+  /// In ar, this message translates to:
+  /// **'نموذج التسجيل؟'**
   String get signUpForm;
 
   /// No description provided for @fullName.
   ///
-  /// In en, this message translates to:
-  /// **'Full Name'**
+  /// In ar, this message translates to:
+  /// **'الاسم الكامل'**
   String get fullName;
 
   /// No description provided for @fullNameHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your full name'**
+  /// In ar, this message translates to:
+  /// **'أدخل اسمك الكامل'**
   String get fullNameHint;
 
   /// No description provided for @profile.
   ///
-  /// In en, this message translates to:
-  /// **'Profile'**
+  /// In ar, this message translates to:
+  /// **'الملف الشخصي'**
   String get profile;
 
   /// No description provided for @edit.
   ///
-  /// In en, this message translates to:
-  /// **'Edit'**
+  /// In ar, this message translates to:
+  /// **'تحرير'**
   String get edit;
 
   /// No description provided for @posts.
   ///
-  /// In en, this message translates to:
-  /// **'Posts'**
+  /// In ar, this message translates to:
+  /// **'المشاركات'**
   String get posts;
 
   /// No description provided for @followers.
   ///
-  /// In en, this message translates to:
-  /// **'Followers'**
+  /// In ar, this message translates to:
+  /// **'المتابعون'**
   String get followers;
 
   /// No description provided for @following.
   ///
-  /// In en, this message translates to:
-  /// **'Following'**
+  /// In ar, this message translates to:
+  /// **'يتابع'**
   String get following;
 
   /// No description provided for @aboutMe.
   ///
-  /// In en, this message translates to:
-  /// **'About Me'**
+  /// In ar, this message translates to:
+  /// **'عنيد'**
   String get aboutMe;
 
   /// No description provided for @followMeOn.
   ///
-  /// In en, this message translates to:
-  /// **'Follow me on'**
+  /// In ar, this message translates to:
+  /// **'تابعني على'**
   String get followMeOn;
 
   /// No description provided for @resetPwd.
   ///
-  /// In en, this message translates to:
-  /// **'Reset Password'**
+  /// In ar, this message translates to:
+  /// **'إعادة تعيين كلمة المرور'**
   String get resetPwd;
 
   /// No description provided for @emailReceiveResetLink.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your email address to receive a password reset link.'**
+  /// In ar, this message translates to:
+  /// **'أدخل عنوان بريدك الإلكتروني لتلقي وصلة إعادة تعيين كلمة المرور.'**
   String get emailReceiveResetLink;
 
   /// No description provided for @sendPwdResetLink.
   ///
-  /// In en, this message translates to:
-  /// **'Send Password Reset Link'**
+  /// In ar, this message translates to:
+  /// **'إرسال وصلة إعادة تعيين'**
   String get sendPwdResetLink;
 
   /// No description provided for @settings.
   ///
-  /// In en, this message translates to:
-  /// **'Settings'**
+  /// In ar, this message translates to:
+  /// **'الإعدادات'**
   String get settings;
 
   /// No description provided for @personalInfo.
   ///
-  /// In en, this message translates to:
-  /// **'Personal Information'**
+  /// In ar, this message translates to:
+  /// **'المعلومات الشخصية'**
   String get personalInfo;
 
   /// No description provided for @phoneNumber.
   ///
-  /// In en, this message translates to:
-  /// **'Phone Number'**
+  /// In ar, this message translates to:
+  /// **'رقم الهاتف'**
   String get phoneNumber;
 
   /// No description provided for @phoneNumberHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your phone number'**
+  /// In ar, this message translates to:
+  /// **'أدخل رقم هاتفك'**
   String get phoneNumberHint;
 
   /// No description provided for @userName.
   ///
-  /// In en, this message translates to:
-  /// **'Username'**
+  /// In ar, this message translates to:
+  /// **'اسم المستخدم'**
   String get userName;
 
   /// No description provided for @userNameHint.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your username'**
+  /// In ar, this message translates to:
+  /// **'أدخل اسم المستخدم'**
   String get userNameHint;
 
   /// No description provided for @save.
   ///
-  /// In en, this message translates to:
-  /// **'Save'**
+  /// In ar, this message translates to:
+  /// **'حفظ'**
   String get save;
 
   /// No description provided for @yourPhoto.
   ///
-  /// In en, this message translates to:
-  /// **'Your Photo'**
+  /// In ar, this message translates to:
+  /// **'صورك'**
   String get yourPhoto;
 
   /// No description provided for @editYourPhoto.
   ///
-  /// In en, this message translates to:
-  /// **'Edit your photo'**
+  /// In ar, this message translates to:
+  /// **'تحرير صورتك'**
   String get editYourPhoto;
 
   /// No description provided for @bio.
   ///
-  /// In en, this message translates to:
-  /// **'BIO'**
+  /// In ar, this message translates to:
+  /// **'السيرة الشخصية'**
   String get bio;
 
   /// No description provided for @delete.
   ///
-  /// In en, this message translates to:
-  /// **'Delete'**
+  /// In ar, this message translates to:
+  /// **'حذف'**
   String get delete;
 
   /// No description provided for @update.
   ///
-  /// In en, this message translates to:
-  /// **'Update'**
+  /// In ar, this message translates to:
+  /// **'تحديث'**
   String get update;
 
   /// No description provided for @clickToUpload.
   ///
-  /// In en, this message translates to:
-  /// **'Click to upload or drag and drop'**
+  /// In ar, this message translates to:
+  /// **'انقر لتحميل أو اسحب'**
   String get clickToUpload;
 
   /// No description provided for @topChannels.
   ///
-  /// In en, this message translates to:
-  /// **'Top Channels'**
+  /// In ar, this message translates to:
+  /// **'القنوات الأعلى'**
   String get topChannels;
 
   /// No description provided for @topProducts.
   ///
-  /// In en, this message translates to:
-  /// **'Top Products'**
+  /// In ar, this message translates to:
+  /// **'المنتجات الأعلى'**
   String get topProducts;
 
   /// No description provided for @loading.
   ///
-  /// In en, this message translates to:
-  /// **'loading'**
+  /// In ar, this message translates to:
+  /// **'جار التحميل'**
   String get loading;
 
   /// No description provided for @visitors.
   ///
-  /// In en, this message translates to:
-  /// **'VISITORS'**
+  /// In ar, this message translates to:
+  /// **'الزوار'**
   String get visitors;
 
   /// No description provided for @source.
   ///
-  /// In en, this message translates to:
-  /// **'SOURCE'**
+  /// In ar, this message translates to:
+  /// **'المصدر'**
   String get source;
 
   /// No description provided for @revenues.
   ///
-  /// In en, this message translates to:
-  /// **'REVENUES'**
+  /// In ar, this message translates to:
+  /// **'الإيرادات'**
   String get revenues;
 
   /// No description provided for @sales.
   ///
-  /// In en, this message translates to:
-  /// **'SALES'**
+  /// In ar, this message translates to:
+  /// **'المبيعات'**
   String get sales;
 
   /// No description provided for @conversation.
   ///
-  /// In en, this message translates to:
-  /// **'CONVERSION'**
+  /// In ar, this message translates to:
+  /// **'التحويل'**
   String get conversation;
 
   /// No description provided for @groupMenu.
   ///
-  /// In en, this message translates to:
-  /// **'MENU'**
+  /// In ar, this message translates to:
+  /// **'القائمة'**
   String get groupMenu;
 
   /// No description provided for @dashboard.
   ///
-  /// In en, this message translates to:
-  /// **'Dashboard'**
+  /// In ar, this message translates to:
+  /// **'لوحة التحكم'**
   String get dashboard;
 
   /// No description provided for @calendar.
   ///
-  /// In en, this message translates to:
-  /// **'Calendar'**
+  /// In ar, this message translates to:
+  /// **'التقويم'**
   String get calendar;
 
   /// No description provided for @forms.
   ///
-  /// In en, this message translates to:
-  /// **'Forms'**
+  /// In ar, this message translates to:
+  /// **'النماذج'**
   String get forms;
 
   /// No description provided for @tables.
   ///
-  /// In en, this message translates to:
-  /// **'Tables'**
+  /// In ar, this message translates to:
+  /// **'الجداول'**
   String get tables;
 
   /// No description provided for @others.
   ///
-  /// In en, this message translates to:
-  /// **'OTHERS'**
+  /// In ar, this message translates to:
+  /// **'آخرون'**
   String get others;
 
   /// No description provided for @chart.
   ///
-  /// In en, this message translates to:
-  /// **'Chart'**
+  /// In ar, this message translates to:
+  /// **'الرسم البياني'**
   String get chart;
 
   /// No description provided for @uiElements.
   ///
-  /// In en, this message translates to:
-  /// **'UI Elements'**
+  /// In ar, this message translates to:
+  /// **'عناصر واجهة المستخدم'**
   String get uiElements;
 
   /// No description provided for @alerts.
   ///
-  /// In en, this message translates to:
-  /// **'Alerts'**
+  /// In ar, this message translates to:
+  /// **'تحذيرات'**
   String get alerts;
 
   /// No description provided for @buttons.
   ///
-  /// In en, this message translates to:
-  /// **'Buttons'**
+  /// In ar, this message translates to:
+  /// **'الأزرار'**
   String get buttons;
 
   /// No description provided for @basicChart.
   ///
-  /// In en, this message translates to:
-  /// **'Basic Chart'**
+  /// In ar, this message translates to:
+  /// **'رسم بياني أساسي'**
   String get basicChart;
 
   /// No description provided for @eCommerce.
   ///
-  /// In en, this message translates to:
-  /// **'eCommerce'**
+  /// In ar, this message translates to:
+  /// **'التجارة إلكترونية'**
   String get eCommerce;
 
   /// No description provided for @authentication.
   ///
-  /// In en, this message translates to:
-  /// **'Authentication'**
+  /// In ar, this message translates to:
+  /// **'المصادقة'**
   String get authentication;
 
   /// No description provided for @advanceTable.
   ///
-  /// In en, this message translates to:
-  /// **'AdvanceTable'**
+  /// In ar, this message translates to:
+  /// **'جدول متقدم'**
   String get advanceTable;
 
   /// No description provided for @profitThisWeek.
   ///
-  /// In en, this message translates to:
-  /// **'Profit this week'**
+  /// In ar, this message translates to:
+  /// **'الربح هذا الأسبوع'**
   String get profitThisWeek;
 
   /// No description provided for @package.
   ///
-  /// In en, this message translates to:
-  /// **'Package'**
+  /// In ar, this message translates to:
+  /// **'حزمة'**
   String get package;
 
   /// No description provided for @invoiceDate.
   ///
-  /// In en, this message translates to:
-  /// **'Invoice date'**
+  /// In ar, this message translates to:
+  /// **'تاريخ الفاتورة'**
   String get invoiceDate;
 
   /// No description provided for @status.
   ///
-  /// In en, this message translates to:
-  /// **'Status'**
+  /// In ar, this message translates to:
+  /// **'الحالة'**
   String get status;
 
   /// No description provided for @actions.
   ///
-  /// In en, this message translates to:
-  /// **'Actions'**
+  /// In ar, this message translates to:
+  /// **'الإجراءات'**
   String get actions;
 
   /// No description provided for @productName.
   ///
-  /// In en, this message translates to:
-  /// **'Product Name'**
+  /// In ar, this message translates to:
+  /// **'اسم المنتج'**
   String get productName;
 
   /// No description provided for @category.
   ///
-  /// In en, this message translates to:
-  /// **'Category'**
+  /// In ar, this message translates to:
+  /// **'الفئة'**
   String get category;
 
   /// No description provided for @price.
   ///
-  /// In en, this message translates to:
-  /// **'Price'**
+  /// In ar, this message translates to:
+  /// **'السعر'**
   String get price;
 
   /// No description provided for @sold.
   ///
-  /// In en, this message translates to:
-  /// **'Sold'**
+  /// In ar, this message translates to:
+  /// **'مباعة'**
   String get sold;
 
   /// No description provided for @profit.
   ///
-  /// In en, this message translates to:
-  /// **'Profit'**
+  /// In ar, this message translates to:
+  /// **'ربح'**
   String get profit;
 
   /// No description provided for @alertTips.
   ///
-  /// In en, this message translates to:
-  /// **'Alert Tips'**
+  /// In ar, this message translates to:
+  /// **'نصائح التحذيرات'**
   String get alertTips;
 
   /// No description provided for @alertDialog.
   ///
-  /// In en, this message translates to:
-  /// **'Alert Dialog'**
+  /// In ar, this message translates to:
+  /// **'حوار التحذيرات'**
   String get alertDialog;
 
   /// No description provided for @info.
   ///
-  /// In en, this message translates to:
-  /// **'Info'**
+  /// In ar, this message translates to:
+  /// **'معلومات'**
   String get info;
 
   /// No description provided for @success.
   ///
-  /// In en, this message translates to:
-  /// **'Success'**
+  /// In ar, this message translates to:
+  /// **'نجاح'**
   String get success;
 
   /// No description provided for @warn.
   ///
-  /// In en, this message translates to:
-  /// **'Warn'**
+  /// In ar, this message translates to:
+  /// **'تحذير'**
   String get warn;
 
   /// No description provided for @danger.
   ///
-  /// In en, this message translates to:
-  /// **'Danger'**
+  /// In ar, this message translates to:
+  /// **'خطر'**
   String get danger;
 
   /// No description provided for @confirm.
   ///
-  /// In en, this message translates to:
-  /// **'Confirm'**
+  /// In ar, this message translates to:
+  /// **'تأكيد'**
   String get confirm;
 
   /// No description provided for @simpleAlert.
   ///
-  /// In en, this message translates to:
-  /// **'Simple Alert'**
+  /// In ar, this message translates to:
+  /// **'تحذير بسيط'**
   String get simpleAlert;
 
   /// No description provided for @simple.
   ///
-  /// In en, this message translates to:
-  /// **'Simple'**
+  /// In ar, this message translates to:
+  /// **'بسيط'**
   String get simple;
 
   /// No description provided for @simpleConfirm.
   ///
-  /// In en, this message translates to:
-  /// **'Simple Confirm'**
+  /// In ar, this message translates to:
+  /// **'تأكيد بسيط'**
   String get simpleConfirm;
 
   /// No description provided for @rflutterAlert.
   ///
-  /// In en, this message translates to:
-  /// **'RFLUTTER ALERT'**
+  /// In ar, this message translates to:
+  /// **'تحذير RFlutter'**
   String get rflutterAlert;
 
   /// No description provided for @rflutterTip.
   ///
-  /// In en, this message translates to:
-  /// **'Flutter is more awesome with RFlutter Alert.'**
+  /// In ar, this message translates to:
+  /// **'Flutter أكثر رائعة مع RFlutter Alert.'**
   String get rflutterTip;
 
   /// No description provided for @cool.
   ///
-  /// In en, this message translates to:
-  /// **'COOL'**
+  /// In ar, this message translates to:
+  /// **'جذاب'**
   String get cool;
 
   /// No description provided for @seeDetail.
   ///
-  /// In en, this message translates to:
-  /// **'See Detail...'**
+  /// In ar, this message translates to:
+  /// **'انظر التفاصيل...'**
   String get seeDetail;
 
   /// No description provided for @tryMore.
   ///
-  /// In en, this message translates to:
-  /// **'Try More...'**
+  /// In ar, this message translates to:
+  /// **'حاول المزيد...'**
   String get tryMore;
 
   /// No description provided for @colorPicker.
   ///
-  /// In en, this message translates to:
-  /// **'Color Picker'**
+  /// In ar, this message translates to:
+  /// **'محدد اللون'**
   String get colorPicker;
 
   /// No description provided for @or.
   ///
-  /// In en, this message translates to:
-  /// **'OR'**
+  /// In ar, this message translates to:
+  /// **'أو'**
   String get or;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -997,33 +981,23 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['ar', 'en', 'es', 'fr', 'id', 'ja', 'ko', 'th', 'vi', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['ar'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'ar': return AppLocalizationsAr();
-    case 'en': return AppLocalizationsEn();
-    case 'es': return AppLocalizationsEs();
-    case 'fr': return AppLocalizationsFr();
-    case 'id': return AppLocalizationsId();
-    case 'ja': return AppLocalizationsJa();
-    case 'ko': return AppLocalizationsKo();
-    case 'th': return AppLocalizationsTh();
-    case 'vi': return AppLocalizationsVi();
-    case 'zh': return AppLocalizationsZh();
+    case 'ar':
+      return AppLocalizationsAr();
   }
 
   throw FlutterError(
-    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-    'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
-  );
+      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+      'an issue with the localizations generation tool. Please file an issue '
+      'on GitHub with a reproducible sample app and the gen-l10n configuration '
+      'that was used.');
 }

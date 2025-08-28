@@ -1,20 +1,17 @@
 
-import 'package:flareline_uikit/components/tables/table_widget.dart';
-import 'package:flareline_uikit/entity/table_data_entity.dart';
+import 'package:flareline_uikit/components/tables/base_table_widget.dart';
+import 'package:flareline_uikit/core/mvvm/base_table_provider.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 
 class ContactsPage extends LayoutWidget {
   ContactsPage({super.key});
 
   @override
-  // TODO: implement isContentScroll
   bool get isContentScroll => false;
 
   @override
   String breakTabTitle(BuildContext context) {
-    // TODO: implement breakTabTitle
     return 'Contacts';
   }
 
@@ -25,6 +22,7 @@ class ContactsPage extends LayoutWidget {
 }
 
 class DataTableWidget extends TableWidget<ContactsViewModel> {
+  const DataTableWidget({super.key});
 
   @override
   ContactsViewModel viewModelBuilder(BuildContext context) {
@@ -36,10 +34,10 @@ class ContactsViewModel extends BaseTableProvider {
   @override
   String get TAG => 'ContactsViewModel';
 
-  ContactsViewModel(super.context);
+  ContactsViewModel(BuildContext context) : super(context);
 
   @override
-  loadData(BuildContext context) async {
+  Future<void> loadData(BuildContext context) async {
     const headers = [
       "Contact Name",
       "Last Contacted",
@@ -74,7 +72,7 @@ class ContactsViewModel extends BaseTableProvider {
     }
 
     Map<String, dynamic> map = {'headers': headers, 'rows': rows};
-    TableDataEntity data = TableDataEntity.fromJson(map);
-    tableDataEntity = data;
+    // For now, just store the data directly since TableDataEntity is not available
+    tableDataEntity = map;
   }
 }

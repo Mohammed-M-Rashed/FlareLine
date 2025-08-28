@@ -48,28 +48,28 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Default',
+                btnText: 'افتراضي',
                 borderRadius: 0,
               ),
             ),
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Default',
+                btnText: 'افتراضي',
                 borderRadius: 5,
               ),
             ),
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Default',
+                btnText: 'افتراضي',
                 borderRadius: 30,
               ),
             ),
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Default',
+                btnText: 'افتراضي',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.normal,
@@ -88,7 +88,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Primary',
+                btnText: 'أولي',
                 borderRadius: 0,
                 type: ButtonType.primary.type,
               ),
@@ -96,7 +96,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Primary',
+                btnText: 'أولي',
                 borderRadius: 5,
                 type: ButtonType.primary.type,
               ),
@@ -104,7 +104,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Primary',
+                btnText: 'أولي',
                 borderRadius: 30,
                 type: ButtonType.primary.type,
               ),
@@ -112,7 +112,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Primary',
+                btnText: 'أولي',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: Theme.of(context).colorScheme.primary,
@@ -131,7 +131,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Success',
+                btnText: 'نجح',
                 type: ButtonType.success.type,
                 borderRadius: 0,
               ),
@@ -139,7 +139,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Success',
+                btnText: 'نجح',
                 type: ButtonType.success.type,
                 borderRadius: 5,
               ),
@@ -147,7 +147,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Success',
+                btnText: 'نجح',
                 type: ButtonType.success.type,
                 borderRadius: 30,
               ),
@@ -155,7 +155,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Success',
+                btnText: 'نجح',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.success,
@@ -174,7 +174,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Info',
+                btnText: 'معلومات',
                 type: ButtonType.info.type,
                 borderRadius: 0,
               ),
@@ -182,7 +182,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Info',
+                btnText: 'معلومات',
                 type: ButtonType.info.type,
                 borderRadius: 5,
               ),
@@ -190,7 +190,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Info',
+                btnText: 'معلومات',
                 type: ButtonType.info.type,
                 borderRadius: 30,
               ),
@@ -198,7 +198,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Info',
+                btnText: 'معلومات',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.info,
@@ -217,7 +217,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Warn',
+                btnText: 'تحذير',
                 type: ButtonType.warn.type,
                 borderRadius: 0,
               ),
@@ -225,7 +225,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Warn',
+                btnText: 'تحذير',
                 type: ButtonType.warn.type,
                 borderRadius: 5,
               ),
@@ -233,7 +233,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Warn',
+                btnText: 'تحذير',
                 type: ButtonType.warn.type,
                 borderRadius: 30,
               ),
@@ -241,7 +241,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Warn',
+                btnText: 'تحذير',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.warn,
@@ -260,7 +260,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Danger',
+                btnText: 'خطر',
                 type: ButtonType.danger.type,
                 borderRadius: 0,
               ),
@@ -268,7 +268,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Danger',
+                btnText: 'خطر',
                 type: ButtonType.danger.type,
                 borderRadius: 5,
               ),
@@ -276,7 +276,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Danger',
+                btnText: 'خطر',
                 type: ButtonType.danger.type,
                 borderRadius: 30,
               ),
@@ -284,7 +284,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Danger',
+                btnText: 'خطر',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.danger,
@@ -303,7 +303,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Dark',
+                btnText: 'داكن',
                 type: ButtonType.dark.type,
                 borderRadius: 0,
               ),
@@ -311,7 +311,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Dark',
+                btnText: 'داكن',
                 type: ButtonType.dark.type,
                 borderRadius: 5,
               ),
@@ -319,7 +319,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Dark',
+                btnText: 'داكن',
                 type: ButtonType.dark.type,
                 borderRadius: 30,
               ),
@@ -327,7 +327,7 @@ class ButtonPage extends LayoutWidget {
             SizedBox(
               width: 100,
               child: ButtonWidget(
-                btnText: 'Dark',
+                btnText: 'داكن',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.dark,
@@ -360,7 +360,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: GlobalColors.normal,
                 ),
-                btnText: 'Default With Icon',
+                btnText: 'افتراضي مع أيقونة',
                 borderRadius: 0,
               ),
             ),
@@ -371,7 +371,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: GlobalColors.normal,
                 ),
-                btnText: 'Default With Icon',
+                btnText: 'افتراضي مع أيقونة',
                 borderRadius: 5,
               ),
             ),
@@ -382,7 +382,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: GlobalColors.normal,
                 ),
-                btnText: 'Default With Icon',
+                btnText: 'افتراضي مع أيقونة',
                 borderRadius: 30,
               ),
             ),
@@ -393,7 +393,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: GlobalColors.normal,
                 ),
-                btnText: 'Default With Icon',
+                btnText: 'افتراضي مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.normal,
@@ -416,7 +416,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: Colors.white,
                 ),
-                btnText: 'Primary With Icon',
+                btnText: 'أولي مع أيقونة',
                 type: ButtonType.primary.type,
                 borderRadius: 0,
               ),
@@ -428,7 +428,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: Colors.white,
                 ),
-                btnText: 'Primary With Icon',
+                btnText: 'أولي مع أيقونة',
                 type: ButtonType.primary.type,
                 borderRadius: 5,
               ),
@@ -440,7 +440,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: Colors.white,
                 ),
-                btnText: 'Primary With Icon',
+                btnText: 'أولي مع أيقونة',
                 type: ButtonType.primary.type,
                 borderRadius: 30,
               ),
@@ -452,7 +452,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.email_outlined,
                   color: GlobalColors.primary,
                 ),
-                btnText: 'Primary With Icon',
+                btnText: 'أولي مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.primary,
@@ -475,7 +475,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Success With Icon',
+                btnText: 'نجح مع أيقونة',
                 type: ButtonType.success.type,
                 borderRadius: 0,
               ),
@@ -487,7 +487,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Success With Icon',
+                btnText: 'نجح مع أيقونة',
                 type: ButtonType.success.type,
                 borderRadius: 5,
               ),
@@ -499,7 +499,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Success With Icon',
+                btnText: 'نجح مع أيقونة',
                 type: ButtonType.success.type,
                 borderRadius: 30,
               ),
@@ -511,7 +511,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: GlobalColors.success,
                 ),
-                btnText: 'Success With Icon',
+                btnText: 'نجح مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.success,
@@ -534,7 +534,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Info With Icon',
+                btnText: 'معلومات مع أيقونة',
                 type: ButtonType.info.type,
                 borderRadius: 0,
               ),
@@ -546,7 +546,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Info With Icon',
+                btnText: 'معلومات مع أيقونة',
                 type: ButtonType.info.type,
                 borderRadius: 5,
               ),
@@ -558,7 +558,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Info With Icon',
+                btnText: 'معلومات مع أيقونة',
                 type: ButtonType.info.type,
                 borderRadius: 30,
               ),
@@ -570,7 +570,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: GlobalColors.info,
                 ),
-                btnText: 'Info With Icon',
+                btnText: 'معلومات مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.info,
@@ -593,7 +593,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Warn With Icon',
+                btnText: 'تحذير مع أيقونة',
                 type: ButtonType.warn.type,
                 borderRadius: 0,
               ),
@@ -605,7 +605,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Warn With Icon',
+                btnText: 'تحذير مع أيقونة',
                 type: ButtonType.warn.type,
                 borderRadius: 5,
               ),
@@ -617,7 +617,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Warn With Icon',
+                btnText: 'تحذير مع أيقونة',
                 type: ButtonType.warn.type,
                 borderRadius: 30,
               ),
@@ -629,7 +629,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: GlobalColors.warn,
                 ),
-                btnText: 'Warn With Icon',
+                btnText: 'تحذير مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.warn,
@@ -652,7 +652,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Danger With Icon',
+                btnText: 'خطر مع أيقونة',
                 type: ButtonType.danger.type,
                 borderRadius: 0,
               ),
@@ -664,7 +664,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Danger With Icon',
+                btnText: 'خطر مع أيقونة',
                 type: ButtonType.danger.type,
                 borderRadius: 5,
               ),
@@ -676,7 +676,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: Colors.white,
                 ),
-                btnText: 'Danger With Icon',
+                btnText: 'خطر مع أيقونة',
                 type: ButtonType.danger.type,
                 borderRadius: 30,
               ),
@@ -688,7 +688,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.shopping_cart_checkout,
                   color: GlobalColors.danger,
                 ),
-                btnText: 'Danger With Icon',
+                btnText: 'خطر مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.danger,
@@ -711,7 +711,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.favorite_border,
                   color: Colors.white,
                 ),
-                btnText: 'Dark With Icon',
+                btnText: 'داكن مع أيقونة',
                 type: ButtonType.dark.type,
                 borderRadius: 0,
               ),
@@ -723,7 +723,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.favorite_border,
                   color: Colors.white,
                 ),
-                btnText: 'Dark With Icon',
+                btnText: 'داكن مع أيقونة',
                 type: ButtonType.dark.type,
                 borderRadius: 5,
               ),
@@ -735,7 +735,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.favorite_border,
                   color: Colors.white,
                 ),
-                btnText: 'Dark With Icon',
+                btnText: 'داكن مع أيقونة',
                 type: ButtonType.dark.type,
                 borderRadius: 30,
               ),
@@ -747,7 +747,7 @@ class ButtonPage extends LayoutWidget {
                   Icons.favorite_border,
                   color: GlobalColors.dark,
                 ),
-                btnText: 'Dark With Icon',
+                btnText: 'داكن مع أيقونة',
                 color: Colors.white,
                 borderRadius: 5,
                 borderColor: GlobalColors.dark,

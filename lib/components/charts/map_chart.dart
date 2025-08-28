@@ -36,7 +36,7 @@ class MapChartWidget extends StatelessWidget {
                 layers: [
                   MapShapeLayer(
                     source: MapShapeSource.asset(
-                      'assets/australia.json',
+                      'assets/ly.json',
                       shapeDataField: 'STATE_NAME',
                       dataCount: data.length,
                       primaryValueMapper: (int index) => data[index].state,
@@ -52,7 +52,7 @@ class MapChartWidget extends StatelessWidget {
                       );
                     },
                     tooltipSettings: MapTooltipSettings(
-                        color: Colors.grey[700],
+                        color: Colors.green,
                         strokeColor: Colors.white,
                         strokeWidth: 2),
                     strokeColor: Colors.white,

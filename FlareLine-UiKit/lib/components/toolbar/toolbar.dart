@@ -8,8 +8,10 @@ import 'package:flareline_uikit/service/theme_provider.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:flareline/core/services/auth_service.dart';
+import 'package:flareline_uikit/components/forms/select_widget.dart';
 
 class ToolBarWidget extends StatelessWidget {
   bool? showMore;
@@ -128,32 +130,28 @@ class ToolBarWidget extends StatelessWidget {
               items: <PopupMenuItem<String>>[
                 PopupMenuItem<String>(
                   value: 'value01',
-                  child: Text('My Profile'),
+                  child: Text('ملفي الشخصي'),
                   onTap: () async {
                     onProfileClick(context);
                   },
                 ),
                 PopupMenuItem<String>(
                   value: 'value02',
-                  child: Text('My Contacts'),
+                  child: Text('جهات الاتصال'),
                   onTap: () async {
                     onContactClick(context);
                   },
                 ),
                 PopupMenuItem<String>(
                   value: 'value03',
-                  child: Text('Settings'),
+                  child: Text('الإعدادات'),
                   onTap: () async {
 
                   },
                 ),
                 PopupMenuItem<String>(
-                    enabled: false,
-                    value: 'value04',
-                    child: _languagesWidget(context)),
-                PopupMenuItem<String>(
                   value: 'value05',
-                  child: Text('Log out'),
+                  child: Text('تسجيل الخروج'),
                   onTap: () {
                     onLogoutClick(context);
                   },
@@ -167,45 +165,51 @@ class ToolBarWidget extends StatelessWidget {
   }
 
   void onProfileClick(BuildContext context){
-    Navigator.of(context).popAndPushNamed('/profile');
+    Get.toNamed('/profile');
   }
 
   void onContactClick(BuildContext context){
-    Navigator.of(context).popAndPushNamed('/contacts');
+    Get.toNamed('/contacts');
   }
 
   void onSettingClick(BuildContext context){
-    Navigator.of(context).popAndPushNamed('/settings');
+    Get.toNamed('/settings');
   }
 
   Future<void> onLogoutClick(BuildContext context) async {
-    Navigator.of(context).popAndPushNamed('/signIn');
+    // Sign out using AuthService
+    print('🚪 TOOLBAR: User clicked logout');
+    await AuthService.signOut(context);
+    print('🚪 TOOLBAR: Navigating to login page');
+    Get.offAllNamed('/');
   }
 
-  Widget _languagesWidget(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: context.read<LocalizationProvider>().supportedLocales.map((e) {
-        return SizedBox(
-          width: 50,
-          height: 20,
-          child:
-              Consumer<LocalizationProvider>(builder: (ctx, provider, child) {
-            return ButtonWidget(
-              btnText: e.languageCode,
-              type: e.languageCode == provider.languageCode
-                  ? ButtonType.primary.type
-                  : null,
-              onTap: () {
-                context.read<LocalizationProvider>().locale = e;
-              },
-            );
-          }),
-        );
-      }).toList(),
-    );
-  }
+  // Remove language switcher widget as we only support Arabic
+  // Widget _languagesWidget(BuildContext context) {
+  //   return GetBuilder<LocalizationProvider>(
+  //     builder: (localizationProvider) {
+  //       return Wrap(
+  //         spacing: 8,
+  //         runSpacing: 8,
+  //         children: localizationProvider.supportedLocales.map((e) {
+  //           return SizedBox(
+  //             width: 50,
+  //             height: 20,
+  //             child: ButtonWidget(
+  //               btnText: e.languageCode,
+  //               type: e.languageCode == localizationProvider.languageCode
+  //                   ? ButtonType.primary.type
+  //                   : null,
+  //               onTap: () {
+  //                 localizationProvider.setLocale(e);
+  //               },
+  //             ),
+  //           );
+  //         }).toList(),
+  //       );
+  //     },
+  //   );
+  // }
 
 
 }
@@ -217,41 +221,45 @@ class ToggleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isDark = context.watch<ThemeProvider>().isDark;
-    return InkWell(
-      child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 2,horizontal: 3),
-     
-          decoration: BoxDecoration(
-              color: FlarelineColors.background,
-              borderRadius: BorderRadius.circular(45)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 15,
-                backgroundColor: isDark ? Colors.transparent : Colors.white,
-                child: SvgPicture.asset('assets/toolbar/sun.svg',
-                    width: 18,
-                    height: 18,
-                    color: isDark
-                        ? FlarelineColors.darkTextBody
-                        : FlarelineColors.primary),
-              ),
-              CircleAvatar(
-                 radius: 15,
-                backgroundColor: isDark ? Colors.white : Colors.transparent,
-                child: SvgPicture.asset('assets/toolbar/moon.svg',
-                    width: 18,
-                    height: 18,
-                    color: isDark
-                        ? FlarelineColors.primary
-                        : FlarelineColors.darkTextBody),
-              ),
-            ],
-          )),
-      onTap: () {
-        context.read<ThemeProvider>().toggleThemeMode();
+    return GetBuilder<ThemeProvider>(
+      builder: (themeProvider) {
+        bool isDark = themeProvider.isDark;
+        return InkWell(
+          child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 2,horizontal: 3),
+         
+              decoration: BoxDecoration(
+                  color: FlarelineColors.background,
+                  borderRadius: BorderRadius.circular(45)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 15,
+                    backgroundColor: isDark ? Colors.transparent : Colors.white,
+                    child: SvgPicture.asset('assets/toolbar/sun.svg',
+                        width: 18,
+                        height: 18,
+                        color: isDark
+                            ? FlarelineColors.darkTextBody
+                            : FlarelineColors.primary),
+                  ),
+                  CircleAvatar(
+                     radius: 15,
+                    backgroundColor: isDark ? Colors.white : Colors.transparent,
+                    child: SvgPicture.asset('assets/toolbar/moon.svg',
+                        width: 18,
+                        height: 18,
+                        color: isDark
+                            ? FlarelineColors.primary
+                            : FlarelineColors.darkTextBody),
+                  ),
+                ],
+              )),
+          onTap: () {
+            themeProvider.toggleThemeMode();
+          },
+        );
       },
     );
   }

@@ -19,38 +19,123 @@ import 'package:flareline/pages/profile/profile_page.dart' deferred as profile;
 import 'package:flareline/pages/resetpwd/reset_pwd_page.dart' deferred as resetPwd;
 import 'package:flareline/pages/setting/settings_page.dart' deferred as settings;
 import 'package:flareline/pages/table/tables_page.dart' deferred as tables;
+import 'package:flareline/pages/users/user_management_page.dart';
+import 'package:flareline/pages/companies/company_management_page.dart';
+
+import 'package:flareline/pages/specializations/specialization_management_page.dart';
+import 'package:flareline/pages/training_centers/training_center_management_page.dart';
+import 'package:flareline/pages/courses/course_management_page.dart';
+import 'package:flareline/pages/training_programs/training_program_management_page.dart';
+import 'package:get/get.dart';
 
 typedef PathWidgetBuilder = Widget Function(BuildContext, String?);
 
-final List<Map<String, Object>> MAIN_PAGES = [
-  {'routerPath': '/', 'widget': const EcommercePage()},
-  {'routerPath': '/calendar', 'widget': DeferredWidget(calendar.loadLibrary, () => calendar.CalendarPage())},
-  {'routerPath': '/profile', 'widget': DeferredWidget(profile.loadLibrary, () => profile.ProfilePage())},
-  {
-    'routerPath': '/formElements',
-    'widget': DeferredWidget(formElements.loadLibrary, () => formElements.FormElementsPage()),
-  },
-  {'routerPath': '/formLayout', 'widget': DeferredWidget(formLayout.loadLibrary, () => formLayout.FormLayoutPage())},
-  {'routerPath': '/signIn', 'widget': DeferredWidget(signIn.loadLibrary, () => signIn.SignInWidget())},
-  {'routerPath': '/signUp', 'widget': DeferredWidget(signUp.loadLibrary, () => signUp.SignUpWidget())},
-  {
-    'routerPath': '/resetPwd',
-    'widget': DeferredWidget(resetPwd.loadLibrary, () => resetPwd.ResetPwdWidget()),
-  },
-  {'routerPath': '/invoice', 'widget': DeferredWidget(invoice.loadLibrary, () => invoice.InvoicePage())},
-  {'routerPath': '/inbox', 'widget': DeferredWidget(inbox.loadLibrary, () => inbox.InboxWidget())},
-  {'routerPath': '/tables', 'widget': DeferredWidget(tables.loadLibrary, () => tables.TablesPage())},
-  {'routerPath': '/settings', 'widget': DeferredWidget(settings.loadLibrary, () => settings.SettingsPage())},
-  {'routerPath': '/basicChart', 'widget': DeferredWidget(chart.loadLibrary, () => chart.ChartPage())},
-  {'routerPath': '/buttons', 'widget': DeferredWidget(button.loadLibrary, () => button.ButtonPage())},
-  {'routerPath': '/alerts', 'widget': DeferredWidget(alert.loadLibrary, () => alert.AlertPage())},
-  {'routerPath': '/contacts', 'widget': DeferredWidget(contacts.loadLibrary, () => contacts.ContactsPage())},
-  {'routerPath': '/tools', 'widget': DeferredWidget(tools.loadLibrary, () => tools.ToolsPage())},
-  {'routerPath': '/toast', 'widget': DeferredWidget(toast.loadLibrary, () => toast.ToastPage())},
-  {
-    'routerPath': '/modal',
-    'widget': DeferredWidget(modal.loadLibrary, () => modal.ModalPage())
-  },
+final List<GetPage> routes = [
+  GetPage(
+    name: '/',
+    page: () => DeferredWidget(signIn.loadLibrary, () => signIn.SignInWidget()),
+  ),
+  GetPage(
+    name: '/dashboard',
+    page: () => const EcommercePage(),
+  ),
+  GetPage(
+    name: '/calendar',
+    page: () => DeferredWidget(calendar.loadLibrary, () => calendar.CalendarPage()),
+  ),
+  GetPage(
+    name: '/profile',
+    page: () => DeferredWidget(profile.loadLibrary, () => profile.ProfilePage()),
+  ),
+  GetPage(
+    name: '/formElements',
+    page: () => DeferredWidget(formElements.loadLibrary, () => formElements.FormElementsPage()),
+  ),
+  GetPage(
+    name: '/formLayout',
+    page: () => DeferredWidget(formLayout.loadLibrary, () => formLayout.FormLayoutPage()),
+  ),
+  GetPage(
+    name: '/signIn',
+    page: () => DeferredWidget(signIn.loadLibrary, () => signIn.SignInWidget()),
+  ),
+  GetPage(
+    name: '/signUp',
+    page: () => DeferredWidget(signUp.loadLibrary, () => signUp.SignUpWidget()),
+  ),
+  GetPage(
+    name: '/resetPwd',
+    page: () => DeferredWidget(resetPwd.loadLibrary, () => resetPwd.ResetPwdWidget()),
+  ),
+  GetPage(
+    name: '/invoice',
+    page: () => DeferredWidget(invoice.loadLibrary, () => invoice.InvoicePage()),
+  ),
+  GetPage(
+    name: '/inbox',
+    page: () => DeferredWidget(inbox.loadLibrary, () => inbox.InboxWidget()),
+  ),
+  GetPage(
+    name: '/tables',
+    page: () => DeferredWidget(tables.loadLibrary, () => tables.TablesPage()),
+  ),
+  GetPage(
+    name: '/settings',
+    page: () => DeferredWidget(settings.loadLibrary, () => settings.SettingsPage()),
+  ),
+  GetPage(
+    name: '/basicChart',
+    page: () => DeferredWidget(chart.loadLibrary, () => chart.ChartPage()),
+  ),
+  GetPage(
+    name: '/buttons',
+    page: () => DeferredWidget(button.loadLibrary, () => button.ButtonPage()),
+  ),
+  GetPage(
+    name: '/alerts',
+    page: () => DeferredWidget(alert.loadLibrary, () => alert.AlertPage()),
+  ),
+  GetPage(
+    name: '/contacts',
+    page: () => DeferredWidget(contacts.loadLibrary, () => contacts.ContactsPage()),
+  ),
+  GetPage(
+    name: '/tools',
+    page: () => DeferredWidget(tools.loadLibrary, () => tools.ToolsPage()),
+  ),
+  GetPage(
+    name: '/toast',
+    page: () => DeferredWidget(toast.loadLibrary, () => toast.ToastPage()),
+  ),
+  GetPage(
+    name: '/modal',
+    page: () => DeferredWidget(modal.loadLibrary, () => modal.ModalPage()),
+  ),
+  GetPage(
+    name: '/userManagement',
+    page: () => const UserManagementPage(),
+  ),
+  GetPage(
+    name: '/companyManagement',
+    page: () => const CompanyManagementPage(),
+  ),
+
+            GetPage(
+              name: '/specializationManagement',
+              page: () => const SpecializationManagementPage(),
+            ),
+            GetPage(
+              name: '/trainingCenterManagement',
+              page: () => const TrainingCenterManagementPage(),
+            ),
+            GetPage(
+              name: '/courseManagement',
+              page: () => const CourseManagementPage(),
+            ),
+            GetPage(
+              name: '/trainingProgramManagement',
+              page: () => const TrainingProgramManagementPage(),
+            ),
 ];
 
 class RouteConfiguration {
@@ -60,28 +145,7 @@ class RouteConfiguration {
   static BuildContext? get navigatorContext =>
       navigatorKey.currentState?.context;
 
-  static Route<dynamic>? onGenerateRoute(
-    RouteSettings settings,
-  ) {
-    String path = settings.name!;
-
-    dynamic map =
-        MAIN_PAGES.firstWhere((element) => element['routerPath'] == path);
-
-    if (map == null) {
-      return null;
-    }
-    Widget targetPage = map['widget'];
-
-    builder(context, match) {
-      return targetPage;
-    }
-
-    return NoAnimationMaterialPageRoute<void>(
-      builder: (context) => builder(context, null),
-      settings: settings,
-    );
-  }
+  static List<GetPage> get getPages => routes;
 }
 
 class NoAnimationMaterialPageRoute<T> extends MaterialPageRoute<T> {

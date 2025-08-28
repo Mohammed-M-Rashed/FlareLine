@@ -83,7 +83,7 @@ class _DeferredWidgetState extends State<DeferredWidget> {
 class DeferredLoadingPlaceholder extends StatelessWidget {
   const DeferredLoadingPlaceholder({
     super.key,
-    this.name = 'This widget',
+          this.name = 'هذا العنصر',
   });
 
   final String name;

@@ -1,5 +1,5 @@
 import 'package:flareline/pages/auth/sign_in/sign_in_provider.dart';
-import 'package:flareline_uikit/core/mvvm/base_widget.dart';
+import 'package:get/get.dart';
 
 import 'package:flutter/material.dart';
 
@@ -11,80 +11,79 @@ import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/flutter_gen/app_localizations.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-class SignInWidget extends BaseWidget<SignInProvider> {
+class SignInWidget extends GetView<SignInProvider> {
+  SignInWidget({super.key});
+
   @override
-  Widget bodyWidget(
-      BuildContext context, SignInProvider viewModel, Widget? child) {
+  Widget build(BuildContext context) {
     return Scaffold(body: ResponsiveBuilder(
       builder: (context, sizingInformation) {
         // Check the sizing information here and return your UI
         if (sizingInformation.deviceScreenType == DeviceScreenType.desktop) {
           return Center(
-            child: contentDesktopWidget(context, viewModel),
+            child: contentDesktopWidget(context),
           );
         }
 
-        return contentMobileWidget(context,viewModel);
+        return contentMobileWidget(context);
       },
     ));
   }
 
-  @override
-  SignInProvider viewModelBuilder(BuildContext context) {
-    return SignInProvider(context);
-  }
-
-  Widget contentDesktopWidget(BuildContext context,SignInProvider viewModel) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CommonCard(
-          width: MediaQuery.of(context).size.width * 0.8,
-          padding: const EdgeInsets.symmetric(vertical: 100),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-            Expanded(
-                child: Column(
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.appName,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    Text(AppLocalizations.of(context)!.slogan),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    SizedBox(
-                      width: 350,
-                      child: SvgPicture.asset('assets/signin/main.svg',
-                          semanticsLabel: ''),
-                    )
-                  ],
-                )),
-            const VerticalDivider(
-              width: 1,
-              color: GlobalColors.background,
-            ),
-            Expanded(
-              child: _signInFormWidget(context,viewModel),
-            )
-          ]),
-        )
-      ],
+  Widget contentDesktopWidget(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CommonCard(
+            width: MediaQuery.of(context).size.width * 0.5,
+            padding: const EdgeInsets.symmetric(vertical: 60),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.appName,
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      Text(AppLocalizations.of(context)!.slogan),
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      SizedBox(
+                        width: 350,
+                        child: SvgPicture.asset('assets/signin/main.svg',
+                            semanticsLabel: ''),
+                      )
+                    ],
+                  )),
+              const VerticalDivider(
+                width: 1,
+                color: GlobalColors.background,
+              ),
+              Expanded(
+                child: _signInFormWidget(context),
+              )
+            ]),
+          )
+        ],
+      ),
     );
   }
 
-  @override
-  Widget contentMobileWidget(BuildContext context,SignInProvider viewModel) {
-    return CommonCard(
-        padding: const EdgeInsets.symmetric(vertical: 60),
-        child: _signInFormWidget(context,viewModel));
+  Widget contentMobileWidget(BuildContext context) {
+    return SingleChildScrollView(
+      child: CommonCard(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: _signInFormWidget(context)),
+    );
   }
 
-  Widget _signInFormWidget(BuildContext context,SignInProvider viewModel) {
+  Widget _signInFormWidget(BuildContext context) {
     return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 50),
         child: Column(
@@ -95,6 +94,16 @@ class SignInWidget extends BaseWidget<SignInProvider> {
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(
+              height: 8,
+            ),
+            Text(
+              'Welcome back! Please sign in to your account.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(
               height: 20,
             ),
             OutBorderTextFormField(
@@ -102,18 +111,20 @@ class SignInWidget extends BaseWidget<SignInProvider> {
               hintText: AppLocalizations.of(context)!.emailHint,
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
-                if (value!.isEmpty || !value.contains('@')) {
-                  return 'Please enter a valid email address';
-                } else {
-                  return null;
+                if (value == null || value.isEmpty) {
+                  return 'Please enter an email address';
                 }
+                if (!value.contains('@') || !value.contains('.')) {
+                  return 'Please enter a valid email address';
+                }
+                return null;
               },
               suffixWidget: SvgPicture.asset(
                 'assets/signin/email.svg',
                 width: 22,
                 height: 22,
               ),
-              controller: viewModel.emailController,
+              controller: controller.emailController,
             ),
             const SizedBox(
               height: 16,
@@ -124,100 +135,34 @@ class SignInWidget extends BaseWidget<SignInProvider> {
               hintText: AppLocalizations.of(context)!.passwordHint,
               keyboardType: TextInputType.visiblePassword,
               validator: (value) {
-                if (value!.isEmpty || value.length < 6) {
-                  return 'Please enter a valid password';
-                } else {
-                  return null;
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a password';
                 }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
               },
               suffixWidget: SvgPicture.asset(
                 'assets/signin/lock.svg',
                 width: 22,
                 height: 22,
               ),
-              controller: viewModel.passwordController,
+              controller: controller.passwordController,
             ),
             const SizedBox(
-              height: 20,
+              height: 32,
             ),
-            ButtonWidget(
+            Obx(() => ButtonWidget(
               type: ButtonType.primary.type,
-              btnText: AppLocalizations.of(context)!.signIn,
-              onTap: () {
-                viewModel.signIn(context);
+              btnText: controller.isLoading ? 'Signing in...' : AppLocalizations.of(context)!.signIn,
+              onTap: controller.isLoading ? null : () {
+                controller.signIn(context);
               },
-            ),
+            )),
             const SizedBox(
-              height: 20,
+              height: 16,
             ),
-            Row(
-              children: [
-                const Expanded(
-                    child: Divider(
-                      height: 1,
-                      color: GlobalColors.border,
-                    )),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(AppLocalizations.of(context)!.or),
-                ),
-                const Expanded(
-                    child: Divider(
-                      height: 1,
-                      color: GlobalColors.border,
-                    )),
-              ],
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            ButtonWidget(
-              color: Colors.white,
-              borderColor: GlobalColors.border,
-              iconWidget: SvgPicture.asset(
-                'assets/brand/brand-01.svg',
-                width: 25,
-                height: 25,
-              ),
-              btnText: AppLocalizations.of(context)!.signInWithGoogle,
-              onTap: () {
-                viewModel.signInWithGoogle(context);
-              },
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            ButtonWidget(
-              color: Colors.white,
-              borderColor: GlobalColors.border,
-              iconWidget: SvgPicture.asset(
-                'assets/brand/brand-03.svg',
-                width: 25,
-                height: 25,
-              ),
-              btnText: AppLocalizations.of(context)!.signInWithGithub,
-              onTap: () {
-                viewModel.signInWithGithub(context);
-              },
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(AppLocalizations.of(context)!.dontHaveAccount),
-                InkWell(
-                  child: Text(
-                    AppLocalizations.of(context)!.signUp,
-                    style: const TextStyle(color: Colors.blue),
-                  ),
-                  onTap: () {
-                    Navigator.of(context).popAndPushNamed('/signUp');
-                  },
-                )
-              ],
-            )
           ],
         ));
   }

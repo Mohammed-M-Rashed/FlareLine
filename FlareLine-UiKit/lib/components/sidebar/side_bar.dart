@@ -67,7 +67,7 @@ class SideBarWidget extends StatelessWidget {
               appName ?? '',
               style: TextStyle(
                   color: isDark ? Colors.white : FlarelineColors.darkBlackText,
-                  fontSize: logoFontSize),
+                  fontSize: 20),
             ))
       ],
     );

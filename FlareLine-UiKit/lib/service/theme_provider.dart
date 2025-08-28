@@ -1,27 +1,17 @@
-import 'package:flareline_uikit/core/mvvm/base_viewmodel.dart';
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 
-class ThemeProvider extends BaseViewModel {
-  ThemeMode _themeMode = ThemeMode.light;
+class ThemeProvider extends GetxController {
+  final _themeMode = ThemeMode.light.obs;
 
-  ThemeProvider(super.context);
+  ThemeMode get themeMode => _themeMode.value;
+  bool get isDark => _themeMode.value == ThemeMode.dark;
 
-  ThemeMode get themeMode => _themeMode;
-
-  set themeMode(ThemeMode mode) {
-    _themeMode = mode;
-    notifyListeners();
+  void setThemeMode(ThemeMode mode) {
+    _themeMode.value = mode;
   }
-
-  bool get isDark => themeMode == ThemeMode.dark;
 
   void toggleThemeMode() {
-    themeMode = themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    notifyListeners();
-  }
-
-  @override
-  void init(BuildContext context) {
-    // TODO: implement init
+    _themeMode.value = _themeMode.value == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
   }
 }

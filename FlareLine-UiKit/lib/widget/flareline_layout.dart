@@ -11,7 +11,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 abstract class FlarelineLayoutWidget extends StatelessWidget {
   const FlarelineLayoutWidget({super.key});
 
-  String get appName => 'Flareline';
+  String get appName => 'نظام التدريب';
 
   bool get showTitle => true;
 
@@ -36,7 +36,7 @@ abstract class FlarelineLayoutWidget extends StatelessWidget {
   double? get sideBarWidth => null;
 
   String sideBarAsset(BuildContext context) {
-    return 'assets/routes/menu_route_en.json';
+    return 'assets/routes/menu_route_ar.json';
   }
 
   bool isDarkTheme(BuildContext context) {
@@ -64,7 +64,7 @@ abstract class FlarelineLayoutWidget extends StatelessWidget {
       );
     }
     return SvgPicture.asset(
-      'assets/logo/logo_${isDark ? 'white' : 'dark'}.svg',
+      'assets/signin/main.svg',
       height: 32,
     );
   }
@@ -144,8 +144,7 @@ abstract class FlarelineLayoutWidget extends StatelessWidget {
             height: 50,
             child: breakTabWidget(context) ??
                 BreakTab(
-                  breakTabTitle(context),
-                  rightWidget: breakTabRightWidget(context),
+                  title: breakTabTitle(context),
                 ),
           ),
         if (showTitle)

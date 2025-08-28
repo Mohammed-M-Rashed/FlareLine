@@ -103,13 +103,13 @@ class _ChartData {
 
 class _BarChartProvider extends ChangeNotifier {
   List<_ChartData>? chartData = <_ChartData>[
-    _ChartData('Mon', 21, 28),
-    _ChartData('Tus', 24, 44),
-    _ChartData('Wen', 36, 48),
-    _ChartData('Thr', 38, 50),
-    _ChartData('Fri', 54, 66),
-    _ChartData('Sat', 57, 78),
-    _ChartData('Sun', 70, 84)
+            _ChartData('الاثنين', 21, 28),
+        _ChartData('الثلاثاء', 24, 44),
+        _ChartData('الأربعاء', 36, 48),
+        _ChartData('الخميس', 38, 50),
+        _ChartData('الجمعة', 54, 66),
+        _ChartData('السبت', 57, 78),
+        _ChartData('الأحد', 70, 84)
   ];
 
   void init() {}

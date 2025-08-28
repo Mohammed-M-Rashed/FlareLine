@@ -16,7 +16,7 @@ class ToolsPage extends LayoutWidget {
 
   @override
   String breakTabTitle(BuildContext context) {
-    return 'Tools';
+    return 'الأدوات';
   }
 
   _sideListWidget(BuildContext context, bool isDark) {
@@ -27,7 +27,7 @@ class ToolsPage extends LayoutWidget {
                 ScrollConfiguration.of(context).copyWith(scrollbars: false),
             child: FutureBuilder(
                 future: DefaultAssetBundle.of(context)
-                    .loadString('assets/routes/tools_menu_route_en.json'),
+                    .loadString('assets/routes/tools_menu_route_ar.json'),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting ||
                       !snapshot.hasData) {
