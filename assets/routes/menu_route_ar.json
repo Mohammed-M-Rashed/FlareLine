@@ -30,6 +30,11 @@
       },
       {
         "icon": "assets/sidebar/school.svg",
+        "menuName": "إدارة فروع مراكز التدريب",
+        "path": "/trainingCenterBranchManagement"
+      },
+      {
+        "icon": "assets/sidebar/school.svg",
         "menuName": "إدارة الدورات",
         "path": "/courseManagement"
       },
@@ -37,6 +42,11 @@
         "icon": "assets/sidebar/people.svg",
         "menuName": "إدارة البرامج التدريبية",
         "path": "/trainingProgramManagement"
+      },
+      {
+        "icon": "assets/sidebar/user.svg",
+        "menuName": "إدارة المدربين",
+        "path": "/trainerManagement"
       }
     ]
   }

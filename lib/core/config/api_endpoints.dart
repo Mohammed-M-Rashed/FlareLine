@@ -40,9 +40,25 @@ class ApiEndpoints {
   static const String specializations = '/specializations';
   static const String specializationDetails = '/specializations/details';
   
-
+  // Training centers - New API endpoints
+  static const String createTrainingCenter = '/training-center/create';
+  static const String getAllTrainingCenters = '/training-center/select';
+  static const String updateTrainingCenter = '/training-center/update';
   
-  // Training centers
+  // Training center branches - New API endpoints
+  static const String createTrainingCenterBranch = '/training-center-branch/create';
+  static const String getAllTrainingCenterBranches = '/training-center-branch/select';
+  static const String updateTrainingCenterBranch = '/training-center-branch/update';
+  
+  // Trainer management - New API endpoints
+  static const String createTrainer = '/trainer/create';
+  static const String getAllTrainers = '/trainer/select';
+  static const String updateTrainer = '/trainer/update';
+  static const String acceptTrainer = '/trainer/accept';
+  static const String rejectTrainer = '/trainer/reject';
+  static const String getTrainersByStatus = '/trainer/by-status';
+  
+  // Legacy training center endpoints (keeping for backward compatibility)
   static const String trainingCenters = '/training-centers';
   static const String centerDetails = '/training-centers/details';
   

@@ -43,7 +43,6 @@ void main() async {
   Get.put(SignInProvider());
   
   // Initialize global services
-  Get.put(TrainingCenterNotificationService());
 
   runApp(MyApp());
 }

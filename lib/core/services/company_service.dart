@@ -6,9 +6,10 @@ import '../models/auth_model.dart';
 import 'auth_service.dart';
 import '../auth/auth_provider.dart';
 import '../config/api_endpoints.dart';
+import '../config/api_config.dart';
 
 class CompanyService {
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
+  static String get _baseUrl => ApiConfig.baseUrl;
   
   // Get all companies
   static Future<CompanyListResponse> getAllCompanies() async {

@@ -6,21 +6,20 @@ import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
+import 'package:flareline/core/models/training_center_branch_model.dart';
 import 'package:flareline/core/models/training_center_model.dart';
+import 'package:flareline/core/services/training_center_branch_service.dart';
 import 'package:flareline/core/services/training_center_service.dart';
 import 'package:toastification/toastification.dart';
-
 import 'package:get/get.dart';
-import 'dart:convert'; // Added for base64Decode
-import 'dart:typed_data'; // Added for Uint8List
-import 'dart:async'; // Added for Completer
+import 'dart:async';
 
-class TrainingCenterManagementPage extends LayoutWidget {
-  const TrainingCenterManagementPage({super.key});
+class TrainingCenterBranchManagementPage extends LayoutWidget {
+  const TrainingCenterBranchManagementPage({super.key});
 
   @override
   String breakTabTitle(BuildContext context) {
-    return 'Training Center Management';
+    return 'Training Center Branch Management';
   }
 
   @override
@@ -28,35 +27,29 @@ class TrainingCenterManagementPage extends LayoutWidget {
     return const Column(
       children: [
         SizedBox(height: 16),
-        TrainingCenterManagementWidget(),
+        TrainingCenterBranchManagementWidget(),
       ],
     );
   }
 }
 
-class TrainingCenterManagementWidget extends StatefulWidget {
-  const TrainingCenterManagementWidget({super.key});
-
-  @override
-  State<TrainingCenterManagementWidget> createState() => _TrainingCenterManagementWidgetState();
-}
-
-class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagementWidget> {
+class TrainingCenterBranchManagementWidget extends StatelessWidget {
+  const TrainingCenterBranchManagementWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
     return CommonCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: GetBuilder<TrainingCenterDataProvider>(
-          init: TrainingCenterDataProvider(),
+        child: GetBuilder<TrainingCenterBranchDataProvider>(
+          init: TrainingCenterBranchDataProvider(),
           builder: (provider) => _buildWidget(context, provider),
         ),
       ),
     );
   }
 
-  Widget _buildWidget(BuildContext context, TrainingCenterDataProvider provider) {
+  Widget _buildWidget(BuildContext context, TrainingCenterBranchDataProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
@@ -75,7 +68,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Training Center Management',
+                            'Training Center Branch Management',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -84,7 +77,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Manage system training centers and their information',
+                            'Manage training center branches and their information',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey[600],
@@ -103,9 +96,9 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                             onTap: provider.isLoading ? null : () async {
                               try {
                                 await provider.refreshData();
-                                _showSuccessToast('Training centers data refreshed successfully');
+                                _showSuccessToast('Branches data refreshed successfully');
                               } catch (e) {
-                                _showErrorToast('خطأ في تحديث بيانات مراكز التدريب: ${e.toString()}');
+                                _showErrorToast('خطأ في تحديث بيانات الفروع: ${e.toString()}');
                               }
                             },
                           )),
@@ -113,14 +106,14 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                         const SizedBox(width: 16),
                         Builder(
                           builder: (context) {
-                            if (TrainingCenterService.hasTrainingCenterManagementPermission()) {
+                            if (TrainingCenterBranchService.hasTrainingCenterBranchManagementPermission()) {
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add Training Center',
+                                  btnText: 'Add Branch',
                                   type: 'primary',
                                   onTap: () {
-                                    _showAddTrainingCenterForm(context);
+                                    _showAddBranchForm(context);
                                   },
                                 ),
                               );
@@ -137,12 +130,12 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               const SizedBox(height: 24),
               Builder(
                 builder: (context) {
-                  if (!TrainingCenterService.hasTrainingCenterManagementPermission()) {
+                  if (!TrainingCenterBranchService.hasTrainingCenterBranchManagementPermission()) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(32.0),
                         child: Text(
-                          'You do not have permission to manage training centers. Only System Administrators can access this functionality.',
+                          'You do not have permission to manage training center branches. Only System Administrators can access this functionality.',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.red,
@@ -158,21 +151,21 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                       return const LoadingWidget();
                     }
 
-                    final trainingCenters = provider.trainingCenters;
+                    final branches = provider.branches;
 
-                    if (trainingCenters.isEmpty) {
+                    if (branches.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.school_outlined,
+                              Icons.business_outlined,
                               size: 64,
                               color: Colors.grey[400],
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'لا توجد مراكز تدريب',
+                              'لا توجد فروع',
                               style: TextStyle(
                                 fontSize: 18,
                                 color: Colors.grey[600],
@@ -181,7 +174,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Get started by adding your first training center',
+                              'Get started by adding your first branch',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[500],
@@ -189,10 +182,10 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                             ),
                             const SizedBox(height: 16),
                             ButtonWidget(
-                              btnText: 'Add First Training Center',
+                              btnText: 'Add First Branch',
                               type: 'primary',
                               onTap: () {
-                                _showAddTrainingCenterForm(context);
+                                _showAddBranchForm(context);
                               },
                             ),
                           ],
@@ -203,7 +196,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Training center count and summary
+                        // Branch count and summary
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -214,13 +207,13 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                           child: Row(
                             children: [
                               Icon(
-                                Icons.school,
+                                Icons.business,
                                 color: Colors.blue.shade600,
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
                               Text(
-                                '${provider.filteredTrainingCenters.length} of ${trainingCenters.length} training center${trainingCenters.length == 1 ? '' : 's'} found',
+                                '${branches.length} branc${branches.length == 1 ? 'h' : 'hes'} found',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -265,26 +258,26 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   // Search text field
                                   Expanded(
                                     flex: 2,
-                                    child: TextFormField(
-                                      controller: provider.searchController,
-                                      decoration: InputDecoration(
-                                        hintText: 'Search training centers...',
-                                        prefixIcon: const Icon(Icons.search),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 16,
-                                        ),
-                                      ),
-                                      onChanged: (value) {
-                                        provider.setSearchQuery(value);
-                                      },
-                                    ),
+                                                                       child: TextFormField(
+                                     controller: provider.searchController,
+                                     decoration: InputDecoration(
+                                       hintText: 'Search branches...',
+                                       prefixIcon: const Icon(Icons.search),
+                                       border: OutlineInputBorder(
+                                         borderRadius: BorderRadius.circular(8),
+                                       ),
+                                       contentPadding: const EdgeInsets.symmetric(
+                                         horizontal: 16,
+                                         vertical: 16,
+                                       ),
+                                     ),
+                                     onChanged: (value) {
+                                       provider.setSearchQuery(value);
+                                     },
+                                   ),
                                   ),
                                   const SizedBox(width: 16),
-                                  // Status filter dropdown
+                                  // Training center filter dropdown
                                   Expanded(
                                     flex: 1,
                                     child: Container(
@@ -293,175 +286,39 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                         border: Border.all(color: Colors.grey.shade400),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Obx(() => DropdownButtonFormField<String>(
-                                        value: provider.selectedStatusFilter == 'all' ? null : provider.selectedStatusFilter,
+                                      child: Obx(() => DropdownButtonFormField<int>(
+                                        value: provider.selectedTrainingCenterId == 0 ? null : provider.selectedTrainingCenterId,
                                         decoration: const InputDecoration(
                                           border: InputBorder.none,
                                           contentPadding: EdgeInsets.symmetric(vertical: 16),
-                                          hintText: 'Filter by Status',
+                                          hintText: 'Filter by Training Center',
                                         ),
-                                        items: const [
-                                          DropdownMenuItem<String>(
+                                        items: [
+                                          const DropdownMenuItem<int>(
                                             value: null,
-                                            child: Text('All Statuses'),
+                                            child: Text('All Training Centers'),
                                           ),
-                                          DropdownMenuItem<String>(
-                                            value: 'pending',
-                                            child: Text('Pending'),
-                                          ),
-                                          DropdownMenuItem<String>(
-                                            value: 'approved',
-                                            child: Text('Approved'),
-                                          ),
-                                          DropdownMenuItem<String>(
-                                            value: 'rejected',
-                                            child: Text('Rejected'),
-                                          ),
+                                          ...provider.trainingCenters.map((center) => DropdownMenuItem<int>(
+                                            value: center.id,
+                                            child: Text(center.name),
+                                          )),
                                         ],
                                         onChanged: (value) {
-                                          provider.setSelectedStatusFilter(value ?? 'all');
+                                          provider.setSelectedTrainingCenterId(value ?? 0);
                                         },
                                       )),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              // Search help text
-                              Text(
-                                'Search by name, email, phone, address, website, or description',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Clear filters button
-                              if (provider.searchQuery.isNotEmpty || provider.selectedStatusFilter != 'all')
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        provider.searchController.clear();
-                                        provider.setSearchQuery('');
-                                        provider.setSelectedStatusFilter('all');
-                                      },
-                                      icon: const Icon(Icons.clear_all, size: 16),
-                                      label: const Text('Clear All Filters'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 16),
                         
-                        // Search results summary
-                        if (provider.searchQuery.isNotEmpty || provider.selectedStatusFilter != 'all')
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.blue.shade200),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  size: 16,
-                                  color: Colors.blue.shade600,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Showing ${provider.filteredTrainingCenters.length} result${provider.filteredTrainingCenters.length == 1 ? '' : 's'}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                if (provider.searchQuery.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'for "${provider.searchQuery}"',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                                if (provider.selectedStatusFilter != 'all') ...[
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'with status "${provider.selectedStatusFilter}"',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue.shade700,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        
-                        const SizedBox(height: 16),
-                        
                         // Data table
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            if (provider.filteredTrainingCenters.isEmpty) {
-                              return Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(40),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.search_off,
-                                      size: 64,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No training centers found',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Try adjusting your search criteria or filters',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[500],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        provider.searchController.clear();
-                                        provider.setSearchQuery('');
-                                        provider.setSelectedStatusFilter('all');
-                                      },
-                                      icon: const Icon(Icons.clear_all, size: 16),
-                                      label: const Text('Clear All Filters'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.blue[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            
                             return Container(
                               width: double.infinity,
                               child: DataTable(
@@ -489,7 +346,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Name',
+                                        'Branch Name',
                                         textAlign: TextAlign.start,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -499,17 +356,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Email',
-                                        textAlign: TextAlign.start,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    numeric: false,
-                                  ),
-                                  DataColumn(
-                                    label: Expanded(
-                                      child: Text(
-                                        'Phone',
+                                        'Training Center',
                                         textAlign: TextAlign.start,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -529,13 +376,24 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Status',
+                                        'Coordinates',
                                         textAlign: TextAlign.start,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     numeric: false,
                                   ),
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Phone',
+                                        textAlign: TextAlign.start,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                  
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
@@ -557,8 +415,8 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                     numeric: false,
                                   ),
                                 ],
-                                rows: provider.pagedTrainingCenters
-                                    .map((trainingCenter) => DataRow(
+                                rows: provider.pagedBranches
+                                    .map((branch) => DataRow(
                                           onSelectChanged: (selected) {},
                                           cells: [
                                             DataCell(
@@ -569,12 +427,25 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                 ),
                                                 child: Row(
                                                   children: [
-                                                    // Training Center Logo or Placeholder
-                                                    _buildTrainingCenterPlaceholder(trainingCenter.name),
+                                                    // Branch Icon
+                                                    Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.blue.shade100,
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        border: Border.all(color: Colors.blue.shade300),
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.business_outlined,
+                                                        color: Colors.blue.shade700,
+                                                        size: 20,
+                                                      ),
+                                                    ),
                                                     const SizedBox(width: 8),
                                                     Expanded(
                                                       child: Text(
-                                                        trainingCenter.name,
+                                                        branch.name,
                                                         style: const TextStyle(
                                                           fontWeight: FontWeight.w600,
                                                           fontSize: 12,
@@ -589,40 +460,8 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                             DataCell(
                                               Container(
                                                 constraints: const BoxConstraints(
-                                                  minWidth: 100,
-                                                  maxWidth: 150,
-                                                ),
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.shade50,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.blue.shade200,
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    trainingCenter.email,
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.w500,
-                                                      fontSize: 11,
-                                                      color: Colors.blue.shade700,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(
-                                              Container(
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 100,
-                                                  maxWidth: 150,
+                                                  minWidth: 120,
+                                                  maxWidth: 180,
                                                 ),
                                                 child: Container(
                                                   padding: const EdgeInsets.symmetric(
@@ -638,7 +477,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                     ),
                                                   ),
                                                   child: Text(
-                                                    trainingCenter.phone,
+                                                    branch.trainingCenterName,
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 11,
@@ -652,11 +491,62 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                             ),
                                             DataCell(
                                               Container(
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 150,
+                                                  maxWidth: 200,
+                                                ),
                                                 child: Text(
-                                                  trainingCenter.address,
+                                                  branch.address,
                                                   style: const TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.black87,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Tooltip(
+                                                message: branch.hasCoordinates 
+                                                    ? 'Coordinates: ${_formatCoordinates(branch.lat, branch.long)}'
+                                                    : 'No coordinates set',
+                                                child: Container(
+                                                  constraints: const BoxConstraints(
+                                                    minWidth: 100,
+                                                    maxWidth: 120,
+                                                  ),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: branch.hasCoordinates ? Colors.green.shade50 : Colors.grey.shade50,
+                                                      borderRadius: BorderRadius.circular(16),
+                                                      border: Border.all(
+                                                        color: branch.hasCoordinates ? Colors.green.shade200 : Colors.grey.shade200,
+                                                        width: 1,
+                                                      ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.location_on,
+                                                          size: 14,
+                                                          color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Text(
+                                                          branch.hasCoordinates ? 'Available' : 'Not Set',
+                                                          style: TextStyle(
+                                                            fontWeight: FontWeight.w500,
+                                                            fontSize: 10,
+                                                            color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -664,32 +554,16 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                             DataCell(
                                               Container(
                                                 constraints: const BoxConstraints(
-                                                  minWidth: 80,
-                                                  maxWidth: 120,
+                                                  minWidth: 100,
+                                                  maxWidth: 150,
                                                 ),
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 4,
+                                                child: Text(
+                                                  branch.phone,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.black87,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: trainingCenter.statusColor.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: trainingCenter.statusColor.withOpacity(0.3),
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    trainingCenter.statusDisplay,
-                                                    style: TextStyle(
-                                                      fontWeight: FontWeight.w500,
-                                                      fontSize: 11,
-                                                      color: trainingCenter.statusColor,
-                                                    ),
-                                                    textAlign: TextAlign.center,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ),
@@ -704,16 +578,16 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                   mainAxisAlignment: MainAxisAlignment.center,
                                                   children: [
                                                     Text(
-                                                      _formatTrainingCenterDate(trainingCenter.createdAt),
+                                                      _formatBranchDate(branch.createdAt),
                                                       style: const TextStyle(
                                                         fontSize: 12,
                                                         color: Colors.black87,
                                                       ),
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    if (trainingCenter.updatedAt != null)
+                                                    if (branch.updatedAt != null)
                                                       Text(
-                                                        'Updated: ${_formatTrainingCenterDate(trainingCenter.updatedAt)}',
+                                                        'Updated: ${_formatBranchDate(branch.updatedAt)}',
                                                         style: TextStyle(
                                                           fontSize: 10,
                                                           color: Colors.grey[600],
@@ -725,57 +599,19 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                             ),
                                             DataCell(
                                               Container(
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    // Edit button
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.edit,
-                                                        size: 18,
-                                                      ),
-                                                      onPressed: () {
-                                                        _showEditTrainingCenterForm(context, trainingCenter);
-                                                      },
-                                                      tooltip: 'Edit Training Center',
-                                                      style: IconButton.styleFrom(
-                                                        backgroundColor: Colors.blue.shade50,
-                                                        foregroundColor: Colors.blue.shade700,
-                                                      ),
-                                                    ),
-                                                    // Accept button (only for pending training centers)
-                                                    if (trainingCenter.isPending)
-                                                      IconButton(
-                                                        icon: const Icon(
-                                                          Icons.check_circle,
-                                                          size: 18,
-                                                        ),
-                                                        onPressed: () {
-                                                          _acceptTrainingCenter(trainingCenter);
-                                                        },
-                                                        tooltip: 'Accept Training Center',
-                                                        style: IconButton.styleFrom(
-                                                          backgroundColor: Colors.green.shade50,
-                                                          foregroundColor: Colors.green.shade700,
-                                                        ),
-                                                      ),
-                                                    // Reject button (only for pending training centers)
-                                                    if (trainingCenter.isPending)
-                                                      IconButton(
-                                                        icon: const Icon(
-                                                          Icons.cancel,
-                                                          size: 18,
-                                                        ),
-                                                        onPressed: () {
-                                                          _rejectTrainingCenter(trainingCenter);
-                                                        },
-                                                        tooltip: 'Reject Training Center',
-                                                        style: IconButton.styleFrom(
-                                                          backgroundColor: Colors.red.shade50,
-                                                          foregroundColor: Colors.red.shade700,
-                                                        ),
-                                                      ),
-                                                  ],
+                                                child: IconButton(
+                                                  icon: const Icon(
+                                                    Icons.edit,
+                                                    size: 18,
+                                                  ),
+                                                  onPressed: () {
+                                                    _showEditBranchForm(context, branch);
+                                                  },
+                                                  tooltip: 'Edit Branch',
+                                                  style: IconButton.styleFrom(
+                                                    backgroundColor: Colors.blue.shade50,
+                                                    foregroundColor: Colors.blue.shade700,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -841,744 +677,17 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     );
   }
 
-  void _showAddTrainingCenterForm(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final addressController = TextEditingController();
-    final websiteController = TextEditingController();
-    final descriptionController = TextEditingController();
-    String selectedStatus = 'pending';
-
-    ModalDialog.show(
-      context: context,
-      title: 'Add New Training Center',
-      showTitle: true,
-      modalType: ModalType.large,
-      child: StatefulBuilder(
-        builder: (BuildContext context, StateSetter setModalState) {
-          bool isSubmitting = false;
-          
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Training Center Information Section
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.school,
-                                    color: Colors.blue.shade600,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Training Center Information',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Name Field
-                              OutBorderTextFormField(
-                                labelText: 'Training Center Name',
-                                hintText: 'Enter training center name',
-                                controller: nameController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a training center name';
-                                  }
-                                  if (value.trim().length > 255) {
-                                    return 'Training center name must not exceed 255 characters';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Email Field
-                              OutBorderTextFormField(
-                                labelText: 'Email Address',
-                                hintText: 'Enter training center email',
-                                controller: emailController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter an email address';
-                                  }
-                                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
-                                    return 'Please enter a valid email address';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Phone Field
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.blue.shade600,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Phone number must start with 091, 092, 093, 094, or 120 and contain exactly 7 digits after the prefix (e.g., 0911234567)',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.blue.shade700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              OutBorderTextFormField(
-                                labelText: 'Phone Number',
-                                hintText: 'Enter training center phone number (e.g., 0911234567)',
-                                controller: phoneController,
-                                enabled: !isSubmitting,
-                                validator: _validatePhoneNumber,
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Address Field
-                              OutBorderTextFormField(
-                                labelText: 'Address',
-                                hintText: 'Enter training center address',
-                                controller: addressController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a training center address';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Website Field
-                              OutBorderTextFormField(
-                                labelText: 'Website URL',
-                                hintText: 'Enter training center website (optional)',
-                                controller: websiteController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value != null && value.trim().isNotEmpty) {
-                                    final uri = Uri.tryParse(value.trim());
-                                    if (uri == null || !uri.hasAbsolutePath) {
-                                      return 'Please enter a valid URL';
-                                    }
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Description Field
-                              OutBorderTextFormField(
-                                labelText: 'Description',
-                                hintText: 'Enter training center description (optional)',
-                                controller: descriptionController,
-                                enabled: !isSubmitting,
-                                maxLines: 3,
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Status Field
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Status',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    DropdownButtonFormField<String>(
-                                      value: selectedStatus,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                                        DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                                        DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value != null) {
-                                          setModalState(() {
-                                            selectedStatus = value;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Loading Overlay
-                if (isSubmitting)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black.withOpacity(0.3),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Creating Training Center...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Please wait while we process your request',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
-      onSaveTap: () async {
-        if (formKey.currentState!.validate()) {
-          // Show loading state
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return WillPopScope(
-                onWillPop: () async => false,
-                child: AlertDialog(
-                  content: Row(
-                    children: [
-                      const SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Text('Creating Training Center...'),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-          
-          try {
-            final request = TrainingCenterCreateRequest(
-              name: nameController.text.trim(),
-              email: emailController.text.trim(),
-              phone: phoneController.text.trim(),
-              address: addressController.text.trim(),
-              website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
-              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-              status: selectedStatus,
-            );
-            
-            final response = await TrainingCenterService.createTrainingCenter(request);
-            
-            // Close loading dialog
-            Navigator.of(context).pop();
-            
-            if (response.success) {
-              // Refresh the data
-              Get.find<TrainingCenterDataProvider>().refreshData();
-               
-              // Close modal
-              Get.back();
-               
-              // Show success message
-              _showSuccessToast(response.messageEn);
-            } else {
-              throw Exception(response.messageEn);
-            }
-          } catch (e) {
-            // Close loading dialog
-            Navigator.of(context).pop();
-            
-            _showErrorToast(e.toString());
-          }
-        }
-      },
-    );
-  }
-
-  void _showEditTrainingCenterForm(BuildContext context, TrainingCenter trainingCenter) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: trainingCenter.name);
-    final emailController = TextEditingController(text: trainingCenter.email);
-    final phoneController = TextEditingController(text: trainingCenter.phone);
-    final addressController = TextEditingController(text: trainingCenter.address);
-    final websiteController = TextEditingController(text: trainingCenter.website);
-    final descriptionController = TextEditingController(text: trainingCenter.description);
-    String selectedStatus = trainingCenter.status;
-
-    ModalDialog.show(
-      context: context,
-      title: 'Edit Training Center',
-      showTitle: true,
-      modalType: ModalType.large,
-      child: StatefulBuilder(
-        builder: (BuildContext context, StateSetter setModalState) {
-          bool isSubmitting = false;
-          
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.7,
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Training Center Information Section
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.school,
-                                    color: Colors.blue.shade600,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Training Center Information',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blue.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Name Field
-                              OutBorderTextFormField(
-                                labelText: 'Training Center Name',
-                                hintText: 'Enter training center name',
-                                controller: nameController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a training center name';
-                                  }
-                                  if (value.trim().length > 255) {
-                                    return 'Training center name must not exceed 255 characters';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Email Field
-                              OutBorderTextFormField(
-                                labelText: 'Email Address',
-                                hintText: 'Enter training center email',
-                                controller: emailController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter an email address';
-                                  }
-                                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
-                                    return 'Please enter a valid email address';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Phone Field
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.info_outline,
-                                      color: Colors.blue.shade600,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        'Phone number must start with 091, 092, 093, 094, or 120 and contain exactly 7 digits after the prefix (e.g., 0911234567)',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.blue.shade700,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              OutBorderTextFormField(
-                                labelText: 'Phone Number',
-                                hintText: 'Enter training center phone number (e.g., 0911234567)',
-                                controller: phoneController,
-                                enabled: !isSubmitting,
-                                validator: _validatePhoneNumber,
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Address Field
-                              OutBorderTextFormField(
-                                labelText: 'Address',
-                                hintText: 'Enter training center address',
-                                controller: addressController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a training center address';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Website Field
-                              OutBorderTextFormField(
-                                labelText: 'Website URL',
-                                hintText: 'Enter training center website (optional)',
-                                controller: websiteController,
-                                enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value != null && value.trim().isNotEmpty) {
-                                    final uri = Uri.tryParse(value.trim());
-                                    if (uri == null || !uri.hasAbsolutePath) {
-                                      return 'Please enter a valid URL';
-                                    }
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Description Field
-                              OutBorderTextFormField(
-                                labelText: 'Description',
-                                hintText: 'Enter training center description (optional)',
-                                controller: descriptionController,
-                                enabled: !isSubmitting,
-                                maxLines: 3,
-                              ),
-                              const SizedBox(height: 16),
-                               
-                              // Status Field
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Status',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    DropdownButtonFormField<String>(
-                                      value: selectedStatus,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                                        DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                                        DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value != null) {
-                                          setModalState(() {
-                                            selectedStatus = value;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Loading Overlay
-                if (isSubmitting)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black.withOpacity(0.3),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Updating Training Center...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Please wait while we process your request',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      ),
-      onSaveTap: () async {
-        if (formKey.currentState!.validate()) {
-          // Show loading state
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return WillPopScope(
-                onWillPop: () async => false,
-                child: AlertDialog(
-                  content: Row(
-                    children: [
-                      const SizedBox(
-                        width: 30,
-                        height: 30,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Text('Updating Training Center...'),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-          
-          try {
-            final request = TrainingCenterUpdateRequest(
-              id: trainingCenter.id!,
-              name: nameController.text.trim(),
-              email: emailController.text.trim(),
-              phone: phoneController.text.trim(),
-              address: addressController.text.trim(),
-              website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
-              description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-              status: selectedStatus,
-            );
-            
-            final response = await TrainingCenterService.updateTrainingCenter(request);
-            
-            // Close loading dialog
-            Navigator.of(context).pop();
-            
-            if (response.success) {
-              // Refresh the data
-              Get.find<TrainingCenterDataProvider>().refreshData();
-               
-              // Close modal
-              Get.back();
-               
-              // Show success message
-              _showSuccessToast(response.messageEn);
-            } else {
-              throw Exception(response.messageEn);
-            }
-          } catch (e) {
-            // Close loading dialog
-            Navigator.of(context).pop();
-            
-            _showErrorToast(e.toString());
-          }
-        }
-      },
-    );
-  }
-
-  String _formatTrainingCenterDate(DateTime? date) {
+  String _formatBranchDate(DateTime? date) {
     if (date == null) {
       return 'N/A';
     }
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  Widget _buildTrainingCenterPlaceholder(String name) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : 'T',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
+  /// Formats coordinates for display
+  String _formatCoordinates(double? lat, double? long) {
+    if (lat == null || long == null) return 'Not set';
+    return '${lat.toStringAsFixed(6)}, ${long.toStringAsFixed(6)}';
   }
 
   /// Validates phone number format according to business rules
@@ -1627,7 +736,823 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     return null; // Validation passed
   }
 
-  /// Shows a success toast notification for training center operations in Arabic
+  void _showAddBranchForm(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final addressController = TextEditingController();
+    final phoneController = TextEditingController();
+    final latController = TextEditingController();
+    final longController = TextEditingController();
+    int selectedTrainingCenterId = 0;
+
+    ModalDialog.show(
+      context: context,
+      title: 'Add New Branch',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          bool isSubmitting = false;
+          
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Branch Information Section
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.business,
+                                    color: Colors.blue.shade600,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Branch Information',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Training Center Selection
+                              FutureBuilder<List<TrainingCenter>>(
+                                future: TrainingCenterBranchService.getAllTrainingCentersForSelection(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(child: CircularProgressIndicator());
+                                  }
+                                  
+                                  if (snapshot.hasError) {
+                                    return Text(
+                                      'Error loading training centers: ${snapshot.error}',
+                                      style: TextStyle(color: Colors.red),
+                                    );
+                                  }
+                                  
+                                  final trainingCenters = snapshot.data ?? [];
+                                  
+                                  if (trainingCenters.isEmpty) {
+                                    return Text(
+                                      'No training centers available',
+                                      style: TextStyle(color: Colors.orange),
+                                    );
+                                  }
+                                  
+                                  return DropdownButtonFormField<int>(
+                                    value: selectedTrainingCenterId > 0 ? selectedTrainingCenterId : null,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Training Center *',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: trainingCenters.map((tc) => DropdownMenuItem<int>(
+                                      value: tc.id,
+                                      child: Text(tc.name),
+                                    )).toList(),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        selectedTrainingCenterId = value ?? 0;
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value == 0) {
+                                        return 'Please select a training center';
+                                      }
+                                      return null;
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Name Field
+                              OutBorderTextFormField(
+                                labelText: 'Branch Name *',
+                                hintText: 'Enter branch name',
+                                controller: nameController,
+                                enabled: !isSubmitting,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a branch name';
+                                  }
+                                  if (value.trim().length > 255) {
+                                    return 'Branch name must not exceed 255 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Address Field
+                              OutBorderTextFormField(
+                                labelText: 'Address *',
+                                hintText: 'Enter branch address',
+                                controller: addressController,
+                                maxLines: 3,
+                                enabled: !isSubmitting,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a branch address';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Phone Field
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.blue.shade600,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Phone number must start with 091, 092, 093, 094, or 120 and contain exactly 7 digits after the prefix (e.g., 0911234567)',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              OutBorderTextFormField(
+                                labelText: 'Phone Number *',
+                                hintText: 'Enter branch phone number (e.g., 0911234567)',
+                                controller: phoneController,
+                                enabled: !isSubmitting,
+                                validator: _validatePhoneNumber,
+                              ),
+                              const SizedBox(height: 16),
+                               
+                               // Geographic Coordinates Section
+                               Container(
+                                 width: double.infinity,
+                                 padding: const EdgeInsets.all(16),
+                                 decoration: BoxDecoration(
+                                   color: Colors.green.shade50,
+                                   borderRadius: BorderRadius.circular(8),
+                                   border: Border.all(color: Colors.green.shade200),
+                                 ),
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Row(
+                                       children: [
+                                         Icon(
+                                           Icons.location_on,
+                                           color: Colors.green.shade600,
+                                           size: 20,
+                                         ),
+                                         const SizedBox(width: 8),
+                                         Text(
+                                           'Geographic Coordinates (Optional)',
+                                           style: TextStyle(
+                                             fontSize: 16,
+                                             fontWeight: FontWeight.w600,
+                                             color: Colors.green.shade700,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                     const SizedBox(height: 8),
+                                     Text(
+                                       'Add coordinates to display this branch on maps. Leave empty if coordinates are not available.',
+                                       style: TextStyle(
+                                         fontSize: 12,
+                                         color: Colors.green.shade700,
+                                       ),
+                                     ),
+                                     const SizedBox(height: 16),
+                                     
+                                     // Latitude and Longitude Fields
+                                     Row(
+                                       children: [
+                                         Expanded(
+                                           child: OutBorderTextFormField(
+                                             labelText: 'Latitude',
+                                             hintText: 'e.g., 40.7128',
+                                             controller: latController,
+                                             enabled: !isSubmitting,
+                                             keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                             validator: (value) {
+                                               if (value != null && value.trim().isNotEmpty) {
+                                                 final lat = double.tryParse(value.trim());
+                                                 if (lat == null) {
+                                                   return 'Please enter a valid number';
+                                                 }
+                                                 if (lat < -90 || lat > 90) {
+                                                   return 'Latitude must be between -90 and 90';
+                                                 }
+                                               }
+                                               return null;
+                                             },
+                                           ),
+                                         ),
+                                         const SizedBox(width: 16),
+                                         Expanded(
+                                           child: OutBorderTextFormField(
+                                             labelText: 'Longitude',
+                                             hintText: 'e.g., -74.0060',
+                                             controller: longController,
+                                             enabled: !isSubmitting,
+                                             keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                             validator: (value) {
+                                               if (value != null && value.trim().isNotEmpty) {
+                                                 final long = double.tryParse(value.trim());
+                                                 if (long == null) {
+                                                   return 'Please enter a valid number';
+                                                 }
+                                                 if (long < -180 || long > 180) {
+                                                   return 'Longitude must be between -180 and 180';
+                                                 }
+                                               }
+                                               return null;
+                                             },
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Loading Overlay
+                if (isSubmitting)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Creating Branch...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Please wait while we process your request',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+      onSaveTap: () async {
+        if (formKey.currentState!.validate()) {
+          // Show loading state
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return WillPopScope(
+                onWillPop: () async => false,
+                child: AlertDialog(
+                  content: Row(
+                    children: [
+                      const SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text('Creating Branch...'),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+          
+          try {
+            final request = TrainingCenterBranchCreateRequest(
+              name: nameController.text.trim(),
+              trainingCenterId: selectedTrainingCenterId,
+              address: addressController.text.trim(),
+              phone: phoneController.text.trim(),
+              lat: latController.text.trim().isNotEmpty ? double.tryParse(latController.text.trim()) : null,
+              long: longController.text.trim().isNotEmpty ? double.tryParse(longController.text.trim()) : null,
+            );
+            
+            final response = await TrainingCenterBranchService.createTrainingCenterBranch(request);
+            
+            // Close loading dialog
+            Navigator.of(context).pop();
+            
+            if (response.success) {
+              // Refresh the data
+              Get.find<TrainingCenterBranchDataProvider>().refreshData();
+               
+              // Close modal
+              Get.back();
+               
+              // Show success message
+              _showSuccessToast(response.messageEn);
+            } else {
+              throw Exception(response.messageEn);
+            }
+          } catch (e) {
+            // Close loading dialog
+            Navigator.of(context).pop();
+            
+            _showErrorToast(e.toString());
+          }
+        }
+      },
+    );
+  }
+
+  void _showEditBranchForm(BuildContext context, TrainingCenterBranch branch) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: branch.name);
+    final addressController = TextEditingController(text: branch.address);
+    final phoneController = TextEditingController(text: branch.phone);
+    final latController = TextEditingController(text: branch.lat?.toString() ?? '');
+    final longController = TextEditingController(text: branch.long?.toString() ?? '');
+    int selectedTrainingCenterId = branch.trainingCenterId;
+
+    ModalDialog.show(
+      context: context,
+      title: 'Edit Branch',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          bool isSubmitting = false;
+          
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Branch Information Section
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.business,
+                                    color: Colors.blue.shade600,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Branch Information',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Training Center Selection
+                              FutureBuilder<List<TrainingCenter>>(
+                                future: TrainingCenterBranchService.getAllTrainingCentersForSelection(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(child: CircularProgressIndicator());
+                                  }
+                                  
+                                  if (snapshot.hasError) {
+                                    return Text(
+                                      'Error loading training centers: ${snapshot.error}',
+                                      style: TextStyle(color: Colors.red),
+                                    );
+                                  }
+                                  
+                                  final trainingCenters = snapshot.data ?? [];
+                                  
+                                  if (trainingCenters.isEmpty) {
+                                    return Text(
+                                      'No training centers available',
+                                      style: TextStyle(color: Colors.orange),
+                                    );
+                                  }
+                                  
+                                  return DropdownButtonFormField<int>(
+                                    value: selectedTrainingCenterId > 0 ? selectedTrainingCenterId : null,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Training Center *',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: trainingCenters.map((tc) => DropdownMenuItem<int>(
+                                      value: tc.id,
+                                      child: Text(tc.name),
+                                    )).toList(),
+                                    onChanged: (value) {
+                                      setModalState(() {
+                                        selectedTrainingCenterId = value ?? 0;
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value == 0) {
+                                        return 'Please select a training center';
+                                      }
+                                      return null;
+                                    },
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Name Field
+                              OutBorderTextFormField(
+                                labelText: 'Branch Name *',
+                                hintText: 'Enter branch name',
+                                controller: nameController,
+                                enabled: !isSubmitting,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a branch name';
+                                  }
+                                  if (value.trim().length > 255) {
+                                    return 'Branch name must not exceed 255 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Address Field
+                              OutBorderTextFormField(
+                                labelText: 'Address *',
+                                hintText: 'Enter branch address',
+                                controller: addressController,
+                                maxLines: 3,
+                                enabled: !isSubmitting,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a branch address';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                               
+                              // Phone Field
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.blue.shade600,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Phone number must start with 091, 092, 093, 094, or 120 and contain exactly 7 digits after the prefix (e.g., 0911234567)',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              OutBorderTextFormField(
+                                labelText: 'Phone Number *',
+                                hintText: 'Enter branch phone number (e.g., 0911234567)',
+                                controller: phoneController,
+                                enabled: !isSubmitting,
+                                validator: _validatePhoneNumber,
+                              ),
+                              const SizedBox(height: 16),
+                               
+                               // Geographic Coordinates Section
+                               Container(
+                                 width: double.infinity,
+                                 padding: const EdgeInsets.all(16),
+                                 decoration: BoxDecoration(
+                                   color: Colors.green.shade50,
+                                   borderRadius: BorderRadius.circular(8),
+                                   border: Border.all(color: Colors.green.shade200),
+                                 ),
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Row(
+                                       children: [
+                                         Icon(
+                                           Icons.location_on,
+                                           color: Colors.green.shade600,
+                                           size: 20,
+                                         ),
+                                         const SizedBox(width: 8),
+                                         Text(
+                                           'Geographic Coordinates (Optional)',
+                                           style: TextStyle(
+                                             fontSize: 16,
+                                             fontWeight: FontWeight.w600,
+                                             color: Colors.green.shade700,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                     const SizedBox(height: 8),
+                                     Text(
+                                       'Add coordinates to display this branch on maps. Leave empty if coordinates are not available.',
+                                       style: TextStyle(
+                                         fontSize: 12,
+                                         color: Colors.green.shade700,
+                                       ),
+                                     ),
+                                     const SizedBox(height: 16),
+                                     
+                                     // Latitude and Longitude Fields
+                                     Row(
+                                       children: [
+                                         Expanded(
+                                           child: OutBorderTextFormField(
+                                             labelText: 'Latitude',
+                                             hintText: 'e.g., 40.7128',
+                                             controller: latController,
+                                             enabled: !isSubmitting,
+                                             keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                             validator: (value) {
+                                               if (value != null && value.trim().isNotEmpty) {
+                                                 final lat = double.tryParse(value.trim());
+                                                 if (lat == null) {
+                                                   return 'Please enter a valid number';
+                                                 }
+                                                 if (lat < -90 || lat > 90) {
+                                                   return 'Latitude must be between -90 and 90';
+                                                 }
+                                               }
+                                               return null;
+                                             },
+                                           ),
+                                         ),
+                                         const SizedBox(width: 16),
+                                         Expanded(
+                                           child: OutBorderTextFormField(
+                                             labelText: 'Longitude',
+                                             hintText: 'e.g., -74.0060',
+                                             controller: longController,
+                                             enabled: !isSubmitting,
+                                             keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                             validator: (value) {
+                                               if (value != null && value.trim().isNotEmpty) {
+                                                 final long = double.tryParse(value.trim());
+                                                 if (long == null) {
+                                                   return 'Please enter a valid number';
+                                                 }
+                                                 if (long < -180 || long > 180) {
+                                                   return 'Longitude must be between -180 and 180';
+                                                 }
+                                               }
+                                               return null;
+                                             },
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ],
+                                 ),
+                               ),
+                             ],
+                           ),
+                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Loading Overlay
+                if (isSubmitting)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withOpacity(0.3),
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 40,
+                                height: 40,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Updating Branch...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Please wait while we process your request',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+      onSaveTap: () async {
+        if (formKey.currentState!.validate()) {
+          // Show loading state
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return WillPopScope(
+                onWillPop: () async => false,
+                child: AlertDialog(
+                  content: Row(
+                    children: [
+                      const SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Text('Updating Branch...'),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+          
+          try {
+            final request = TrainingCenterBranchUpdateRequest(
+              id: branch.id!,
+              name: nameController.text.trim(),
+              trainingCenterId: selectedTrainingCenterId,
+              address: addressController.text.trim(),
+              phone: phoneController.text.trim(),
+              lat: latController.text.trim().isNotEmpty ? double.tryParse(latController.text.trim()) : null,
+              long: longController.text.trim().isNotEmpty ? double.tryParse(longController.text.trim()) : null,
+            );
+            
+            final response = await TrainingCenterBranchService.updateTrainingCenterBranch(request);
+            
+            // Close loading dialog
+            Navigator.of(context).pop();
+            
+            if (response.success) {
+              // Refresh the data
+              Get.find<TrainingCenterBranchDataProvider>().refreshData();
+               
+              // Close modal
+              Get.back();
+               
+              // Show success message
+              _showSuccessToast(response.messageEn);
+            } else {
+              throw Exception(response.messageEn);
+            }
+          } catch (e) {
+            // Close loading dialog
+            Navigator.of(context).pop();
+            
+            _showErrorToast(e.toString());
+          }
+        }
+      },
+    );
+  }
+
   void _showSuccessToast(String message) {
     toastification.show(
       context: Get.context!,
@@ -1642,7 +1567,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     );
   }
 
-  /// Shows an error toast notification for training center operations in Arabic
   void _showErrorToast(String message) {
     toastification.show(
       context: Get.context!,
@@ -1656,206 +1580,29 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
       foregroundColor: Colors.white,
     );
   }
-
-
-
-  // Accept training center
-  void _acceptTrainingCenter(TrainingCenter trainingCenter) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Accept Training Center'),
-          content: Text('Are you sure you want to accept "${trainingCenter.name}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _performAcceptTrainingCenter(trainingCenter);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Accept'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Reject training center
-  void _rejectTrainingCenter(TrainingCenter trainingCenter) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Reject Training Center'),
-          content: Text('Are you sure you want to reject "${trainingCenter.name}"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _performRejectTrainingCenter(trainingCenter);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Reject'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Perform accept training center
-  Future<void> _performAcceptTrainingCenter(TrainingCenter trainingCenter) async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return WillPopScope(
-            onWillPop: () async => false,
-            child: AlertDialog(
-              content: Row(
-                children: [
-                  const SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Accepting Training Center...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-      final response = await TrainingCenterService.acceptTrainingCenter(trainingCenter.id!);
-      
-      // Close loading dialog
-      Navigator.of(context).pop();
-      
-      if (response.success) {
-        // Refresh the data
-        Get.find<TrainingCenterDataProvider>().refreshData();
-        
-        // Show success message
-        _showSuccessToast(response.messageEn);
-      } else {
-        throw Exception(response.messageEn);
-      }
-    } catch (e) {
-      // Close loading dialog
-      Navigator.of(context).pop();
-      
-      _showErrorToast(e.toString());
-    }
-  }
-
-  // Perform reject training center
-  Future<void> _performRejectTrainingCenter(TrainingCenter trainingCenter) async {
-    try {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return WillPopScope(
-            onWillPop: () async => false,
-            child: AlertDialog(
-              content: Row(
-                children: [
-                  const SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Rejecting Training Center...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-      final response = await TrainingCenterService.rejectTrainingCenter(trainingCenter.id!);
-      
-      // Close loading dialog
-      Navigator.of(context).pop();
-      
-      if (response.success) {
-        // Refresh the data
-        Get.find<TrainingCenterDataProvider>().refreshData();
-        
-        // Show success message
-        _showSuccessToast(response.messageEn);
-      } else {
-        throw Exception(response.messageEn);
-      }
-    } catch (e) {
-      // Close loading dialog
-      Navigator.of(context).pop();
-      
-      _showErrorToast(e.toString());
-    }
-  }
 }
 
-class TrainingCenterDataProvider extends GetxController {
+class TrainingCenterBranchDataProvider extends GetxController {
+  final _branches = <TrainingCenterBranch>[].obs;
   final _trainingCenters = <TrainingCenter>[].obs;
   final _isLoading = false.obs;
   final _currentPage = 0.obs;
   final _rowsPerPage = 10.obs;
-  final _selectedStatusFilter = 'all'.obs;
+  final _selectedTrainingCenterId = 0.obs;
   final _searchQuery = ''.obs;
   
   // Controllers
   final searchController = TextEditingController();
 
+  List<TrainingCenterBranch> get branches => _branches;
   List<TrainingCenter> get trainingCenters => _trainingCenters;
   bool get isLoading => _isLoading.value;
   int get currentPage => _currentPage.value;
   int get rowsPerPage => _rowsPerPage.value;
-  String get selectedStatusFilter => _selectedStatusFilter.value;
+  int get selectedTrainingCenterId => _selectedTrainingCenterId.value;
   String get searchQuery => _searchQuery.value;
-  int get totalItems => filteredTrainingCenters.length;
+  
+  int get totalItems => filteredBranches.length;
   int get totalPages {
     final total = totalItems;
     if (total == 0) return 1;
@@ -1863,66 +1610,80 @@ class TrainingCenterDataProvider extends GetxController {
     return pages < 1 ? 1 : pages;
   }
   
-  List<TrainingCenter> get filteredTrainingCenters {
-    var filtered = _trainingCenters.toList();
+  List<TrainingCenterBranch> get filteredBranches {
+    var filtered = _branches.toList();
     
-    // Filter by status
-    if (_selectedStatusFilter.value != 'all') {
-      filtered = filtered.where((tc) => tc.status == _selectedStatusFilter.value).toList();
+    if (_selectedTrainingCenterId.value > 0) {
+      filtered = filtered.where((branch) => branch.trainingCenterId == _selectedTrainingCenterId.value).toList();
     }
     
-    // Filter by search query
     if (_searchQuery.value.isNotEmpty) {
       final query = _searchQuery.value.toLowerCase();
-      filtered = filtered.where((tc) =>
-        tc.name.toLowerCase().contains(query) ||
-        tc.email.toLowerCase().contains(query) ||
-        tc.phone.toLowerCase().contains(query) ||
-        tc.address.toLowerCase().contains(query) ||
-        tc.website?.toLowerCase().contains(query) == true ||
-        tc.description?.toLowerCase().contains(query) == true
+      filtered = filtered.where((branch) =>
+        branch.name.toLowerCase().contains(query) ||
+        branch.address.toLowerCase().contains(query) ||
+        branch.phone.toLowerCase().contains(query) ||
+        branch.trainingCenterName.toLowerCase().contains(query)
       ).toList();
     }
     
     return filtered;
   }
   
-  List<TrainingCenter> get pagedTrainingCenters {
-    if (totalItems == 0) return const <TrainingCenter>[];
+  List<TrainingCenterBranch> get pagedBranches {
+    if (totalItems == 0) return const <TrainingCenterBranch>[];
     final start = currentPage * rowsPerPage;
+    if (start >= totalItems) return const <TrainingCenterBranch>[];
     var end = start + rowsPerPage;
-    if (start >= totalItems) {
-      // Snap back to last valid page
-      _currentPage.value = totalPages - 1;
-      return pagedTrainingCenters;
-    }
     if (end > totalItems) end = totalItems;
-    return filteredTrainingCenters.sublist(start, end);
+    return filteredBranches.sublist(start, end);
+  }
+  
+  int get startIndex => currentPage * rowsPerPage;
+  int get endIndex {
+    if (totalItems == 0) return 0;
+    return (startIndex + rowsPerPage - 1).clamp(0, totalItems - 1);
   }
 
   @override
   void onInit() {
     super.onInit();
     loadData();
+    loadTrainingCenters();
   }
 
-  Future<List<TrainingCenter>> loadData() async {
+  Future<List<TrainingCenterBranch>> loadData() async {
     try {
       _isLoading.value = true;
-      final response = await TrainingCenterService.getAllTrainingCenters();
+      final response = await TrainingCenterBranchService.getAllTrainingCenterBranches();
       
       if (response.success) {
-        _trainingCenters.value = response.data;
+        _branches.value = response.data;
         _currentPage.value = 0; // reset page on new data
         return response.data;
       } else {
         throw Exception(response.messageEn);
       }
     } catch (e) {
-      _trainingCenters.clear();
+      _branches.clear();
       rethrow;
     } finally {
       _isLoading.value = false;
+    }
+  }
+
+  Future<void> loadTrainingCenters() async {
+    try {
+      final response = await TrainingCenterService.getAllTrainingCenters();
+      
+      if (response.success) {
+        _trainingCenters.value = response.data;
+      } else {
+        _trainingCenters.clear();
+      }
+    } catch (e) {
+      _trainingCenters.clear();
+      // Don't rethrow as this is not critical for the main functionality
     }
   }
 
@@ -1955,8 +1716,8 @@ class TrainingCenterDataProvider extends GetxController {
     }
   }
 
-  void setSelectedStatusFilter(String value) {
-    _selectedStatusFilter.value = value;
+  void setSelectedTrainingCenterId(int value) {
+    _selectedTrainingCenterId.value = value;
     _currentPage.value = 0;
     update();
   }
@@ -1973,4 +1734,3 @@ class TrainingCenterDataProvider extends GetxController {
     super.onClose();
   }
 }
-
