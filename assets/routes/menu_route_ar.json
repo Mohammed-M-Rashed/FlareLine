@@ -47,6 +47,11 @@
         "icon": "assets/sidebar/user.svg",
         "menuName": "إدارة المدربين",
         "path": "/trainerManagement"
+      },
+      {
+        "icon": "assets/sidebar/task.svg",
+        "menuName": "إدارة احتياجات التدريب",
+        "path": "/trainingNeedManagement"
       }
     ]
   }

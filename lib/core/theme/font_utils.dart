@@ -29,7 +29,6 @@ class FontUtils {
       decoration: decoration,
       height: height,
       overflow: overflow,
-      maxLines: maxLines,
     );
   }
   
