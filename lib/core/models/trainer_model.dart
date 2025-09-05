@@ -186,6 +186,39 @@ class TrainerStatusRequest {
   }
 }
 
+// Accept Trainer Request model
+class AcceptTrainerRequest {
+  final int id;
+
+  AcceptTrainerRequest({required this.id});
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+// Reject Trainer Request model
+class RejectTrainerRequest {
+  final int id;
+
+  RejectTrainerRequest({required this.id});
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+// Get Trainers By Status Request model
+class GetTrainersByStatusRequest {
+  final String status;
+
+  GetTrainersByStatusRequest({required this.status});
+
+  Map<String, dynamic> toJson() {
+    return {'status': status};
+  }
+}
+
 // Trainer Create Request model
 class TrainerCreateRequest {
   final String name;

@@ -179,7 +179,7 @@ class SpecialCourseRequestService {
         throw Exception('You do not have permission to view special course requests.');
       }
 
-      final request = SpecialCourseRequestByStatusRequest(status: status);
+      final request = GetSpecialCourseRequestsByStatusRequest(status: status);
 
       final response = await ApiService.post(
         ApiEndpoints.getSpecialCourseRequestsByStatus,
@@ -214,7 +214,7 @@ class SpecialCourseRequestService {
         throw Exception('You do not have permission to approve special course requests.');
       }
 
-      final request = SpecialCourseRequestApproveRequest(id: id);
+      final request = ApproveSpecialCourseRequestRequest(id: id);
 
       final response = await ApiService.post(
         ApiEndpoints.approveSpecialCourseRequest,
@@ -248,7 +248,7 @@ class SpecialCourseRequestService {
         throw Exception('You do not have permission to reject special course requests.');
       }
 
-      final request = SpecialCourseRequestRejectRequest(id: id);
+      final request = RejectSpecialCourseRequestRequest(id: id);
 
       final response = await ApiService.post(
         ApiEndpoints.rejectSpecialCourseRequest,

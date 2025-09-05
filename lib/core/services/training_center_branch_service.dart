@@ -29,14 +29,15 @@ class TrainingCenterBranchService {
     }
   }
 
-  // Get all training center branches
-  static Future<TrainingCenterBranchListResponse> getAllTrainingCenterBranches() async {
+  // Get all training center branches (with optional center filter)
+  static Future<TrainingCenterBranchListResponse> getAllTrainingCenterBranches({int? centerId}) async {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
         throw Exception('رمز المصادقة غير موجود');
       }
 
+      final request = GetTrainingCenterBranchesRequest(centerId: centerId);
       final response = await http.post(
         Uri.parse('$_baseUrl${ApiEndpoints.getAllTrainingCenterBranches}'),
         headers: {
@@ -44,7 +45,7 @@ class TrainingCenterBranchService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({}), // Empty body as per API spec
+        body: jsonEncode(request.toJson()),
       );
 
       if (response.statusCode == 200) {

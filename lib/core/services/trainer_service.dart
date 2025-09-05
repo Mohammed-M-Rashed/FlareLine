@@ -184,7 +184,7 @@ class TrainerService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
-      final request = TrainerStatusRequest(id: id);
+      final request = AcceptTrainerRequest(id: id);
       final response = await http.post(
         Uri.parse('$_baseUrl${ApiEndpoints.acceptTrainer}'),
         headers: {
@@ -220,7 +220,7 @@ class TrainerService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
-      final request = TrainerStatusRequest(id: id);
+      final request = RejectTrainerRequest(id: id);
       final response = await http.post(
         Uri.parse('$_baseUrl${ApiEndpoints.rejectTrainer}'),
         headers: {
@@ -256,6 +256,7 @@ class TrainerService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
+      final request = GetTrainersByStatusRequest(status: status);
       final response = await http.post(
         Uri.parse('$_baseUrl${ApiEndpoints.getTrainersByStatus}'),
         headers: {
@@ -263,7 +264,7 @@ class TrainerService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'status': status}),
+        body: jsonEncode(request.toJson()),
       );
 
       if (response.statusCode == 200) {

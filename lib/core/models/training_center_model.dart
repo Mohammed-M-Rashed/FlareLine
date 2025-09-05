@@ -226,6 +226,39 @@ class TrainingCenterUpdateRequest {
   }
 }
 
+// Accept Training Center Request model
+class AcceptTrainingCenterRequest {
+  final int id;
+
+  AcceptTrainingCenterRequest({required this.id});
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+// Reject Training Center Request model
+class RejectTrainingCenterRequest {
+  final int id;
+
+  RejectTrainingCenterRequest({required this.id});
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+// Get Training Centers By Status Request model
+class GetTrainingCentersByStatusRequest {
+  final String status;
+
+  GetTrainingCentersByStatusRequest({required this.status});
+
+  Map<String, dynamic> toJson() {
+    return {'status': status};
+  }
+}
+
 // Training Center List Response model
 class TrainingCenterListResponse {
   final List<TrainingCenter> data;

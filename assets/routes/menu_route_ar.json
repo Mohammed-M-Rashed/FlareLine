@@ -57,6 +57,11 @@
         "icon": "assets/sidebar/task.svg",
         "menuName": "طلبات الدورات الخاصة",
         "path": "/special-course-request"
+      },
+      {
+        "icon": "assets/sidebar/task.svg",
+        "menuName": "خطط التدريب للشركات",
+        "path": "/training-plan"
       }
     ]
   }

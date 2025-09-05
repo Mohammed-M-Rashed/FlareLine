@@ -239,10 +239,10 @@ class SpecialCourseRequestUpdateRequest {
   }
 }
 
-class SpecialCourseRequestByStatusRequest {
+class GetSpecialCourseRequestsByStatusRequest {
   final String status;
 
-  SpecialCourseRequestByStatusRequest({
+  GetSpecialCourseRequestsByStatusRequest({
     required this.status,
   });
 
@@ -253,10 +253,10 @@ class SpecialCourseRequestByStatusRequest {
   }
 }
 
-class SpecialCourseRequestApproveRequest {
+class ApproveSpecialCourseRequestRequest {
   final int id;
 
-  SpecialCourseRequestApproveRequest({
+  ApproveSpecialCourseRequestRequest({
     required this.id,
   });
 
@@ -267,10 +267,10 @@ class SpecialCourseRequestApproveRequest {
   }
 }
 
-class SpecialCourseRequestRejectRequest {
+class RejectSpecialCourseRequestRequest {
   final int id;
 
-  SpecialCourseRequestRejectRequest({
+  RejectSpecialCourseRequestRequest({
     required this.id,
   });
 

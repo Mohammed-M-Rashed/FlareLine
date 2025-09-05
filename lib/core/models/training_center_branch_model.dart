@@ -199,6 +199,19 @@ class TrainingCenterBranchUpdateRequest {
   }
 }
 
+// Get Training Center Branches Request model
+class GetTrainingCenterBranchesRequest {
+  final int? centerId;
+
+  GetTrainingCenterBranchesRequest({this.centerId});
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+    if (centerId != null) data['center_id'] = centerId;
+    return data;
+  }
+}
+
 // Training Center Branch List Response model
 class TrainingCenterBranchListResponse {
   final List<TrainingCenterBranch> data;

@@ -153,6 +153,7 @@ class TrainingCenterService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
+      final request = AcceptTrainingCenterRequest(id: id);
       final response = await http.post(
         Uri.parse('$_baseUrl/training-center/accept'),
         headers: {
@@ -160,7 +161,7 @@ class TrainingCenterService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'id': id}),
+        body: jsonEncode(request.toJson()),
       );
 
       if (response.statusCode == 200) {
@@ -188,6 +189,7 @@ class TrainingCenterService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
+      final request = RejectTrainingCenterRequest(id: id);
       final response = await http.post(
         Uri.parse('$_baseUrl/training-center/reject'),
         headers: {
@@ -195,7 +197,7 @@ class TrainingCenterService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'id': id}),
+        body: jsonEncode(request.toJson()),
       );
 
       if (response.statusCode == 200) {
@@ -223,6 +225,7 @@ class TrainingCenterService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
+      final request = GetTrainingCentersByStatusRequest(status: status);
       final response = await http.post(
         Uri.parse('$_baseUrl/training-center/by-status'),
         headers: {
@@ -230,7 +233,7 @@ class TrainingCenterService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({'status': status}),
+        body: jsonEncode(request.toJson()),
       );
 
       if (response.statusCode == 200) {

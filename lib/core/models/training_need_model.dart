@@ -300,6 +300,39 @@ class TrainingNeedUpdateRequest {
   }
 }
 
+// Get Training Needs By Status Request model
+class GetTrainingNeedsByStatusRequest {
+  final String status;
+
+  GetTrainingNeedsByStatusRequest({required this.status});
+
+  Map<String, dynamic> toJson() {
+    return {'status': status};
+  }
+}
+
+// Approve Training Need Request model
+class ApproveTrainingNeedRequest {
+  final int id;
+
+  ApproveTrainingNeedRequest({required this.id});
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
+// Reject Training Need Request model
+class RejectTrainingNeedRequest {
+  final int id;
+
+  RejectTrainingNeedRequest({required this.id});
+
+  Map<String, dynamic> toJson() {
+    return {'id': id};
+  }
+}
+
 // Training Need List Response model
 class TrainingNeedListResponse {
   final List<TrainingNeed> data;
