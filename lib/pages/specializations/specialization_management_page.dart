@@ -34,9 +34,14 @@ class SpecializationManagementPage extends LayoutWidget {
   }
 }
 
-class SpecializationManagementWidget extends StatelessWidget {
+class SpecializationManagementWidget extends StatefulWidget {
   const SpecializationManagementWidget({super.key});
 
+  @override
+  State<SpecializationManagementWidget> createState() => _SpecializationManagementWidgetState();
+}
+
+class _SpecializationManagementWidgetState extends State<SpecializationManagementWidget> {
   @override
   Widget build(BuildContext context) {
     return CommonCard(
@@ -344,21 +349,41 @@ class SpecializationManagementWidget extends StatelessWidget {
                                       ),
                                     ),
                                     DataCell(
-                                      Container(
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.edit,
-                                            size: 18,
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // View button
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.visibility,
+                                              size: 18,
+                                            ),
+                                            onPressed: () {
+                                              _showViewSpecializationDialog(context, specialization);
+                                            },
+                                            tooltip: 'View Details',
+                                            style: IconButton.styleFrom(
+                                              backgroundColor: Colors.grey.shade50,
+                                              foregroundColor: Colors.grey.shade700,
+                                            ),
                                           ),
-                                          onPressed: () {
-                                            _showEditSpecializationForm(context, specialization, provider);
-                                          },
-                                          tooltip: 'Edit Specialization',
-                                          style: IconButton.styleFrom(
-                                            backgroundColor: Colors.blue.shade50,
-                                            foregroundColor: Colors.blue.shade700,
+                                          const SizedBox(width: 8),
+                                          // Edit button
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              size: 18,
+                                            ),
+                                            onPressed: () {
+                                              _showEditSpecializationForm(context, specialization, provider);
+                                            },
+                                            tooltip: 'Edit Specialization',
+                                            style: IconButton.styleFrom(
+                                              backgroundColor: Colors.blue.shade50,
+                                              foregroundColor: Colors.blue.shade700,
+                                            ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -1042,6 +1067,99 @@ class SpecializationManagementWidget extends StatelessWidget {
       },
     );
   }
+
+  void _showViewSpecializationDialog(BuildContext context, Specialization specialization) {
+    ModalDialog.show(
+      context: context,
+      title: 'Specialization Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Specialization Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Specialization Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Specialization Name', specialization.name),
+                        if (specialization.description != null && specialization.description!.isNotEmpty)
+                          _buildDetailRow('Description', specialization.description!),
+                        if (specialization.createdAt != null)
+                          _buildDetailRow('Created At', specialization.createdAt!),
+                        if (specialization.updatedAt != null)
+                          _buildDetailRow('Updated At', specialization.updatedAt!),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SpecializationDataProvider extends GetxController {
@@ -1160,6 +1278,7 @@ class _SpecializationDataProvider extends GetxController {
       foregroundColor: Colors.white,
     );
   }
+
 
   /// Shows an info toast notification for specialization operations in Arabic
   void _showInfoToast(String message) {

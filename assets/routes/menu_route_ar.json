@@ -52,6 +52,11 @@
         "icon": "assets/sidebar/task.svg",
         "menuName": "إدارة احتياجات التدريب",
         "path": "/trainingNeedManagement"
+      },
+      {
+        "icon": "assets/sidebar/task.svg",
+        "menuName": "طلبات الدورات الخاصة",
+        "path": "/special-course-request"
       }
     ]
   }

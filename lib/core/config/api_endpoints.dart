@@ -58,6 +58,14 @@ class ApiEndpoints {
   static const String rejectTrainer = '/trainer/reject';
   static const String getTrainersByStatus = '/trainer/by-status';
   
+  // Special Course Request management - New API endpoints
+  static const String createSpecialCourseRequest = '/special-course-request/create';
+  static const String getAllSpecialCourseRequests = '/special-course-request/select';
+  static const String updateSpecialCourseRequest = '/special-course-request/update';
+  static const String approveSpecialCourseRequest = '/special-course-request/approve';
+  static const String rejectSpecialCourseRequest = '/special-course-request/reject';
+  static const String getSpecialCourseRequestsByStatus = '/special-course-request/by-status';
+  
   // Legacy training center endpoints (keeping for backward compatibility)
   static const String trainingCenters = '/training-centers';
   static const String centerDetails = '/training-centers/details';

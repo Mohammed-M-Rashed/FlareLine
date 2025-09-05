@@ -476,6 +476,23 @@ class UserManagementWidget extends StatelessWidget {
                                              child: Row(
                                                mainAxisAlignment: MainAxisAlignment.center,
                                                children: [
+                                                 // View button
+                                                 IconButton(
+                                                   icon: const Icon(
+                                                     Icons.visibility,
+                                                     size: 18,
+                                                   ),
+                                                   onPressed: () {
+                                                     _showViewUserDialog(context, user);
+                                                   },
+                                                   tooltip: 'View Details',
+                                                   style: IconButton.styleFrom(
+                                                     backgroundColor: Colors.grey.shade50,
+                                                     foregroundColor: Colors.grey.shade700,
+                                                   ),
+                                                 ),
+                                                 const SizedBox(width: 4),
+                                                 // Edit button
                                                  IconButton(
                                                    icon: const Icon(
                                                      Icons.edit,
@@ -2273,6 +2290,104 @@ class UserManagementWidget extends StatelessWidget {
       return Colors.green.shade700;
     }
   }
+
+  void _showViewUserDialog(BuildContext context, User user) {
+    ModalDialog.show(
+      context: context,
+      title: 'User Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // User Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'User Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Name', user.name),
+                        _buildDetailRow('Email', user.email),
+                        _buildDetailRow('Role', _getRoleDisplayName(user.role ?? '')),
+                        if (user.company != null)
+                          _buildDetailRow('Company', user.company!.name),
+                        _buildDetailRow('Status', user.isActive ? 'Active' : 'Inactive'),
+                        if (user.emailVerifiedAt != null)
+                          _buildDetailRow('Email Verified At', user.emailVerifiedAt!),
+                        if (user.createdAt != null)
+                          _buildDetailRow('Created At', user.createdAt!),
+                        if (user.updatedAt != null)
+                          _buildDetailRow('Updated At', user.updatedAt!),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _UserDataProvider extends GetxController {
@@ -2560,10 +2675,11 @@ String _formatDate(String dateString) {
    final passwordList = password.split('');
    passwordList.shuffle(random);
    return passwordList.join();
- }
+  }
 
- // Helper method to get role display name
- String _getRoleDisplayName(String roleValue) {
+
+// Helper method to get role display name
+String _getRoleDisplayName(String roleValue) {
    if (roleValue.isEmpty || roleValue == 'null' || roleValue == 'undefined') {
      return 'N/A';
    }

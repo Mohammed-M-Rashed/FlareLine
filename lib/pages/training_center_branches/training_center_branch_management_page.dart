@@ -33,9 +33,14 @@ class TrainingCenterBranchManagementPage extends LayoutWidget {
   }
 }
 
-class TrainingCenterBranchManagementWidget extends StatelessWidget {
+class TrainingCenterBranchManagementWidget extends StatefulWidget {
   const TrainingCenterBranchManagementWidget({super.key});
 
+  @override
+  State<TrainingCenterBranchManagementWidget> createState() => _TrainingCenterBranchManagementWidgetState();
+}
+
+class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBranchManagementWidget> {
   @override
   Widget build(BuildContext context) {
     return CommonCard(
@@ -598,21 +603,41 @@ class TrainingCenterBranchManagementWidget extends StatelessWidget {
                                               ),
                                             ),
                                             DataCell(
-                                              Container(
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.edit,
-                                                    size: 18,
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  // View button
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.visibility,
+                                                      size: 18,
+                                                    ),
+                                                    onPressed: () {
+                                                      _showViewBranchDialog(context, branch);
+                                                    },
+                                                    tooltip: 'View Details',
+                                                    style: IconButton.styleFrom(
+                                                      backgroundColor: Colors.grey.shade50,
+                                                      foregroundColor: Colors.grey.shade700,
+                                                    ),
                                                   ),
-                                                  onPressed: () {
-                                                    _showEditBranchForm(context, branch);
-                                                  },
-                                                  tooltip: 'Edit Branch',
-                                                  style: IconButton.styleFrom(
-                                                    backgroundColor: Colors.blue.shade50,
-                                                    foregroundColor: Colors.blue.shade700,
+                                                  const SizedBox(width: 8),
+                                                  // Edit button
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.edit,
+                                                      size: 18,
+                                                    ),
+                                                    onPressed: () {
+                                                      _showEditBranchForm(context, branch);
+                                                    },
+                                                    tooltip: 'Edit Branch',
+                                                    style: IconButton.styleFrom(
+                                                      backgroundColor: Colors.blue.shade50,
+                                                      foregroundColor: Colors.blue.shade700,
+                                                    ),
                                                   ),
-                                                ),
+                                                ],
                                               ),
                                             ),
                                           ],
@@ -1580,6 +1605,101 @@ class TrainingCenterBranchManagementWidget extends StatelessWidget {
       foregroundColor: Colors.white,
     );
   }
+
+  void _showViewBranchDialog(BuildContext context, TrainingCenterBranch branch) {
+    ModalDialog.show(
+      context: context,
+      title: 'Branch Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Branch Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Branch Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Branch Name', branch.name),
+                        if (branch.address != null && branch.address!.isNotEmpty)
+                          _buildDetailRow('Address', branch.address!),
+                        if (branch.hasCoordinates)
+                          _buildDetailRow('Coordinates', '${branch.lat}, ${branch.long}'),
+                        if (branch.createdAt != null)
+                          _buildDetailRow('Created At', branch.createdAt.toString()),
+                        if (branch.updatedAt != null)
+                          _buildDetailRow('Updated At', branch.updatedAt.toString()),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class TrainingCenterBranchDataProvider extends GetxController {
@@ -1733,4 +1853,5 @@ class TrainingCenterBranchDataProvider extends GetxController {
     searchController.dispose();
     super.onClose();
   }
+
 }

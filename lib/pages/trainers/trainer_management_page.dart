@@ -763,6 +763,18 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        // View button
+                                        IconButton(
+                                          icon: const Icon(Icons.visibility, size: 18),
+                                          onPressed: () => _showViewTrainerDialog(context, trainer),
+                                          tooltip: 'View Details',
+                                          style: IconButton.styleFrom(
+                                            backgroundColor: Colors.grey.shade50,
+                                            foregroundColor: Colors.grey.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Edit button
                                         IconButton(
                                           icon: const Icon(Icons.edit, size: 18),
                                           onPressed: () => _showEditTrainerForm(context, trainer),
@@ -2014,6 +2026,102 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       type: ToastificationType.error,
     );
   }
+
+  void _showViewTrainerDialog(BuildContext context, Trainer trainer) {
+    ModalDialog.show(
+      context: context,
+      title: 'Trainer Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Trainer Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Trainer Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Trainer Name', trainer.name),
+                        if (trainer.email != null && trainer.email!.isNotEmpty)
+                          _buildDetailRow('Email', trainer.email!),
+                        if (trainer.phone != null && trainer.phone!.isNotEmpty)
+                          _buildDetailRow('Phone', trainer.phone!),
+                        _buildDetailRow('Status', trainer.statusDisplay),
+                        if (trainer.createdAt != null)
+                          _buildDetailRow('Created At', trainer.createdAt.toString()),
+                        if (trainer.updatedAt != null)
+                          _buildDetailRow('Updated At', trainer.updatedAt.toString()),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class TrainerDataProvider extends GetxController {
@@ -2173,4 +2281,5 @@ class TrainerDataProvider extends GetxController {
   void forceLoadData() {
     loadData();
   }
+
 }

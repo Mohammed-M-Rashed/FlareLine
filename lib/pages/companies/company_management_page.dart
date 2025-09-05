@@ -35,9 +35,14 @@ class CompanyManagementPage extends LayoutWidget {
   }
 }
 
-class CompanyManagementWidget extends StatelessWidget {
+class CompanyManagementWidget extends StatefulWidget {
   const CompanyManagementWidget({super.key});
 
+  @override
+  State<CompanyManagementWidget> createState() => _CompanyManagementWidgetState();
+}
+
+class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
   @override
   Widget build(BuildContext context) {
     return CommonCard(
@@ -462,21 +467,41 @@ class CompanyManagementWidget extends StatelessWidget {
                                               ),
                                             ),
                                             DataCell(
-                                              Container(
-                                                child: IconButton(
-                                                  icon: const Icon(
-                                                    Icons.edit,
-                                                    size: 18,
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  // View button
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.visibility,
+                                                      size: 18,
+                                                    ),
+                                                    onPressed: () {
+                                                      _showViewCompanyDialog(context, company);
+                                                    },
+                                                    tooltip: 'View Details',
+                                                    style: IconButton.styleFrom(
+                                                      backgroundColor: Colors.grey.shade50,
+                                                      foregroundColor: Colors.grey.shade700,
+                                                    ),
                                                   ),
-                                                  onPressed: () {
-                                                    _showEditCompanyForm(context, company);
-                                                  },
-                                                  tooltip: 'Edit Company',
-                                                  style: IconButton.styleFrom(
-                                                    backgroundColor: Colors.blue.shade50,
-                                                    foregroundColor: Colors.blue.shade700,
+                                                  const SizedBox(width: 8),
+                                                  // Edit button
+                                                  IconButton(
+                                                    icon: const Icon(
+                                                      Icons.edit,
+                                                      size: 18,
+                                                    ),
+                                                    onPressed: () {
+                                                      _showEditCompanyForm(context, company);
+                                                    },
+                                                    tooltip: 'Edit Company',
+                                                    style: IconButton.styleFrom(
+                                                      backgroundColor: Colors.blue.shade50,
+                                                      foregroundColor: Colors.blue.shade700,
+                                                    ),
                                                   ),
-                                                ),
+                                                ],
                                               ),
                                             ),
                                           ],
@@ -1400,6 +1425,105 @@ class CompanyManagementWidget extends StatelessWidget {
       foregroundColor: Colors.white,
     );
   }
+
+  void _showViewCompanyDialog(BuildContext context, Company company) {
+    ModalDialog.show(
+      context: context,
+      title: 'Company Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Company Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Company Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Company Name', company.name),
+                        if (company.address != null && company.address!.isNotEmpty)
+                          _buildDetailRow('Address', company.address!),
+                        if (company.phone != null && company.phone!.isNotEmpty)
+                          _buildDetailRow('Phone', company.phone!),
+                        if (company.apiUrl != null && company.apiUrl!.isNotEmpty)
+                          _buildDetailRow('API URL', company.apiUrl!),
+                        if (company.image != null && company.image!.isNotEmpty)
+                          _buildDetailRow('Logo', 'Available'),
+                        if (company.createdAt != null)
+                          _buildDetailRow('Created At', _formatCompanyDate(company.createdAt)),
+                        if (company.updatedAt != null)
+                          _buildDetailRow('Updated At', _formatCompanyDate(company.updatedAt)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class CompanyDataProvider extends GetxController {
@@ -1466,6 +1590,7 @@ class CompanyDataProvider extends GetxController {
       rethrow;
     }
   }
+
 
   void setRowsPerPage(int value) {
     _rowsPerPage.value = value;

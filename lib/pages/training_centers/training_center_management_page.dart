@@ -728,6 +728,22 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
                                                   children: [
+                                                    // View button
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.visibility,
+                                                        size: 18,
+                                                      ),
+                                                      onPressed: () {
+                                                        _showViewTrainingCenterDialog(context, trainingCenter);
+                                                      },
+                                                      tooltip: 'View Details',
+                                                      style: IconButton.styleFrom(
+                                                        backgroundColor: Colors.grey.shade50,
+                                                        foregroundColor: Colors.grey.shade700,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
                                                     // Edit button
                                                     IconButton(
                                                       icon: const Icon(
@@ -1836,6 +1852,106 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
       _showErrorToast(e.toString());
     }
   }
+
+  void _showViewTrainingCenterDialog(BuildContext context, TrainingCenter trainingCenter) {
+    ModalDialog.show(
+      context: context,
+      title: 'Training Center Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Training Center Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Training Center Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Center Name', trainingCenter.name),
+                        if (trainingCenter.description != null && trainingCenter.description!.isNotEmpty)
+                          _buildDetailRow('Description', trainingCenter.description!),
+                        if (trainingCenter.address != null && trainingCenter.address!.isNotEmpty)
+                          _buildDetailRow('Address', trainingCenter.address!),
+                        if (trainingCenter.phone != null && trainingCenter.phone!.isNotEmpty)
+                          _buildDetailRow('Phone', trainingCenter.phone!),
+                        if (trainingCenter.email != null && trainingCenter.email!.isNotEmpty)
+                          _buildDetailRow('Email', trainingCenter.email!),
+                        _buildDetailRow('Status', trainingCenter.statusDisplay),
+                        if (trainingCenter.createdAt != null)
+                          _buildDetailRow('Created At', trainingCenter.createdAt.toString()),
+                        if (trainingCenter.updatedAt != null)
+                          _buildDetailRow('Updated At', trainingCenter.updatedAt.toString()),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class TrainingCenterDataProvider extends GetxController {
@@ -1972,5 +2088,6 @@ class TrainingCenterDataProvider extends GetxController {
     searchController.dispose();
     super.onClose();
   }
+
 }
 
