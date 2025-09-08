@@ -62,6 +62,11 @@
         "icon": "assets/sidebar/task.svg",
         "menuName": "خطط التدريب للشركات",
         "path": "/training-plan"
+      },
+      {
+        "icon": "assets/sidebar/task.svg",
+        "menuName": "إدارة تخصيصات الدورات",
+        "path": "/plan-course-assignment-management"
       }
     ]
   }

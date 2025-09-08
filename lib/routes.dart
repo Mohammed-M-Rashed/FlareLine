@@ -31,6 +31,7 @@ import 'package:flareline/pages/trainers/trainer_management_page.dart';
 import 'package:flareline/pages/training_needs/training_need_management_page.dart';
 import 'package:flareline/pages/special_course_requests/special_course_request_management_page.dart';
 import 'package:flareline/pages/training_plans/training_plan_management_page.dart';
+import 'package:flareline/pages/plan_course_assignments/plan_course_assignment_management_page.dart';
 import 'package:get/get.dart';
 
 typedef PathWidgetBuilder = Widget Function(BuildContext, String?);
@@ -160,6 +161,10 @@ final List<GetPage> routes = [
             GetPage(
               name: '/training-plan',
               page: () => const TrainingPlanManagementPage(),
+            ),
+            GetPage(
+              name: '/plan-course-assignment-management',
+              page: () => const PlanCourseAssignmentManagementPage(),
             ),
 ];
 

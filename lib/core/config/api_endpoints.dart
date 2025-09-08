@@ -77,6 +77,10 @@ class ApiEndpoints {
   static const String approveTrainingPlan = '/training-plans/approve';
   static const String rejectTrainingPlan = '/training-plans/reject';
   
+  // Plan Course Assignments - Store and Retrieve endpoints
+  static const String storePlanCourseAssignments = '/plan-course-assignments/store';
+  static const String getPlanCourseAssignmentsByTrainingPlan = '/plan-course-assignments/by-training-plan';
+  
   // Legacy training center endpoints (keeping for backward compatibility)
   static const String trainingCenters = '/training-centers';
   static const String centerDetails = '/training-centers/details';
