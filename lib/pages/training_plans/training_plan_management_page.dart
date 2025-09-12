@@ -4,10 +4,15 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
+import 'package:flareline/core/utils/validation_helper.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/training_plan_model.dart';
 import 'package:flareline/core/services/training_plan_service.dart';
+import 'package:flareline/core/services/plan_course_assignment_service.dart';
+import 'package:flareline/core/models/plan_course_assignment_model.dart' as pca_model;
 import 'package:toastification/toastification.dart';
 
 import 'package:get/get.dart';
@@ -216,9 +221,22 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
 
   Widget _buildTrainingPlansTable(BuildContext context, TrainingPlanDataProvider provider, BoxConstraints constraints) {
     final trainingPlans = provider.pagedTrainingPlans;
+    final filteredPlans = provider.filteredTrainingPlans;
 
     return Column(
       children: [
+        // Training Plans count and summary
+        CountSummaryWidgetEn(
+          count: provider.trainingPlans.length,
+          itemName: 'training plan',
+          itemNamePlural: 'training plans',
+          icon: Icons.assignment,
+          color: Colors.blue,
+          filteredCount: filteredPlans.length,
+          showFilteredCount: true,
+        ),
+        const SizedBox(height: 16),
+        
         // Search and filter section
         Container(
           width: double.infinity,
@@ -262,8 +280,6 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                     DropdownMenuItem(value: 'all', child: Text('All Statuses')),
                     DropdownMenuItem(value: 'draft', child: Text('Draft')),
                     DropdownMenuItem(value: 'submitted', child: Text('Submitted')),
-                    DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                    DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
                   ],
                   onChanged: (value) {
                     if (value != null) provider.setSelectedStatusFilter(value);
@@ -601,43 +617,6 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
             ),
           ),
 
-        const SizedBox(width: 8),
-
-        // Approve button (only for submitted plans)
-        if (item.canBeApproved && TrainingPlanService.canApproveRejectTrainingPlans())
-          IconButton(
-            icon: const Icon(
-              Icons.check_circle,
-              size: 18,
-            ),
-            onPressed: () {
-              _handleAction(context, 'approve', item);
-            },
-            tooltip: 'Approve Training Plan',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.green.shade50,
-              foregroundColor: Colors.green.shade700,
-            ),
-          ),
-
-        const SizedBox(width: 8),
-
-        // Reject button (only for submitted plans)
-        if (item.canBeRejected && TrainingPlanService.canApproveRejectTrainingPlans())
-          IconButton(
-            icon: const Icon(
-              Icons.cancel,
-              size: 18,
-            ),
-            onPressed: () {
-              _handleAction(context, 'reject', item);
-            },
-            tooltip: 'Reject Training Plan',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.red.shade50,
-              foregroundColor: Colors.red.shade700,
-            ),
-          ),
       ],
     );
   }
@@ -775,73 +754,38 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
       case 'submit':
         _submitTrainingPlan(context, item);
         break;
-      case 'approve':
-        _approveTrainingPlan(context, item);
-        break;
-      case 'reject':
-        _rejectTrainingPlan(context, item);
-        break;
     }
   }
 
   void _showViewTrainingPlanDialog(BuildContext context, TrainingPlan item) {
     ModalDialog.show(
       context: context,
-      title: 'Training Plan Details',
+      title: 'Complete Training Plan Details',
       showTitle: true,
       modalType: ModalType.large,
+      showCancel: false,
+      showFooter: false,
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: Stack(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Column(
           children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: ViewTrainingPlanDetailsWidget(plan: item),
+            ),
+            // Custom footer with only Cancel button
+            Container(
+              margin: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Training Plan Information Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.visibility,
-                              color: Colors.blue.shade600,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Training Plan Details',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        _buildDetailRow('Year', item.year.toString()),
-                        _buildDetailRow('Title', item.title),
-                        if (item.description != null && item.description!.isNotEmpty)
-                          _buildDetailRow('Description', item.description!),
-                        _buildDetailRow('Status', item.statusDisplay),
-                        _buildDetailRow('Created By', item.creatorName),
-                        if (item.createdAt != null)
-                          _buildDetailRow('Created At', _formatDateTime(item.createdAt!)),
-                        if (item.updatedAt != null)
-                          _buildDetailRow('Updated At', _formatDateTime(item.updatedAt!)),
-                      ],
+                  SizedBox(
+                    width: 120,
+                    child: ButtonWidget(
+                      btnText: 'Cancel',
+                      textColor: FlarelineColors.darkBlackText,
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
                     ),
                   ),
                 ],
@@ -889,18 +833,48 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
   }
 
   void _submitTrainingPlan(BuildContext context, TrainingPlan item) async {
+    // Validate business rules
+    final businessRuleErrors = ValidationHelper.validateBusinessRules(
+      operation: 'submit',
+      currentStatus: item.status,
+      hasPermission: TrainingPlanService.canSubmitTrainingPlans(),
+    );
+
+    if (businessRuleErrors.isNotEmpty) {
+      _showErrorToast(businessRuleErrors.values.first);
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirm Submission'),
-        content: Text('Are you sure you want to submit the training plan "${item.title}" for year ${item.year}?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to submit the training plan "${item.title}" for year ${item.year}?'),
+            const SizedBox(height: 12),
+            const Text(
+              'Once submitted, this training plan cannot be edited.',
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.orange,
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Submit'),
           ),
         ],
@@ -908,98 +882,74 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
     );
 
     if (confirmed == true) {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return WillPopScope(
+            onWillPop: () async => false,
+            child: AlertDialog(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text('Submitting Training Plan...'),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
       try {
         final response = await TrainingPlanService.submitTrainingPlan(item.id!);
+        
+        // Close loading dialog
+        Navigator.of(context).pop();
+        
         if (response.success) {
+          // Refresh the data to reflect the status change
           Get.find<TrainingPlanDataProvider>().refreshData();
-          _showSuccessToast('Training plan submitted successfully');
+          _showSuccessToast('Training plan submitted successfully. It can no longer be edited.');
         } else {
-          throw Exception(response.messageEn);
+          // Handle specific error cases
+          String errorMessage = response.messageEn ?? 'Failed to submit training plan';
+          
+          if (errorMessage.contains('draft') && errorMessage.contains('only')) {
+            errorMessage = 'Only draft training plans can be submitted.';
+          } else if (errorMessage.contains('permission')) {
+            errorMessage = 'You do not have permission to submit training plans.';
+          } else if (errorMessage.contains('not found')) {
+            errorMessage = 'Training plan not found.';
+          }
+          
+          throw Exception(errorMessage);
         }
       } catch (e) {
+        // Close loading dialog
+        Navigator.of(context).pop();
         _showErrorToast(e.toString());
       }
     }
   }
 
-  void _approveTrainingPlan(BuildContext context, TrainingPlan item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Approval'),
-        content: Text('Are you sure you want to approve the training plan "${item.title}" for year ${item.year}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Approve'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final response = await TrainingPlanService.approveTrainingPlan(item.id!);
-        if (response.success) {
-          Get.find<TrainingPlanDataProvider>().refreshData();
-          _showSuccessToast('Training plan approved successfully');
-        } else {
-          throw Exception(response.messageEn);
-        }
-      } catch (e) {
-        _showErrorToast(e.toString());
-      }
-    }
-  }
-
-  void _rejectTrainingPlan(BuildContext context, TrainingPlan item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Rejection'),
-        content: Text('Are you sure you want to reject the training plan "${item.title}" for year ${item.year}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Reject'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final response = await TrainingPlanService.rejectTrainingPlan(item.id!);
-        if (response.success) {
-          Get.find<TrainingPlanDataProvider>().refreshData();
-          _showSuccessToast('Training plan rejected successfully');
-        } else {
-          throw Exception(response.messageEn);
-        }
-      } catch (e) {
-        _showErrorToast(e.toString());
-      }
-    }
-  }
 
   void _showAddTrainingPlanForm(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     int? selectedYear;
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
-    String? selectedStatus = 'draft';
 
     // Get available years
     final availableYears = TrainingPlanService.getAvailableYears();
-    final statusOptions = TrainingPlanService.getStatusOptions();
 
     ModalDialog.show(
       context: context,
@@ -1076,12 +1026,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                                   value: year,
                                   child: Text(year.toString()),
                                 )).toList(),
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Please select a year';
-                                  }
-                                  return null;
-                                },
+                                validator: ValidationHelper.validateYear,
                                 onChanged: (value) {
                                   setModalState(() {
                                     selectedYear = value;
@@ -1106,15 +1051,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                                 hintText: 'Enter training plan title (max 255 characters)',
                                 controller: titleController,
                                 enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a title';
-                                  }
-                                  if (value.trim().length > 255) {
-                                    return 'Title must be less than 255 characters';
-                                  }
-                                  return null;
-                                },
+                                validator: ValidationHelper.validateTitle,
                               ),
                               const SizedBox(height: 16),
                                 
@@ -1139,37 +1076,6 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                                 ),
                                 maxLines: 4,
                                 enabled: !isSubmitting,
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // Status field label
-                              const Text(
-                                'Status',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              
-                              // Status Dropdown
-                              DropdownButtonFormField<String>(
-                                value: selectedStatus,
-                                decoration: const InputDecoration(
-                                  hintText: 'Select status',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                ),
-                                items: statusOptions.map((status) => DropdownMenuItem<String>(
-                                  value: status['value'],
-                                  child: Text(status['label']!),
-                                )).toList(),
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    selectedStatus = value;
-                                  });
-                                },
                               ),
                             ],
                           ),
@@ -1274,7 +1180,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
               description: descriptionController.text.trim().isNotEmpty 
                   ? descriptionController.text.trim() 
                   : null,
-              status: selectedStatus,
+              status: 'draft', // Default status for new training plans
             );
             
             final response = await TrainingPlanService.createTrainingPlan(request);
@@ -1314,15 +1220,25 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
   }
 
   void _showEditTrainingPlanForm(BuildContext context, TrainingPlan trainingPlan) {
+    // Validate business rules
+    final businessRuleErrors = ValidationHelper.validateBusinessRules(
+      operation: 'edit',
+      currentStatus: trainingPlan.status,
+      hasPermission: TrainingPlanService.hasTrainingPlanManagementPermission(),
+    );
+
+    if (businessRuleErrors.isNotEmpty) {
+      _showErrorToast(businessRuleErrors.values.first);
+      return;
+    }
+
     final formKey = GlobalKey<FormState>();
     int? selectedYear = trainingPlan.year;
     final titleController = TextEditingController(text: trainingPlan.title);
     final descriptionController = TextEditingController(text: trainingPlan.description ?? '');
-    String? selectedStatus = trainingPlan.status;
 
     // Get available years
     final availableYears = TrainingPlanService.getAvailableYears();
-    final statusOptions = TrainingPlanService.getStatusOptions();
 
     ModalDialog.show(
       context: context,
@@ -1399,12 +1315,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                                   value: year,
                                   child: Text(year.toString()),
                                 )).toList(),
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Please select a year';
-                                  }
-                                  return null;
-                                },
+                                validator: ValidationHelper.validateYear,
                                 onChanged: (value) {
                                   setModalState(() {
                                     selectedYear = value;
@@ -1429,15 +1340,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                                 hintText: 'Enter training plan title (max 255 characters)',
                                 controller: titleController,
                                 enabled: !isSubmitting,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter a title';
-                                  }
-                                  if (value.trim().length > 255) {
-                                    return 'Title must be less than 255 characters';
-                                  }
-                                  return null;
-                                },
+                                validator: ValidationHelper.validateTitle,
                               ),
                               const SizedBox(height: 16),
                                 
@@ -1462,37 +1365,6 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                                 ),
                                 maxLines: 4,
                                 enabled: !isSubmitting,
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // Status field label
-                              const Text(
-                                'Status',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              
-                              // Status Dropdown
-                              DropdownButtonFormField<String>(
-                                value: selectedStatus,
-                                decoration: const InputDecoration(
-                                  hintText: 'Select status',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                                ),
-                                items: statusOptions.map((status) => DropdownMenuItem<String>(
-                                  value: status['value'],
-                                  child: Text(status['label']!),
-                                )).toList(),
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    selectedStatus = value;
-                                  });
-                                },
                               ),
                             ],
                           ),
@@ -1598,7 +1470,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
               description: descriptionController.text.trim().isNotEmpty 
                   ? descriptionController.text.trim() 
                   : null,
-              status: selectedStatus,
+              status: trainingPlan.status, // Keep the current status
             );
             
             final response = await TrainingPlanService.updateTrainingPlan(request);
@@ -1826,5 +1698,346 @@ class TrainingPlanDataProvider extends GetxController {
   void onClose() {
     searchController.dispose();
     super.onClose();
+  }
+}
+
+class ViewTrainingPlanDetailsWidget extends StatefulWidget {
+  final TrainingPlan plan;
+
+  const ViewTrainingPlanDetailsWidget({super.key, required this.plan});
+
+  @override
+  State<ViewTrainingPlanDetailsWidget> createState() => _ViewTrainingPlanDetailsWidgetState();
+}
+
+class _ViewTrainingPlanDetailsWidgetState extends State<ViewTrainingPlanDetailsWidget> {
+  List<pca_model.PlanCourseAssignment> _assignments = [];
+  bool _isLoadingAssignments = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlanAssignments();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Training Plan Information Section
+          _buildPlanInfoSection(),
+          const SizedBox(height: 24),
+
+          // Course Assignments Section
+          _buildAssignmentsSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanInfoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.school,
+                color: Colors.blue.shade700,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Training Plan Information',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          _buildInfoRow('Plan ID', widget.plan.id.toString()),
+          _buildInfoRow('Title', widget.plan.title),
+          _buildInfoRow('Year', widget.plan.year.toString()),
+          _buildInfoRow('Status', widget.plan.statusDisplay),
+          if (widget.plan.description != null && widget.plan.description!.isNotEmpty)
+            _buildInfoRow('Description', widget.plan.description!),
+          _buildInfoRow('Created By', widget.plan.creatorName),
+          if (widget.plan.createdAt != null)
+            _buildInfoRow('Created At', _formatDateTime(widget.plan.createdAt!)),
+          if (widget.plan.updatedAt != null)
+            _buildInfoRow('Updated At', _formatDateTime(widget.plan.updatedAt!)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssignmentsSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.assignment,
+                color: Colors.grey.shade700,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Course Assignments',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const Spacer(),
+              if (_isLoadingAssignments)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          if (_isLoadingAssignments)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_assignments.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No course assignments found for this training plan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            _buildAssignmentsTable(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssignmentsTable() {
+    if (_assignments.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Table(
+        columnWidths: _getFlexibleColumnWidths(),
+        border: TableBorder.all(
+          color: Colors.grey.shade300,
+          width: 1,
+        ),
+        children: [
+          // Header row
+          TableRow(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+            ),
+            children: [
+              _buildTableHeaderCell('Company Name'),
+              _buildTableHeaderCell('Course Name'),
+              _buildTableHeaderCell('Specialization'),
+              _buildTableHeaderCell('Training Center Branch'),
+              _buildTableHeaderCell('Start Date'),
+              _buildTableHeaderCell('End Date'),
+              _buildTableHeaderCell('Seats'),
+            ],
+          ),
+          // Data rows
+          ..._assignments.map((assignment) => TableRow(
+            children: [
+              _buildTableCell(assignment.company?.name ?? 'N/A'),
+              _buildTableCell(assignment.course?.title ?? 'N/A'),
+              _buildTableCell(assignment.course?.specialization?.name ?? assignment.course?.specializationName ?? 'N/A'),
+              _buildTableCell(assignment.trainingCenterBranch?.name ?? 'N/A'),
+              _buildTableCell(_formatDate(assignment.startDate)),
+              _buildTableCell(_formatDate(assignment.endDate)),
+              _buildTableCell(assignment.seats.toString()),
+            ],
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableHeaderCell(String text) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        textAlign: TextAlign.center,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14),
+        textAlign: TextAlign.center,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 2,
+      ),
+    );
+  }
+
+  Map<int, TableColumnWidth> _getFlexibleColumnWidths() {
+    // Use flexible column widths that adapt to container size
+    // The numbers represent relative proportions - higher numbers = more space
+    return {
+      0: const FlexColumnWidth(2.0), // Company Name - important, give more space
+      1: const FlexColumnWidth(2.5), // Course Name - most important, give most space
+      2: const FlexColumnWidth(1.5), // Specialization - moderate importance
+      3: const FlexColumnWidth(2.0), // Training Center Branch - important
+      4: const FlexColumnWidth(1.0), // Start Date - fixed width content
+      5: const FlexColumnWidth(1.0), // End Date - fixed width content
+      6: const FlexColumnWidth(0.8), // Seats - least space needed
+    };
+  }
+
+  Future<void> _loadPlanAssignments() async {
+    setState(() {
+      _isLoadingAssignments = true;
+    });
+
+    try {
+      if (widget.plan.id == null) {
+        _showErrorToast('Training plan ID is not available');
+        return;
+      }
+
+      final response = await PlanCourseAssignmentService.getPlanCourseAssignmentsByTrainingPlan(
+        trainingPlanId: widget.plan.id!,
+      );
+
+      if (response.statusCode == 200) {
+        print('✅ Successfully loaded ${response.data.length} assignments');
+        print('📊 Sample assignment data:');
+        if (response.data.isNotEmpty) {
+          final sample = response.data.first;
+          print('   Company: ${sample.company?.name}');
+          print('   Course: ${sample.course?.title}');
+          print('   Specialization: ${sample.course?.specialization?.name ?? sample.course?.specializationName}');
+          print('   Branch: ${sample.trainingCenterBranch?.name}');
+          print('   Start Date: ${sample.startDate}');
+          print('   End Date: ${sample.endDate}');
+          print('   Seats: ${sample.seats}');
+        }
+        setState(() {
+          _assignments = response.data;
+        });
+      } else {
+        _showErrorToast('Failed to load assignments: ${response.messageEn}');
+      }
+    } catch (e) {
+      _showErrorToast('Error loading assignments: $e');
+    } finally {
+      setState(() {
+        _isLoadingAssignments = false;
+      });
+    }
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  void _showErrorToast(String message) {
+    toastification.show(
+      context: context,
+      type: ToastificationType.error,
+      style: ToastificationStyle.fillColored,
+      title: Text(message),
+      autoCloseDuration: const Duration(seconds: 3),
+    );
   }
 }

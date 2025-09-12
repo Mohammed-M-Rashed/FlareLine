@@ -9,6 +9,7 @@ import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/services/specialization_service.dart';
 import 'package:flareline/core/models/specialization_model.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline_uikit/utils/snackbar_util.dart';
 import 'package:get/get.dart';
 import 'package:toastification/toastification.dart';
@@ -175,39 +176,12 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Specialization count and summary
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.school,
-                            color: Colors.blue.shade600,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '${specializations.length} specialization${specializations.length == 1 ? '' : 's'} found',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            'Last updated: ${DateTime.now().toString().substring(0, 19)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.blue.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
+                    CountSummaryWidgetEn(
+                      count: specializations.length,
+                      itemName: 'specialization',
+                      itemNamePlural: 'specializations',
+                      icon: Icons.school,
+                      color: Colors.blue,
                     ),
                     const SizedBox(height: 16),
                     

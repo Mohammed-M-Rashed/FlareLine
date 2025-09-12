@@ -91,7 +91,7 @@ class PlanCourseAssignment {
 
   // Getters for UI convenience
   String get companyName => company?.name ?? 'Unknown Company';
-  String get courseName => course?.name ?? 'Unknown Course';
+  String get courseName => course?.title ?? 'Unknown Course';
   String get branchName => trainingCenterBranch?.name ?? 'Unknown Branch';
   
   bool get isPending => status == 'pending';
@@ -210,19 +210,21 @@ class Company {
 // Course model for related course data
 class Course {
   final int id;
-  final String name;
+  final String title;
   final String? description;
   final int? specializationId;
   final String? specializationName;
+  final Specialization? specialization;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   Course({
     required this.id,
-    required this.name,
+    required this.title,
     this.description,
     this.specializationId,
     this.specializationName,
+    this.specialization,
     this.createdAt,
     this.updatedAt,
   });
@@ -230,10 +232,63 @@ class Course {
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
       id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      title: json['title'] ?? '',
       description: json['description'],
       specializationId: json['specialization_id'],
       specializationName: json['specialization_name'],
+      specialization: json['specialization'] != null 
+          ? Specialization.fromJson(json['specialization']) 
+          : null,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : null,
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'specialization_id': specializationId,
+      'specialization_name': specializationName,
+      'specialization': specialization?.toJson(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+    };
+  }
+}
+
+// Specialization model for related specialization data
+class Specialization {
+  final int id;
+  final String name;
+  final String? description;
+  final int? createdBy;
+  final String? status;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  Specialization({
+    required this.id,
+    required this.name,
+    this.description,
+    this.createdBy,
+    this.status,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory Specialization.fromJson(Map<String, dynamic> json) {
+    return Specialization(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      description: json['description'],
+      createdBy: json['created_by'],
+      status: json['status'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -248,8 +303,8 @@ class Course {
       'id': id,
       'name': name,
       'description': description,
-      'specialization_id': specializationId,
-      'specialization_name': specializationName,
+      'created_by': createdBy,
+      'status': status,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

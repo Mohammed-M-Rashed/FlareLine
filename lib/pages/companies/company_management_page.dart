@@ -9,6 +9,7 @@ import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/company_model.dart';
 import 'package:flareline/core/services/company_service.dart';
 import 'package:flareline/core/widgets/company_image_picker.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:get/get.dart';
@@ -204,39 +205,12 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Company count and summary
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue.shade200),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.business,
-                                color: Colors.blue.shade600,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                '${companies.length} compan${companies.length == 1 ? 'y' : 'ies'} found',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.blue.shade700,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                'Last updated: ${DateTime.now().toString().substring(0, 19)}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue.shade600,
-                                ),
-                              ),
-                            ],
-                          ),
+                        CountSummaryWidgetEn(
+                          count: companies.length,
+                          itemName: 'company',
+                          itemNamePlural: 'companies',
+                          icon: Icons.business,
+                          color: Colors.blue,
                         ),
                         const SizedBox(height: 16),
                         

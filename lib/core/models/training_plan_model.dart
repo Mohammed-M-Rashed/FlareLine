@@ -93,13 +93,11 @@ class TrainingPlan {
   
   bool get isDraft => status == 'draft';
   bool get isSubmitted => status == 'submitted';
-  bool get isApproved => status == 'approved';
-  bool get isRejected => status == 'rejected';
   
-  bool get canBeEdited => isDraft || isRejected;
-  bool get canBeSubmitted => isDraft || isRejected;
-  bool get canBeApproved => isSubmitted;
-  bool get canBeRejected => isSubmitted;
+  // Status workflow: Draft → Submitted (one-way transition)
+  // Only draft plans can be edited and submitted
+  bool get canBeEdited => isDraft;
+  bool get canBeSubmitted => isDraft;
 
   String get statusDisplay {
     switch (status) {
@@ -107,10 +105,6 @@ class TrainingPlan {
         return 'Draft';
       case 'submitted':
         return 'Submitted';
-      case 'approved':
-        return 'Approved';
-      case 'rejected':
-        return 'Rejected';
       default:
         return status;
     }
@@ -122,10 +116,6 @@ class TrainingPlan {
         return Colors.grey;
       case 'submitted':
         return Colors.orange;
-      case 'approved':
-        return Colors.green;
-      case 'rejected':
-        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -137,10 +127,6 @@ class TrainingPlan {
         return Icons.edit;
       case 'submitted':
         return Icons.hourglass_empty;
-      case 'approved':
-        return Icons.check_circle;
-      case 'rejected':
-        return Icons.cancel;
       default:
         return Icons.help;
     }
@@ -152,10 +138,6 @@ class TrainingPlan {
         return 'مسودة';
       case 'submitted':
         return 'مُرسل';
-      case 'approved':
-        return 'مقبول';
-      case 'rejected':
-        return 'مرفوض';
       default:
         return status;
     }

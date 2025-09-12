@@ -120,6 +120,7 @@ class CourseService {
       // Create CourseCreateRequest from Course model
       final createRequest = CourseCreateRequest(
         specializationId: course.specializationId,
+        code: course.code,
         title: course.title,
         description: course.description,
         fileAttachment: course.fileAttachment,
@@ -196,6 +197,7 @@ class CourseService {
       final updateRequest = CourseUpdateRequest(
         id: course.id!,
         specializationId: course.specializationId,
+        code: course.code,
         title: course.title,
         description: course.description,
         fileAttachment: course.fileAttachment,
@@ -249,6 +251,16 @@ class CourseService {
 
   // Validate course data before sending to API
   static String? _validateCourseData(Course course) {
+    if (course.code.trim().isEmpty) {
+      print('❌ COURSE SERVICE: Validation failed - Code is empty');
+      return 'كود الدورة مطلوب';
+    }
+    
+    if (course.code.length > 50) {
+      print('❌ COURSE SERVICE: Validation failed - Code too long: ${course.code.length} characters');
+      return 'كود الدورة يجب أن يكون أقل من 50 حرف';
+    }
+    
     if (course.title.trim().isEmpty) {
       print('❌ COURSE SERVICE: Validation failed - Title is empty');
       return 'عنوان الدورة مطلوب';
@@ -286,5 +298,170 @@ class CourseService {
     print('📚 COURSE SERVICE: ===== GETTING ALL COURSES =====');
     
     return await getCourses(context);
+  }
+
+  // Search courses by code or title
+  static Future<List<Course>> searchCourses(BuildContext context, String searchTerm) async {
+    print('📚 COURSE SERVICE: ===== SEARCHING COURSES =====');
+    print('🔍 COURSE SERVICE: Search term: $searchTerm');
+    
+    try {
+      final requestBody = CourseSearchRequest(searchTerm: searchTerm).toJson();
+      print('📤 COURSE SERVICE: Request body: $requestBody');
+      
+      print('🌐 COURSE SERVICE: Calling API endpoint: ${ApiEndpoints.courseSearch}');
+      final response = await ApiService.post(ApiEndpoints.courseSearch, body: requestBody);
+      print('📡 COURSE SERVICE: Response received - Status: ${response.statusCode}');
+      
+      if (ApiService.isSuccessResponse(response)) {
+        print('✅ COURSE SERVICE: API call successful, parsing response...');
+        final responseData = jsonDecode(response.body);
+        print('🔍 COURSE SERVICE: Response data: $responseData');
+        
+        final courseListResponse = CourseListResponse.fromJson(responseData);
+        
+        if (courseListResponse.success) {
+          print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
+          _showSuccessToast(context, courseListResponse.message);
+          return courseListResponse.data;
+        } else {
+          print('❌ COURSE SERVICE: API response indicates failure');
+          _showErrorToast(context, courseListResponse.message);
+          return [];
+        }
+      } else {
+        print('❌ COURSE SERVICE: API call failed, handling error response...');
+        final errorMessage = ApiService.handleErrorResponse(response);
+        final errorType = ApiService.getErrorType(response);
+        print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
+        
+        if (ApiService.isAuthError(response)) {
+          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+        } else if (ApiService.isValidationError(response)) {
+          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+        } else {
+          _showErrorToast(context, '$errorType: $errorMessage');
+        }
+        return [];
+      }
+    } catch (e) {
+      print('💥 COURSE SERVICE: Exception occurred while searching courses: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return [];
+    }
+  }
+
+  // Get course by code
+  static Future<Course?> getCourseByCode(BuildContext context, String code) async {
+    print('📚 COURSE SERVICE: ===== GETTING COURSE BY CODE =====');
+    print('🔍 COURSE SERVICE: Course code: $code');
+    
+    try {
+      final requestBody = CourseByCodeRequest(code: code).toJson();
+      print('📤 COURSE SERVICE: Request body: $requestBody');
+      
+      print('🌐 COURSE SERVICE: Calling API endpoint: ${ApiEndpoints.courseByCode}');
+      final response = await ApiService.post(ApiEndpoints.courseByCode, body: requestBody);
+      print('📡 COURSE SERVICE: Response received - Status: ${response.statusCode}');
+      
+      if (ApiService.isSuccessResponse(response)) {
+        print('✅ COURSE SERVICE: API call successful, parsing response...');
+        final responseData = jsonDecode(response.body);
+        print('🔍 COURSE SERVICE: Response data: $responseData');
+        
+        final courseResponse = CourseResponse.fromJson(responseData);
+        
+        if (courseResponse.success) {
+          print('✅ COURSE SERVICE: Successfully retrieved course');
+          _showSuccessToast(context, courseResponse.message);
+          return courseResponse.data;
+        } else {
+          print('❌ COURSE SERVICE: API response indicates failure');
+          _showErrorToast(context, courseResponse.message);
+          return null;
+        }
+      } else {
+        print('❌ COURSE SERVICE: API call failed, handling error response...');
+        final errorMessage = ApiService.handleErrorResponse(response);
+        final errorType = ApiService.getErrorType(response);
+        print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
+        
+        if (ApiService.isNotFoundError(response)) {
+          _showErrorToast(context, 'الدورة غير موجودة');
+        } else if (ApiService.isAuthError(response)) {
+          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+        } else if (ApiService.isValidationError(response)) {
+          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+        } else {
+          _showErrorToast(context, '$errorType: $errorMessage');
+        }
+        return null;
+      }
+    } catch (e) {
+      print('💥 COURSE SERVICE: Exception occurred while getting course by code: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return null;
+    }
+  }
+
+  // Get courses by status
+  static Future<List<Course>> getCoursesByStatus(BuildContext context, String status) async {
+    print('📚 COURSE SERVICE: ===== GETTING COURSES BY STATUS =====');
+    print('🔍 COURSE SERVICE: Status: $status');
+    
+    try {
+      final requestBody = CourseByStatusRequest(status: status).toJson();
+      print('📤 COURSE SERVICE: Request body: $requestBody');
+      
+      print('🌐 COURSE SERVICE: Calling API endpoint: ${ApiEndpoints.courseByStatus}');
+      final response = await ApiService.post(ApiEndpoints.courseByStatus, body: requestBody);
+      print('📡 COURSE SERVICE: Response received - Status: ${response.statusCode}');
+      
+      if (ApiService.isSuccessResponse(response)) {
+        print('✅ COURSE SERVICE: API call successful, parsing response...');
+        final responseData = jsonDecode(response.body);
+        print('🔍 COURSE SERVICE: Response data: $responseData');
+        
+        final courseListResponse = CourseListResponse.fromJson(responseData);
+        
+        if (courseListResponse.success) {
+          print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
+          _showSuccessToast(context, courseListResponse.message);
+          return courseListResponse.data;
+        } else {
+          print('❌ COURSE SERVICE: API response indicates failure');
+          _showErrorToast(context, courseListResponse.message);
+          return [];
+        }
+      } else {
+        print('❌ COURSE SERVICE: API call failed, handling error response...');
+        final errorMessage = ApiService.handleErrorResponse(response);
+        final errorType = ApiService.getErrorType(response);
+        print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
+        
+        if (ApiService.isAuthError(response)) {
+          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+        } else if (ApiService.isValidationError(response)) {
+          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+        } else {
+          _showErrorToast(context, '$errorType: $errorMessage');
+        }
+        return [];
+      }
+    } catch (e) {
+      print('💥 COURSE SERVICE: Exception occurred while getting courses by status: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return [];
+    }
+  }
+
+  // Get available status options
+  static List<Map<String, String>> getStatusOptions() {
+    return [
+      {'value': 'active', 'label': 'Active', 'labelAr': 'نشط'},
+      {'value': 'pending', 'label': 'Pending', 'labelAr': 'قيد الانتظار'},
+      {'value': 'approved', 'label': 'Approved', 'labelAr': 'مقبول'},
+      {'value': 'rejected', 'label': 'Rejected', 'labelAr': 'مرفوض'},
+    ];
   }
 }

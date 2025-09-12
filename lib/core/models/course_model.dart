@@ -6,10 +6,12 @@ import 'package:flareline/core/models/specialization_model.dart';
 class Course {
   final int? id;
   final int specializationId;
+  final String code;
   final String title;
   final String description;
   final String? createdBy;
   final String? fileAttachment;
+  final String status;
   final String? createdAt;
   final String? updatedAt;
   final Specialization? specialization;
@@ -17,10 +19,12 @@ class Course {
   Course({
     this.id,
     required this.specializationId,
+    required this.code,
     required this.title,
     required this.description,
     this.createdBy,
     this.fileAttachment,
+    this.status = 'active',
     this.createdAt,
     this.updatedAt,
     this.specialization,
@@ -30,10 +34,12 @@ class Course {
     return Course(
       id: json['id'],
       specializationId: json['specialization_id'] ?? 0,
+      code: json['code'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       createdBy: json['created_by'],
       fileAttachment: json['file_attachment'],
+      status: json['status'] ?? 'active',
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
       specialization: json['specialization'] != null 
@@ -45,8 +51,10 @@ class Course {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       'specialization_id': specializationId,
+      'code': code,
       'title': title,
       'description': description,
+      'status': status,
     };
     
     if (id != null) data['id'] = id;
@@ -61,10 +69,12 @@ class Course {
   Course copyWith({
     int? id,
     int? specializationId,
+    String? code,
     String? title,
     String? description,
     String? createdBy,
     String? fileAttachment,
+    String? status,
     String? createdAt,
     String? updatedAt,
     Specialization? specialization,
@@ -72,10 +82,12 @@ class Course {
     return Course(
       id: id ?? this.id,
       specializationId: specializationId ?? this.specializationId,
+      code: code ?? this.code,
       title: title ?? this.title,
       description: description ?? this.description,
       createdBy: createdBy ?? this.createdBy,
       fileAttachment: fileAttachment ?? this.fileAttachment,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       specialization: specialization ?? this.specialization,
@@ -190,17 +202,77 @@ class Course {
 
   /// Check if course has complete information
   bool get isComplete {
-    return title.isNotEmpty && 
+    return code.isNotEmpty &&
+           title.isNotEmpty && 
            specializationId > 0 && 
            description.isNotEmpty;
   }
 
-  /// Get course status based on completeness
-  String get status {
-    if (isComplete) {
-      return 'مكتمل';
+  /// Status getters
+  bool get isActive => status == 'active';
+  bool get isPending => status == 'pending';
+  bool get isApproved => status == 'approved';
+  bool get isRejected => status == 'rejected';
+
+  /// Status display properties
+  String get statusDisplay {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'pending':
+        return 'Pending';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
     }
-    return 'ناقص';
+  }
+
+  String get statusDisplayText {
+    switch (status) {
+      case 'active':
+        return 'نشط';
+      case 'pending':
+        return 'قيد الانتظار';
+      case 'approved':
+        return 'مقبول';
+      case 'rejected':
+        return 'مرفوض';
+      default:
+        return status;
+    }
+  }
+
+  Color get statusColor {
+    switch (status) {
+      case 'active':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return Colors.blue;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData get statusIcon {
+    switch (status) {
+      case 'active':
+        return Icons.check_circle;
+      case 'pending':
+        return Icons.hourglass_empty;
+      case 'approved':
+        return Icons.verified;
+      case 'rejected':
+        return Icons.cancel;
+      default:
+        return Icons.help;
+    }
   }
 }
 
@@ -279,6 +351,7 @@ class CourseResponse {
 // Request models for course operations
 class CourseCreateRequest {
   final int specializationId;
+  final String code;
   final String title;
   final String description;
   final String? createdBy;
@@ -286,6 +359,7 @@ class CourseCreateRequest {
 
   CourseCreateRequest({
     required this.specializationId,
+    required this.code,
     required this.title,
     required this.description,
     this.createdBy,
@@ -295,6 +369,7 @@ class CourseCreateRequest {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       'specialization_id': specializationId,
+      'code': code,
       'title': title,
       'description': description,
       'created_by': createdBy ?? 'admin', // Always include created_by, default to 'admin'
@@ -309,6 +384,7 @@ class CourseCreateRequest {
 class CourseUpdateRequest {
   final int id;
   final int? specializationId;
+  final String? code;
   final String? title;
   final String? description;
   final String? createdBy;
@@ -317,6 +393,7 @@ class CourseUpdateRequest {
   CourseUpdateRequest({
     required this.id,
     this.specializationId,
+    this.code,
     this.title,
     this.description,
     this.createdBy,
@@ -327,6 +404,7 @@ class CourseUpdateRequest {
     final Map<String, dynamic> data = {'id': id};
     
     if (specializationId != null) data['specialization_id'] = specializationId;
+    if (code != null) data['code'] = code;
     if (title != null) data['title'] = title;
     if (description != null) data['description'] = description;
     if (createdBy != null) data['created_by'] = createdBy;
@@ -347,5 +425,41 @@ class CourseFilterRequest {
     if (specializationId != null) data['specialization_id'] = specializationId;
     
     return data;
+  }
+}
+
+class CourseSearchRequest {
+  final String searchTerm;
+
+  CourseSearchRequest({required this.searchTerm});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'search_term': searchTerm,
+    };
+  }
+}
+
+class CourseByCodeRequest {
+  final String code;
+
+  CourseByCodeRequest({required this.code});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+    };
+  }
+}
+
+class CourseByStatusRequest {
+  final String status;
+
+  CourseByStatusRequest({required this.status});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+    };
   }
 }

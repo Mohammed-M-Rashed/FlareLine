@@ -30,11 +30,10 @@ class ApiEndpoints {
   static const String createCourse = '/course/create';
   static const String selectCourses = '/course/select';
   static const String updateCourse = '/course/update';
+  static const String courseByCode = '/course/by-code';
+  static const String courseSearch = '/course/search';
+  static const String courseByStatus = '/course/by-status';
   
-  // Training programs
-  static const String trainingPrograms = '/training-programs';
-  static const String programDetails = '/training-programs/details';
-  static const String enrollProgram = '/training-programs/enroll';
   
   // Specializations
   static const String specializations = '/specializations';
@@ -73,6 +72,7 @@ class ApiEndpoints {
   static const String updateTrainingPlan = '/training-plans/update';
   static const String getTrainingPlansByStatus = '/training-plans/status';
   static const String getTrainingPlansByYear = '/training-plans/year';
+  static const String getTrainingPlansByCompany = '/training-plans/by-company';
   static const String submitTrainingPlan = '/training-plans/submit';
   static const String approveTrainingPlan = '/training-plans/approve';
   static const String rejectTrainingPlan = '/training-plans/reject';
@@ -80,6 +80,11 @@ class ApiEndpoints {
   // Plan Course Assignments - Store and Retrieve endpoints
   static const String storePlanCourseAssignments = '/plan-course-assignments/store';
   static const String getPlanCourseAssignmentsByTrainingPlan = '/plan-course-assignments/by-training-plan';
+  static const String getCoursesByPlanAndCompany = '/plan-course-assignments/courses-by-plan-company';
+  
+  // Nomination management - New API endpoints
+  static const String createNominations = '/nomination/create';
+  static const String getNominationsByPlanCourseAssignment = '/nomination/by-plan-course-assignment';
   
   // Legacy training center endpoints (keeping for backward compatibility)
   static const String trainingCenters = '/training-centers';

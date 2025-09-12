@@ -26,12 +26,12 @@ import 'package:flareline/pages/specializations/specialization_management_page.d
 import 'package:flareline/pages/training_centers/training_center_management_page.dart';
 import 'package:flareline/pages/training_center_branches/training_center_branch_management_page.dart';
 import 'package:flareline/pages/courses/course_management_page.dart';
-import 'package:flareline/pages/training_programs/training_program_management_page.dart';
 import 'package:flareline/pages/trainers/trainer_management_page.dart';
 import 'package:flareline/pages/training_needs/training_need_management_page.dart';
 import 'package:flareline/pages/special_course_requests/special_course_request_management_page.dart';
 import 'package:flareline/pages/training_plans/training_plan_management_page.dart';
 import 'package:flareline/pages/plan_course_assignments/plan_course_assignment_management_page.dart';
+import 'package:flareline/pages/nominations/nomination_management_page.dart';
 import 'package:get/get.dart';
 
 typedef PathWidgetBuilder = Widget Function(BuildContext, String?);
@@ -143,10 +143,6 @@ final List<GetPage> routes = [
               page: () => const CourseManagementPage(),
             ),
             GetPage(
-              name: '/trainingProgramManagement',
-              page: () => const TrainingProgramManagementPage(),
-            ),
-            GetPage(
               name: '/trainerManagement',
               page: () => const TrainerManagementPage(),
             ),
@@ -165,6 +161,10 @@ final List<GetPage> routes = [
             GetPage(
               name: '/plan-course-assignment-management',
               page: () => const PlanCourseAssignmentManagementPage(),
+            ),
+            GetPage(
+              name: '/nomination-management',
+              page: () => const NominationManagementPage(),
             ),
 ];
 

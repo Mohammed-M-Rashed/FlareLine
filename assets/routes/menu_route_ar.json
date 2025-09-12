@@ -39,11 +39,6 @@
         "path": "/courseManagement"
       },
       {
-        "icon": "assets/sidebar/people.svg",
-        "menuName": "إدارة البرامج التدريبية",
-        "path": "/trainingProgramManagement"
-      },
-      {
         "icon": "assets/sidebar/user.svg",
         "menuName": "إدارة المدربين",
         "path": "/trainerManagement"
@@ -67,6 +62,11 @@
         "icon": "assets/sidebar/task.svg",
         "menuName": "إدارة تخصيصات الدورات",
         "path": "/plan-course-assignment-management"
+      },
+      {
+        "icon": "assets/sidebar/user.svg",
+        "menuName": "إدارة الترشيحات",
+        "path": "/nomination-management"
       }
     ]
   }

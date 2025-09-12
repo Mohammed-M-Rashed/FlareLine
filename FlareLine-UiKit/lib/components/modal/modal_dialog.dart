@@ -25,7 +25,7 @@ class ModalDialog {
         width = MediaQuery
             .of(context)
             .size
-            .width * 0.6;
+            .width * 0.8;
       } else if (modalType == ModalType.medium) {
         width = MediaQuery
             .of(context)

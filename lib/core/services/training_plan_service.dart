@@ -490,8 +490,6 @@ class TrainingPlanService {
     return [
       {'value': 'draft', 'label': 'Draft', 'labelAr': 'مسودة'},
       {'value': 'submitted', 'label': 'Submitted', 'labelAr': 'مُرسل'},
-      {'value': 'approved', 'label': 'Approved', 'labelAr': 'مقبول'},
-      {'value': 'rejected', 'label': 'Rejected', 'labelAr': 'مرفوض'},
     ];
   }
 }

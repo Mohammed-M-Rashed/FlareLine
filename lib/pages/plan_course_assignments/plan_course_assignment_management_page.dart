@@ -6,7 +6,7 @@ import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
-import 'package:flareline/core/models/plan_course_assignment_model.dart';
+import 'package:flareline/core/models/plan_course_assignment_model.dart' as pca_model;
 import 'package:flareline/core/services/plan_course_assignment_service.dart';
 import 'package:flareline/core/models/company_model.dart' as company_model;
 import 'package:flareline/core/services/company_service.dart';
@@ -14,13 +14,13 @@ import 'package:flareline/core/models/course_model.dart' as course_model;
 import 'package:flareline/core/services/course_service.dart';
 import 'package:flareline/core/models/training_center_branch_model.dart' as branch_model;
 import 'package:flareline/core/services/training_center_branch_service.dart';
-import 'package:flareline/core/models/specialization_model.dart';
 import 'package:flareline/core/services/specialization_service.dart';
 import 'package:flareline/core/models/training_center_model.dart';
 import 'package:flareline/core/services/training_center_service.dart';
 import 'package:flareline/core/models/training_plan_model.dart' as training_plan_model;
 import 'package:flareline/core/services/training_plan_service.dart';
 import 'package:toastification/toastification.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 
 import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
@@ -92,7 +92,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
   // State for specialization and course selection
   int? _selectedSpecializationId;
   int? _selectedCourseId;
-  List<Specialization> _specializations = [];
+  List<pca_model.Specialization> _specializations = [];
   List<course_model.Course> _courses = [];
   bool _isLoadingSpecializations = false;
   bool _isLoadingCourses = false;
@@ -409,17 +409,18 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
                             color: Colors.blue.shade800,
                           ),
                         ),
-                        const Spacer(),
-                        Text(
-                          _selectedFilterCompany != null && _selectedFilterCompany != 'All'
-                              ? '${_filteredCourseAssignments.length} of ${_courseAssignments.length} assignment(s)'
-                              : '${_courseAssignments.length} assignment(s)',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Course Assignments count and summary
+                    CountSummaryWidgetEn(
+                      count: _courseAssignments.length,
+                      itemName: 'assignment',
+                      itemNamePlural: 'assignments',
+                      icon: Icons.assignment_turned_in,
+                      color: Colors.purple,
+                      filteredCount: _filteredCourseAssignments.length,
+                      showFilteredCount: _selectedFilterCompany != null && _selectedFilterCompany != 'All',
                     ),
                     const SizedBox(height: 16),
                     _buildFilterSection(),
@@ -481,52 +482,138 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     try {
       _showLoadingToast('Saving assignments...');
 
+      // Debug: Check the state of required lists
+      final provider = Get.find<PlanCourseAssignmentDataProvider>();
+      print('🔍 Debug - List states before processing:');
+      print('   Companies count: ${provider.companies.length}');
+      print('   Courses count: ${_courses.length}');
+      print('   Branches count: ${_branches.length}');
+      print('   Course assignments count: ${_courseAssignments.length}');
+
+      // Load required data if lists are empty
+      if (_courses.isEmpty || _branches.isEmpty) {
+        print('🔄 Loading required data for save operation...');
+        await _loadAllCourses();
+        await _loadAllBranches();
+        print('   ✅ Data loaded - Courses: ${_courses.length}, Branches: ${_branches.length}');
+        
+        // Debug: Show some sample data
+        if (_courses.isNotEmpty) {
+          print('   Sample courses: ${_courses.take(3).map((c) => c.title).toList()}');
+        }
+        if (_branches.isNotEmpty) {
+          print('   Sample branches: ${_branches.take(3).map((b) => b.name).toList()}');
+        }
+      }
+
       // Convert course assignments to API format
-      final List<Map<String, dynamic>> assignments = _courseAssignments.map((assignment) {
-        return {
-          'company_id': _getCompanyIdByName(assignment.companyName),
-          'course_id': _getCourseIdByName(assignment.courseName),
-          'training_center_branch_id': _getBranchIdByName(assignment.branchName),
-          'start_date': assignment.startDate.toIso8601String().split('T')[0],
-          'end_date': assignment.endDate.toIso8601String().split('T')[0],
-          'seats': assignment.seats,
-        };
-      }).toList();
+      final List<Map<String, dynamic>> assignments = [];
+      for (int i = 0; i < _courseAssignments.length; i++) {
+        final assignment = _courseAssignments[i];
+        try {
+          print('🔄 Processing assignment ${i + 1}/${_courseAssignments.length}:');
+          print('   Company: ${assignment.companyName}');
+          print('   Course: ${assignment.courseName}');
+          print('   Branch: ${assignment.branchName}');
+          
+          final assignmentData = {
+            'company_id': _getCompanyIdByName(assignment.companyName),
+            'course_id': _getCourseIdByName(assignment.courseName),
+            'training_center_branch_id': _getBranchIdByName(assignment.branchName),
+            'start_date': assignment.startDate.toIso8601String().split('T')[0],
+            'end_date': assignment.endDate.toIso8601String().split('T')[0],
+            'seats': assignment.seats,
+          };
+          
+          assignments.add(assignmentData);
+          print('   ✅ Assignment ${i + 1} processed successfully');
+        } catch (e) {
+          print('   ❌ Error processing assignment ${i + 1}: $e');
+          throw Exception('Failed to process assignment ${i + 1}: $e');
+        }
+      }
+
+      // Log the data being sent to server
+      print('📤 Sending data to server:');
+      print('   Training Plan ID: $_selectedTrainingId');
+      print('   Number of assignments: ${assignments.length}');
+      print('   Assignments data:');
+      for (int i = 0; i < assignments.length; i++) {
+        print('     Assignment ${i + 1}:');
+        assignments[i].forEach((key, value) {
+          print('       $key: $value');
+        });
+      }
+      print('   Full assignments JSON: ${assignments.toString()}');
 
       final response = await PlanCourseAssignmentService.replacePlanCourseAssignments(
         trainingPlanId: _selectedTrainingId!,
         assignments: assignments,
       );
 
+      // Log the response received from server
+      print('📥 Response received from server:');
+      print('   Status Code: ${response.statusCode}');
+      print('   Message (EN): ${response.messageEn}');
+      print('   Message (AR): ${response.messageAr}');
+      print('   Full Response: ${response.toString()}');
+
       if (response.statusCode == 200) {
         _showSuccessToast('Assignments saved successfully');
+        print('✅ Assignments saved successfully');
         // Optionally clear the assignments after saving
         // setState(() {
         //   _courseAssignments.clear();
         // });
       } else {
+        print('❌ Server error saving assignments:');
+        print('   Status Code: ${response.statusCode}');
+        print('   Message (EN): ${response.messageEn}');
+        print('   Message (AR): ${response.messageAr}');
+        print('   Full Response: ${response.toString()}');
         _showErrorToast('Failed to save assignments: ${response.messageEn}');
       }
     } catch (e) {
-      _showErrorToast('Error saving assignments: ${e.toString()}');
+     // print('❌ Exception saving assignments: ${e.toString()}');
+     // print('   Exception type: ${e.runtimeType}');
+     // _showErrorToast('Error saving assignments: ${e.toString()}');
+      print('${e.toString()}');
     }
   }
 
   // Helper methods to get IDs by name
   int _getCompanyIdByName(String companyName) {
     final provider = Get.find<PlanCourseAssignmentDataProvider>();
-    final company = provider.companies.firstWhere((c) => c.name == companyName);
-    return company.id!;
+    try {
+      final company = provider.companies.firstWhere((c) => c.name == companyName);
+      return company.id!;
+    } catch (e) {
+      print('❌ Company not found: $companyName');
+      print('   Available companies: ${provider.companies.map((c) => c.name).toList()}');
+      throw Exception('Company "$companyName" not found in the list');
+    }
   }
 
   int _getCourseIdByName(String courseName) {
-    final course = _courses.firstWhere((c) => c.title == courseName);
-    return course.id!;
+    try {
+      final course = _courses.firstWhere((c) => c.title == courseName);
+      return course.id!;
+    } catch (e) {
+      print('❌ Course not found: $courseName');
+      print('   Available courses: ${_courses.map((c) => c.title).toList()}');
+      throw Exception('Course "$courseName" not found in the list');
+    }
   }
 
   int _getBranchIdByName(String branchName) {
-    final branch = _branches.firstWhere((b) => b.name == branchName);
-    return branch.id!;
+    try {
+      final branch = _branches.firstWhere((b) => b.name == branchName);
+      return branch.id!;
+    } catch (e) {
+      print('❌ Branch not found: $branchName');
+      print('   Available branches: ${_branches.map((b) => b.name).toList()}');
+      throw Exception('Branch "$branchName" not found in the list');
+    }
   }
 
   // Add course assignment to the table
@@ -577,7 +664,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         .companies
         .firstWhere((c) => c.id == _selectedCompanyId);
     
-    final specialization = _specializations
+    final pca_model.Specialization specialization = _specializations
         .firstWhere((s) => s.id == _selectedSpecializationId);
     
     final course = _courses
@@ -686,7 +773,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
   // Clear the form after adding an assignment
   void _clearForm() {
     setState(() {
-      _selectedTrainingId = null;
+      // Keep the selected training plan - don't reset _selectedTrainingId
       _selectedCompanyId = null;
       _selectedSpecializationId = null;
       _selectedCourseId = null;
@@ -1667,7 +1754,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     _showSuccessToast('Add form will be implemented');
   }
 
-  void _showEditPlanCourseAssignmentForm(BuildContext context, PlanCourseAssignment planCourseAssignment) {
+  void _showEditPlanCourseAssignmentForm(BuildContext context, pca_model.PlanCourseAssignment planCourseAssignment) {
     // This will be implemented in the next part
     _showSuccessToast('Edit form will be implemented');
   }
@@ -1697,7 +1784,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
             trainingName: selectedTraining?.title ?? 'Unknown Training',
             companyName: assignment.company?.name ?? 'Unknown Company',
             specializationName: assignment.course?.specializationName ?? 'Unknown Specialization',
-            courseName: assignment.course?.name ?? 'Unknown Course',
+            courseName: assignment.course?.title ?? 'Unknown Course',
             trainingCenterName: assignment.trainingCenterBranch?.trainingCenterName ?? 'Unknown Center',
             branchName: assignment.trainingCenterBranch?.name ?? 'Unknown Branch',
             startDate: assignment.startDate,
@@ -1710,14 +1797,25 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
           _courseAssignments = assignments;
         });
 
+        print('✅ Assignments loaded successfully for training plan $trainingPlanId');
+        print('   Loaded ${assignments.length} assignments');
         _showSuccessToast('Assignments loaded successfully');
       } else {
+        print('❌ Server error loading assignments:');
+        print('   Training Plan ID: $trainingPlanId');
+        print('   Status Code: ${response.statusCode}');
+        print('   Message (EN): ${response.messageEn}');
+        print('   Message (AR): ${response.messageAr}');
+        print('   Full Response: ${response.toString()}');
         _showErrorToast('Failed to load assignments: ${response.messageEn}');
         setState(() {
           _courseAssignments = [];
         });
       }
     } catch (e) {
+      print('❌ Exception loading assignments for training plan $trainingPlanId:');
+      print('   Exception: ${e.toString()}');
+      print('   Exception type: ${e.runtimeType}');
       _showErrorToast('Error loading assignments: ${e.toString()}');
       setState(() {
         _courseAssignments = [];
@@ -1759,7 +1857,18 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     });
 
     try {
-      final specializations = await SpecializationService.getSpecializations(context);
+      final oldSpecializations = await SpecializationService.getSpecializations(context);
+      // Convert old Specialization model to new pca_model.Specialization
+      final specializations = oldSpecializations.map((oldSpec) => pca_model.Specialization(
+        id: oldSpec.id ?? 0,
+        name: oldSpec.name,
+        description: oldSpec.description,
+        createdBy: null,
+        status: null,
+        createdAt: oldSpec.createdAt.isNotEmpty ? DateTime.tryParse(oldSpec.createdAt) : null,
+        updatedAt: oldSpec.updatedAt.isNotEmpty ? DateTime.tryParse(oldSpec.updatedAt) : null,
+      )).toList();
+      
       setState(() {
         _specializations = specializations;
         _isLoadingSpecializations = false;
@@ -1769,6 +1878,36 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         _isLoadingSpecializations = false;
       });
       _showErrorToast('Failed to load specializations: $e');
+    }
+  }
+
+  // Load all courses without filter (for save operation)
+  Future<void> _loadAllCourses() async {
+    try {
+      final courses = await CourseService.getAllCourses(context);
+      setState(() {
+        _courses = courses;
+      });
+      print('✅ Loaded ${_courses.length} courses for save operation');
+    } catch (e) {
+      print('❌ Error loading courses: $e');
+    }
+  }
+
+  // Load all branches without filter (for save operation)
+  Future<void> _loadAllBranches() async {
+    try {
+      final response = await TrainingCenterBranchService.getAllTrainingCenterBranches();
+      if (response.statusCode == 200) {
+        setState(() {
+          _branches = response.data;
+        });
+        print('✅ Loaded ${_branches.length} branches for save operation');
+      } else {
+        print('❌ Failed to load branches: ${response.messageEn}');
+      }
+    } catch (e) {
+      print('❌ Error loading branches: $e');
     }
   }
 
@@ -2101,7 +2240,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     );
   }
 }class PlanCourseAssignmentDataProvider extends GetxController {
-  final _planCourseAssignments = <PlanCourseAssignment>[].obs;
+  final _planCourseAssignments = <pca_model.PlanCourseAssignment>[].obs;
   final _isLoading = false.obs;
   final _currentPage = 0.obs;
   final _rowsPerPage = 10.obs;
@@ -2113,7 +2252,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
   // Controllers
   final searchController = TextEditingController();
 
-  List<PlanCourseAssignment> get planCourseAssignments => _planCourseAssignments;
+  List<pca_model.PlanCourseAssignment> get planCourseAssignments => _planCourseAssignments;
   bool get isLoading => _isLoading.value;
   int get currentPage => _currentPage.value;
   int get rowsPerPage => _rowsPerPage.value;
@@ -2130,7 +2269,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     return pages < 1 ? 1 : pages;
   }
   
-  List<PlanCourseAssignment> get filteredPlanCourseAssignments {
+  List<pca_model.PlanCourseAssignment> get filteredPlanCourseAssignments {
     var filtered = _planCourseAssignments.toList();
     
     // Filter by status
@@ -2157,8 +2296,8 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     return filtered;
   }
   
-  List<PlanCourseAssignment> get pagedPlanCourseAssignments {
-    if (totalItems == 0) return const <PlanCourseAssignment>[];
+  List<pca_model.PlanCourseAssignment> get pagedPlanCourseAssignments {
+    if (totalItems == 0) return const <pca_model.PlanCourseAssignment>[];
     final start = currentPage * rowsPerPage;
     var end = start + rowsPerPage;
     if (start >= totalItems) {
@@ -2181,7 +2320,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     });
   }
 
-  Future<List<PlanCourseAssignment>> loadData() async {
+  Future<List<pca_model.PlanCourseAssignment>> loadData() async {
     try {
       _isLoading.value = true;
       

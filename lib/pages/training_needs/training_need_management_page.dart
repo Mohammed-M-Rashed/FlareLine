@@ -15,6 +15,7 @@ import 'package:flareline/core/services/specialization_service.dart';
 import 'package:flareline/core/models/course_model.dart' as course_model;
 import 'package:flareline/core/services/course_service.dart';
 import 'package:toastification/toastification.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 
 import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
@@ -222,9 +223,22 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
 
   Widget _buildTrainingNeedsTable(BuildContext context, TrainingNeedDataProvider provider, BoxConstraints constraints) {
     final trainingNeeds = provider.pagedTrainingNeeds;
+    final filteredNeeds = provider.filteredTrainingNeeds;
 
     return Column(
       children: [
+        // Training Needs count and summary
+        CountSummaryWidgetEn(
+          count: provider.trainingNeeds.length,
+          itemName: 'training need',
+          itemNamePlural: 'training needs',
+          icon: Icons.psychology,
+          color: Colors.orange,
+          filteredCount: filteredNeeds.length,
+          showFilteredCount: true,
+        ),
+        const SizedBox(height: 16),
+        
         // Search and filter section
         Container(
           width: double.infinity,

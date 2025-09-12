@@ -12,6 +12,7 @@ import 'package:flareline/core/services/specialization_service.dart';
 import 'package:flareline/core/models/course_model.dart';
 import 'package:flareline/core/models/specialization_model.dart';
 import 'package:flareline/core/widgets/course_file_upload.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline_uikit/utils/snackbar_util.dart';
 import 'package:get/get.dart';
 import 'package:toastification/toastification.dart';
@@ -174,39 +175,12 @@ class CourseManagementWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Course count and summary
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.school,
-                        color: Colors.blue.shade600,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'تم العثور على ${courses.length} دورة',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'آخر تحديث: ${DateTime.now().toString().substring(0, 19)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
+                CountSummaryWidget(
+                  count: courses.length,
+                  itemName: 'دورة',
+                  itemNamePlural: 'دورات',
+                  icon: Icons.school,
+                  color: Colors.blue,
                 ),
                 const SizedBox(height: 16),
                 
@@ -241,6 +215,16 @@ class CourseManagementWidget extends StatelessWidget {
                             label: Expanded(
                               child: Text(
                                 'عنوان الدورة',
+                                textAlign: TextAlign.start,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            numeric: false,
+                          ),
+                          DataColumn(
+                            label: Expanded(
+                              child: Text(
+                                'كود الدورة',
                                 textAlign: TextAlign.start,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -359,6 +343,38 @@ class CourseManagementWidget extends StatelessWidget {
                                               ),
                                             ),
                                           ],
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Container(
+                                        constraints: const BoxConstraints(
+                                          minWidth: 80, // Reduced from 100
+                                          maxWidth: 120, // Reduced from 120
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, // Reduced from 12
+                                            vertical: 6, // Reduced from 8
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.blue.shade50,
+                                            borderRadius: BorderRadius.circular(16), // Reduced from 20
+                                            border: Border.all(
+                                              color: Colors.blue.shade200,
+                                              width: 1, // Reduced from 1.5
+                                            ),
+                                          ),
+                                          child: Text(
+                                            course.code,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 11, // Reduced from 14
+                                              color: Colors.blue.shade700,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -604,6 +620,7 @@ class CourseManagementWidget extends StatelessWidget {
 
   void _showAddCourseForm(BuildContext context) {
     final formKey = GlobalKey<FormState>();
+    final codeController = TextEditingController();
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
     final specializationIdController = TextEditingController();
@@ -674,6 +691,7 @@ class CourseManagementWidget extends StatelessWidget {
                           // Create course with new model structure
                           final newCourse = Course(
                             specializationId: int.parse(specializationIdController.text.trim()),
+                            code: codeController.text.trim(),
                             title: titleController.text.trim(),
                             description: descriptionController.text.trim(),
                             fileAttachment: selectedFileBase64,
@@ -773,6 +791,23 @@ class CourseManagementWidget extends StatelessWidget {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Course Code Field
+                          OutBorderTextFormField(
+                            labelText: 'كود الدورة *',
+                            hintText: 'أدخل كود الدورة (مثل: CS101)',
+                            controller: codeController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'يرجى إدخال كود الدورة';
+                              }
+                              if (value.length > 50) {
+                                return 'كود الدورة يجب أن يكون أقل من 50 حرف';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 20),
                           
@@ -930,6 +965,7 @@ class CourseManagementWidget extends StatelessWidget {
 
   void _showEditCourseForm(BuildContext context, Course course, _CourseDataProvider provider) {
     final formKey = GlobalKey<FormState>();
+    final codeController = TextEditingController(text: course.code);
     final titleController = TextEditingController(text: course.title);
     final descriptionController = TextEditingController(text: course.description);
     final specializationIdController = TextEditingController(text: course.specializationId.toString());
@@ -1004,9 +1040,11 @@ class CourseManagementWidget extends StatelessWidget {
                           final updatedCourse = Course(
                             id: course.id,
                             specializationId: int.parse(specializationIdController.text.trim()),
+                            code: codeController.text.trim(),
                             title: titleController.text.trim(),
                             description: descriptionController.text.trim(),
                             fileAttachment: selectedFileBase64,
+                            status: course.status,
                             createdAt: course.createdAt,
                             updatedAt: DateTime.now().toIso8601String(),
                             specialization: course.specialization,
@@ -1090,6 +1128,23 @@ class CourseManagementWidget extends StatelessWidget {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Course Code Field
+                          OutBorderTextFormField(
+                            labelText: 'كود الدورة *',
+                            hintText: 'أدخل كود الدورة (مثل: CS101)',
+                            controller: codeController,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'يرجى إدخال كود الدورة';
+                              }
+                              if (value.length > 50) {
+                                return 'كود الدورة يجب أن يكون أقل من 50 حرف';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 20),
                           

@@ -13,6 +13,7 @@ import 'package:toastification/toastification.dart';
 
 import 'package:flareline/core/models/user_model.dart';
 import 'package:flareline/core/models/company_model.dart';
+import 'package:flareline/core/widgets/count_summary_widget.dart';
 
 import 'package:get/get.dart';
 import 'dart:math';
@@ -177,39 +178,12 @@ class UserManagementWidget extends StatelessWidget {
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
                      // User count and summary
-                     Container(
-                       padding: const EdgeInsets.all(16),
-                       decoration: BoxDecoration(
-                         color: Colors.blue.shade50,
-                         borderRadius: BorderRadius.circular(8),
-                         border: Border.all(color: Colors.blue.shade200),
-                       ),
-                       child: Row(
-                         children: [
-                           Icon(
-                             Icons.people,
-                             color: Colors.blue.shade600,
-                             size: 24,
-                           ),
-                           const SizedBox(width: 12),
-                           Text(
-                             'تم العثور على ${users.length} مستخدم',
-                             style: TextStyle(
-                               fontSize: 16,
-                               fontWeight: FontWeight.w600,
-                               color: Colors.blue.shade700,
-                             ),
-                           ),
-                           const Spacer(),
-                           Text(
-                             'آخر تحديث: ${DateTime.now().toString().substring(0, 19)}',
-                             style: TextStyle(
-                               fontSize: 12,
-                               color: Colors.blue.shade600,
-                             ),
-                           ),
-                         ],
-                       ),
+                     CountSummaryWidget(
+                       count: users.length,
+                       itemName: 'مستخدم',
+                       itemNamePlural: 'مستخدمين',
+                       icon: Icons.people,
+                       color: Colors.blue,
                      ),
                      const SizedBox(height: 16),
                      
