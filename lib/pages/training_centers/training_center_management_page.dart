@@ -4,6 +4,7 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/training_center_model.dart';
@@ -515,16 +516,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Created',
-                                        textAlign: TextAlign.start,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    numeric: false,
-                                  ),
-                                  DataColumn(
-                                    label: Expanded(
-                                      child: Text(
                                         'Actions',
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
@@ -573,20 +564,12 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                     horizontal: 8,
                                                     vertical: 4,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.shade50,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.blue.shade200,
-                                                      width: 1,
-                                                    ),
-                                                  ),
                                                   child: Text(
                                                     trainingCenter.email,
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 11,
-                                                      color: Colors.blue.shade700,
+                                                      color: Colors.black87,
                                                     ),
                                                     textAlign: TextAlign.center,
                                                     overflow: TextOverflow.ellipsis,
@@ -605,20 +588,12 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                     horizontal: 8,
                                                     vertical: 4,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.shade50,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.green.shade200,
-                                                      width: 1,
-                                                    ),
-                                                  ),
                                                   child: Text(
                                                     trainingCenter.phone,
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 11,
-                                                      color: Colors.green.shade700,
+                                                      color: Colors.black87,
                                                     ),
                                                     textAlign: TextAlign.center,
                                                     overflow: TextOverflow.ellipsis,
@@ -641,7 +616,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                               Container(
                                                 constraints: const BoxConstraints(
                                                   minWidth: 80,
-                                                  maxWidth: 120,
+                                                  maxWidth: 200,
                                                 ),
                                                 child: Container(
                                                   padding: const EdgeInsets.symmetric(
@@ -650,11 +625,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                   ),
                                                   decoration: BoxDecoration(
                                                     color: trainingCenter.statusColor.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: trainingCenter.statusColor.withOpacity(0.3),
-                                                      width: 1,
-                                                    ),
+                                                    borderRadius: BorderRadius.circular(5),
                                                   ),
                                                   child: Text(
                                                     trainingCenter.statusDisplay,
@@ -666,36 +637,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                     textAlign: TextAlign.center,
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(
-                                              Container(
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 100,
-                                                  maxWidth: 150,
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      _formatTrainingCenterDate(trainingCenter.createdAt),
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.black87,
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    if (trainingCenter.updatedAt != null)
-                                                      Text(
-                                                        'Updated: ${_formatTrainingCenterDate(trainingCenter.updatedAt)}',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
-                                                          color: Colors.grey[600],
-                                                        ),
-                                                      ),
-                                                  ],
                                                 ),
                                               ),
                                             ),
@@ -735,6 +676,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                         foregroundColor: Colors.blue.shade700,
                                                       ),
                                                     ),
+                                                    const SizedBox(width: 8),
                                                     // Accept button (only for pending training centers)
                                                     if (trainingCenter.isPending)
                                                       IconButton(
@@ -751,6 +693,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                           foregroundColor: Colors.green.shade700,
                                                         ),
                                                       ),
+                                                    const SizedBox(width: 8),
                                                     // Reject button (only for pending training centers)
                                                     if (trainingCenter.isPending)
                                                       IconButton(
@@ -841,7 +784,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     final addressController = TextEditingController();
     final websiteController = TextEditingController();
     final descriptionController = TextEditingController();
-    String selectedStatus = 'pending';
 
     ModalDialog.show(
       context: context,
@@ -1010,50 +952,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                 enabled: !isSubmitting,
                                 maxLines: 3,
                               ),
-                              const SizedBox(height: 16),
-                               
-                              // Status Field
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Status',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    DropdownButtonFormField<String>(
-                                      value: selectedStatus,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                                        DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                                        DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value != null) {
-                                          setModalState(() {
-                                            selectedStatus = value;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -1158,7 +1056,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               address: addressController.text.trim(),
               website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-              status: selectedStatus,
             );
             
             final response = await TrainingCenterService.createTrainingCenter(request);
@@ -1174,7 +1071,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               Get.back();
                
               // Show success message
-              _showSuccessToast(response.messageEn);
+              _showSuccessToast(response.messageEnText);
             } else {
               throw Exception(response.messageEn);
             }
@@ -1197,7 +1094,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     final addressController = TextEditingController(text: trainingCenter.address);
     final websiteController = TextEditingController(text: trainingCenter.website);
     final descriptionController = TextEditingController(text: trainingCenter.description);
-    String selectedStatus = trainingCenter.status;
 
     ModalDialog.show(
       context: context,
@@ -1366,50 +1262,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                 enabled: !isSubmitting,
                                 maxLines: 3,
                               ),
-                              const SizedBox(height: 16),
-                               
-                              // Status Field
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Status',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.blue.shade700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    DropdownButtonFormField<String>(
-                                      value: selectedStatus,
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                      ),
-                                      items: const [
-                                        DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                                        DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                                        DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value != null) {
-                                          setModalState(() {
-                                            selectedStatus = value;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -1515,7 +1367,6 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               address: addressController.text.trim(),
               website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
-              status: selectedStatus,
             );
             
             final response = await TrainingCenterService.updateTrainingCenter(request);
@@ -1531,7 +1382,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               Get.back();
                
               // Show success message
-              _showSuccessToast(response.messageEn);
+              _showSuccessToast(response.messageEnText);
             } else {
               throw Exception(response.messageEn);
             }
@@ -1683,12 +1534,54 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
 
   // Reject training center
   void _rejectTrainingCenter(TrainingCenter trainingCenter) {
+    final rejectionReasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Reject Training Center'),
-          content: Text('Are you sure you want to reject "${trainingCenter.name}"?'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Are you sure you want to reject "${trainingCenter.name}"?'),
+                const SizedBox(height: 16),
+                const Text(
+                  'Rejection Reason *',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: rejectionReasonController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Enter reason for rejection',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Rejection reason is required';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -1696,8 +1589,10 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
             ),
             ElevatedButton(
               onPressed: () async {
-                Navigator.of(context).pop();
-                await _performRejectTrainingCenter(trainingCenter);
+                if (formKey.currentState!.validate()) {
+                  Navigator.of(context).pop();
+                  await _performRejectTrainingCenter(trainingCenter, rejectionReasonController.text.trim());
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -1758,7 +1653,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
         Get.find<TrainingCenterDataProvider>().refreshData();
         
         // Show success message
-        _showSuccessToast(response.messageEn);
+        _showSuccessToast(response.messageEnText);
       } else {
         throw Exception(response.messageEn);
       }
@@ -1771,7 +1666,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
   }
 
   // Perform reject training center
-  Future<void> _performRejectTrainingCenter(TrainingCenter trainingCenter) async {
+  Future<void> _performRejectTrainingCenter(TrainingCenter trainingCenter, String rejectionReason) async {
     try {
       // Show loading dialog
       showDialog(
@@ -1807,7 +1702,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
         },
       );
 
-      final response = await TrainingCenterService.rejectTrainingCenter(trainingCenter.id!);
+      final response = await TrainingCenterService.rejectTrainingCenter(trainingCenter.id!, rejectionReason: rejectionReason);
       
       // Close loading dialog
       Navigator.of(context).pop();
@@ -1817,7 +1712,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
         Get.find<TrainingCenterDataProvider>().refreshData();
         
         // Show success message
-        _showSuccessToast(response.messageEn);
+        _showSuccessToast(response.messageEnText);
       } else {
         throw Exception(response.messageEn);
       }
@@ -1835,6 +1730,25 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
       title: 'Training Center Details',
       showTitle: true,
       modalType: ModalType.large,
+      showCancel: false, // Disable default buttons
+      footer: Container(
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Row(
+          children: [
+            const Spacer(),
+            SizedBox(
+              width: 120,
+              child: ButtonWidget(
+                btnText: 'Cancel',
+                textColor: FlarelineColors.darkBlackText,
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.6,
         child: Stack(
@@ -1885,7 +1799,9 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                           _buildDetailRow('Phone', trainingCenter.phone!),
                         if (trainingCenter.email != null && trainingCenter.email!.isNotEmpty)
                           _buildDetailRow('Email', trainingCenter.email!),
-                        _buildDetailRow('Status', trainingCenter.statusDisplay),
+                        _buildStatusDetailRow(trainingCenter),
+                        if (trainingCenter.isRejected && trainingCenter.rejectionReason != null && trainingCenter.rejectionReason!.isNotEmpty)
+                          _buildDetailRow('Rejection Reason', trainingCenter.rejectionReason!),
                         if (trainingCenter.createdAt != null)
                           _buildDetailRow('Created At', trainingCenter.createdAt.toString()),
                         if (trainingCenter.updatedAt != null)
@@ -1922,6 +1838,44 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusDetailRow(TrainingCenter trainingCenter) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Status',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: trainingCenter.statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              trainingCenter.statusDisplay,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: trainingCenter.statusColor,
+              ),
             ),
           ),
         ],

@@ -292,7 +292,7 @@ class UserService {
   }
 
   // Create new user
-  static Future<bool> createUser(BuildContext context, User user) async {
+  static Future<User?> createUser(BuildContext context, User user) async {
     print('👥 USER SERVICE: ===== CREATING NEW USER =====');
     print('🔍 USER SERVICE: User details - Name: ${user.name}, Email: ${user.email}, Role: ${user.role}');
     print('🔍 USER SERVICE: Company ID: ${user.companyId}, Status: ${user.status ?? 'active'}');
@@ -325,10 +325,28 @@ class UserService {
         
         if (userApiResponse.success) {
           _showSuccessToast(context, userApiResponse.message.ar);
-          return true;
+          // Convert UserApiData to User model
+          if (userApiResponse.data != null) {
+            final userApiData = userApiResponse.data!;
+            final createdUser = User(
+              id: userApiData.id,
+              name: userApiData.name,
+              email: userApiData.email,
+              emailVerifiedAt: userApiData.emailVerifiedAt,
+              createdAt: userApiData.createdAt ?? DateTime.now().toIso8601String(),
+              updatedAt: userApiData.updatedAt ?? DateTime.now().toIso8601String(),
+              companyId: userApiData.companyId,
+              status: userApiData.status,
+              company: userApiData.company,
+              roles: userApiData.roles,
+              role: userApiData.roles.isNotEmpty ? userApiData.roles.first.name : null,
+            );
+            return createdUser;
+          }
+          return null;
         } else {
           _showErrorToast(context, userApiResponse.message.ar);
-          return false;
+          return null;
         }
       } else {
         print('❌ USER SERVICE: API call failed, handling error response...');
@@ -346,14 +364,14 @@ class UserService {
           print('⚠️ USER SERVICE: Other error type: $errorType');
           _showErrorToast(context, '$errorType: $errorMessage');
         }
-        return false;
+        return null;
       }
     } catch (e) {
       print('💥 USER SERVICE: Exception occurred while creating user: $e');
       print('💥 USER SERVICE: Exception type: ${e.runtimeType}');
       print('💥 USER SERVICE: Stack trace: ${StackTrace.current}');
       _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
-      return false;
+      return null;
     }
   }
 

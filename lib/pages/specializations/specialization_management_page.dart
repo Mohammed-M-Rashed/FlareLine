@@ -5,6 +5,7 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/services/specialization_service.dart';
@@ -235,16 +236,6 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                               DataColumn(
                                 label: Expanded(
                                   child: Text(
-                                    'Created',
-                                    textAlign: TextAlign.start,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                numeric: false,
-                              ),
-                              DataColumn(
-                                label: Expanded(
-                                  child: Text(
                                     'Actions',
                                     textAlign: TextAlign.center,
                                     overflow: TextOverflow.ellipsis,
@@ -304,21 +295,6 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                                             color: Colors.black87,
                                           ),
                                           overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Container(
-                                        constraints: const BoxConstraints(
-                                          minWidth: 100,
-                                          maxWidth: 150,
-                                        ),
-                                        child: Text(
-                                          _formatDate(specialization.createdAt),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[700],
-                                          ),
                                         ),
                                       ),
                                     ),
@@ -1048,6 +1024,25 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
       title: 'Specialization Details',
       showTitle: true,
       modalType: ModalType.large,
+      showCancel: false, // Disable default buttons
+      footer: Container(
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Row(
+          children: [
+            const Spacer(),
+            SizedBox(
+              width: 120,
+              child: ButtonWidget(
+                btnText: 'Cancel',
+                textColor: FlarelineColors.darkBlackText,
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.6,
         child: Stack(

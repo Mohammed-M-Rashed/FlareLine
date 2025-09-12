@@ -4,6 +4,7 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/company_model.dart';
@@ -284,16 +285,6 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Created',
-                                        textAlign: TextAlign.start,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    numeric: false,
-                                  ),
-                                  DataColumn(
-                                    label: Expanded(
-                                      child: Text(
                                         'Actions',
                                         textAlign: TextAlign.center,
                                         overflow: TextOverflow.ellipsis,
@@ -357,20 +348,12 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                                     horizontal: 8,
                                                     vertical: 4,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.shade50,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.green.shade200,
-                                                      width: 1,
-                                                    ),
-                                                  ),
                                                   child: Text(
                                                     company.phone ?? 'No phone',
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 11,
-                                                      color: Colors.green.shade700,
+                                                      color: Colors.black87,
                                                     ),
                                                     textAlign: TextAlign.center,
                                                     overflow: TextOverflow.ellipsis,
@@ -389,54 +372,16 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                                     horizontal: 8,
                                                     vertical: 4,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.shade50,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.blue.shade200,
-                                                      width: 1,
-                                                    ),
-                                                  ),
                                                   child: Text(
                                                     company.apiUrl ?? 'No API URL',
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 11,
-                                                      color: Colors.blue.shade700,
+                                                      color: Colors.black87,
                                                     ),
                                                     textAlign: TextAlign.center,
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(
-                                              Container(
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 100,
-                                                  maxWidth: 150,
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      _formatCompanyDate(company.createdAt),
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.black87,
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    if (company.updatedAt != null)
-                                                      Text(
-                                                        'Updated: ${_formatCompanyDate(company.updatedAt)}',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
-                                                          color: Colors.grey[600],
-                                                        ),
-                                                      ),
-                                                  ],
                                                 ),
                                               ),
                                             ),
@@ -1406,6 +1351,25 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
       title: 'Company Details',
       showTitle: true,
       modalType: ModalType.large,
+      showCancel: false, // Disable default buttons
+      footer: Container(
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Row(
+          children: [
+            const Spacer(),
+            SizedBox(
+              width: 120,
+              child: ButtonWidget(
+                btnText: 'Cancel',
+                textColor: FlarelineColors.darkBlackText,
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.6,
         child: Stack(

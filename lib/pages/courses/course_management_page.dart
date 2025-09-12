@@ -5,6 +5,7 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/services/course_service.dart';
@@ -119,6 +120,88 @@ class CourseManagementWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+          
+          // Specialization filter section
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.filter_list,
+                  color: Colors.blue.shade600,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Filter by Specialization:',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Obx(() => DropdownButtonFormField<String>(
+                    value: provider.selectedSpecializationFilter,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    hint: const Text('Select Specialization'),
+                    items: [
+                      const DropdownMenuItem(value: 'all', child: Text('All Specializations')),
+                      ...provider.specializations.map((specialization) => DropdownMenuItem<String>(
+                        value: specialization.id.toString(),
+                        child: Text(
+                          specialization.name,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      )).toList(),
+                    ],
+                    onChanged: provider.isLoadingSpecializations ? null : (String? newValue) {
+                      if (newValue != null) {
+                        provider.setSelectedSpecializationFilter(newValue);
+                      }
+                    },
+                  )),
+                ),
+                const SizedBox(width: 12),
+                if (provider.selectedSpecializationFilter != 'all')
+                  IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      provider.setSelectedSpecializationFilter('all');
+                    },
+                    tooltip: 'Clear Filter',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.grey.shade100,
+                      foregroundColor: Colors.grey.shade600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
           Obx(() {
             if (provider.isLoading) {
               return const Padding(
@@ -129,7 +212,7 @@ class CourseManagementWidget extends StatelessWidget {
               );
             }
 
-            final courses = provider.courses;
+            final courses = provider.filteredCourses;
 
             if (courses.isEmpty) {
               return Center(
@@ -244,37 +327,7 @@ class CourseManagementWidget extends StatelessWidget {
                           DataColumn(
                             label: Expanded(
                               child: Text(
-                                'المنشئ',
-                                textAlign: TextAlign.start,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            numeric: false,
-                          ),
-                          DataColumn(
-                            label: Expanded(
-                              child: Text(
                                 'المرفقات',
-                                textAlign: TextAlign.start,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            numeric: false,
-                          ),
-                          DataColumn(
-                            label: Expanded(
-                              child: Text(
-                                'الحالة',
-                                textAlign: TextAlign.start,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            numeric: false,
-                          ),
-                          DataColumn(
-                            label: Expanded(
-                              child: Text(
-                                'تاريخ الإنشاء',
                                 textAlign: TextAlign.start,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -330,15 +383,6 @@ class CourseManagementWidget extends StatelessWidget {
                                                     ),
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
-                                                  if (course.id != null)
-                                                    Text(
-                                                      'ID: ${course.id}',
-                                                      style: TextStyle(
-                                                        fontSize: 10, // Reduced from 12
-                                                        color: Colors.grey[600],
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
                                                 ],
                                               ),
                                             ),
@@ -357,20 +401,12 @@ class CourseManagementWidget extends StatelessWidget {
                                             horizontal: 8, // Reduced from 12
                                             vertical: 6, // Reduced from 8
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.shade50,
-                                            borderRadius: BorderRadius.circular(16), // Reduced from 20
-                                            border: Border.all(
-                                              color: Colors.blue.shade200,
-                                              width: 1, // Reduced from 1.5
-                                            ),
-                                          ),
                                           child: Text(
                                             course.code,
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 11, // Reduced from 14
-                                              color: Colors.blue.shade700,
+                                              color: Colors.black87,
                                             ),
                                             textAlign: TextAlign.center,
                                             overflow: TextOverflow.ellipsis,
@@ -389,52 +425,12 @@ class CourseManagementWidget extends StatelessWidget {
                                             horizontal: 8, // Reduced from 12
                                             vertical: 6, // Reduced from 8
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple.shade50,
-                                            borderRadius: BorderRadius.circular(16), // Reduced from 20
-                                            border: Border.all(
-                                              color: Colors.purple.shade200,
-                                              width: 1, // Reduced from 1.5
-                                            ),
-                                          ),
                                           child: Text(
                                             course.specializationDisplayName,
                                             style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 11, // Reduced from 14
-                                              color: Colors.purple.shade700,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Container(
-                                        constraints: const BoxConstraints(
-                                          minWidth: 80, // Reduced from 100
-                                          maxWidth: 100, // Reduced from 120
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, // Reduced from 12
-                                            vertical: 6, // Reduced from 8
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.orange.shade50,
-                                            borderRadius: BorderRadius.circular(16), // Reduced from 20
-                                            border: Border.all(
-                                              color: Colors.orange.shade200,
-                                              width: 1, // Reduced from 1.5
-                                            ),
-                                          ),
-                                          child: Text(
-                                            course.createdByText,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 11, // Reduced from 14
-                                              color: Colors.orange.shade700,
+                                              color: Colors.black87,
                                             ),
                                             textAlign: TextAlign.center,
                                             overflow: TextOverflow.ellipsis,
@@ -456,11 +452,7 @@ class CourseManagementWidget extends StatelessWidget {
                                                 ),
                                                 decoration: BoxDecoration(
                                                   color: course.fileAttachmentColor.withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(16), // Reduced from 20
-                                                  border: Border.all(
-                                                    color: course.fileAttachmentColor,
-                                                    width: 1, // Reduced from 1.5
-                                                  ),
+                                                  borderRadius: BorderRadius.circular(5), // Reduced from 20
                                                 ),
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
@@ -493,11 +485,7 @@ class CourseManagementWidget extends StatelessWidget {
                                                 ),
                                                 decoration: BoxDecoration(
                                                   color: Colors.grey.shade50,
-                                                  borderRadius: BorderRadius.circular(16), // Reduced from 20
-                                                  border: Border.all(
-                                                    color: Colors.grey.shade300,
-                                                    width: 1, // Reduced from 1.5
-                                                  ),
+                                                  borderRadius: BorderRadius.circular(5), // Reduced from 20
                                                 ),
                                                 child: Text(
                                                   'لا يوجد',
@@ -509,54 +497,6 @@ class CourseManagementWidget extends StatelessWidget {
                                                   textAlign: TextAlign.center,
                                                 ),
                                               ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Container(
-                                        constraints: const BoxConstraints(
-                                          minWidth: 80, // Reduced from 100
-                                          maxWidth: 100, // Reduced from 120
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, // Reduced from 12
-                                            vertical: 6, // Reduced from 8
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: course.isComplete ? Colors.green.shade50 : Colors.orange.shade50,
-                                            borderRadius: BorderRadius.circular(16), // Reduced from 20
-                                            border: Border.all(
-                                              color: course.isComplete ? Colors.green.shade200 : Colors.orange.shade200,
-                                              width: 1, // Reduced from 1.5
-                                            ),
-                                          ),
-                                          child: Text(
-                                            course.status,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 10, // Reduced from 12
-                                              color: course.isComplete ? Colors.green.shade700 : Colors.orange.shade700,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Container(
-                                        constraints: const BoxConstraints(
-                                          minWidth: 100, // Reduced from 120
-                                          maxWidth: 120, // Reduced from 140
-                                        ),
-                                        child: Text(
-                                          course.formattedCreatedAt,
-                                          style: TextStyle(
-                                            fontSize: 11, // Reduced from 14
-                                            color: Colors.grey[700],
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
                                       ),
                                     ),
                                     DataCell(
@@ -594,8 +534,8 @@ class CourseManagementWidget extends StatelessWidget {
                                               },
                                               tooltip: 'عرض التفاصيل',
                                               style: IconButton.styleFrom(
-                                                backgroundColor: Colors.green.shade50,
-                                                foregroundColor: Colors.green.shade700,
+                                                backgroundColor: Colors.grey.shade50,
+                                                foregroundColor: Colors.grey.shade700,
                                                 padding: const EdgeInsets.all(6), // Reduced from 8
                                               ),
                                             ),
@@ -1044,7 +984,6 @@ class CourseManagementWidget extends StatelessWidget {
                             title: titleController.text.trim(),
                             description: descriptionController.text.trim(),
                             fileAttachment: selectedFileBase64,
-                            status: course.status,
                             createdAt: course.createdAt,
                             updatedAt: DateTime.now().toIso8601String(),
                             specialization: course.specialization,
@@ -1301,111 +1240,112 @@ class CourseManagementWidget extends StatelessWidget {
   }
 
   void _showCourseDetails(BuildContext context, Course course) {
-    showDialog(
+    ModalDialog.show(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.school,
-                color: Colors.blue.shade600,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'تفاصيل الدورة',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Container(
-            width: 500,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDetailRow('معرف الدورة', course.id?.toString() ?? 'غير متوفر'),
-                _buildDetailRow('العنوان', course.title),
-                _buildDetailRow('الوصف', course.descriptionDisplay),
-                _buildDetailRow('التخصص', course.specializationDisplayName),
-                _buildDetailRow('معرف التخصص', course.specializationId.toString()),
-                _buildDetailRow('المنشئ', course.createdByText),
-                _buildDetailRow('المرفقات', course.hasFileAttachment 
-                    ? '${course.fileAttachmentExtension} - ${course.fileAttachmentName}'
-                    : 'لا يوجد'),
-                _buildDetailRow('الحالة', course.status),
-                if (course.specialization != null) ...[
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Text(
-                    'معلومات التخصص',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.purple.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDetailRow('الاسم', course.specialization!.name),
-                  _buildDetailRow('الوصف', course.specialization!.description ?? 'غير متوفر'),
-                ],
-                const Divider(),
-                _buildDetailRow('تاريخ الإنشاء', course.formattedCreatedAt),
-                _buildDetailRow('آخر تحديث', course.formattedUpdatedAt),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey[600],
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-              child: const Text(
-                'إغلاق',
-                style: TextStyle(fontSize: 16),
+      title: 'Course Details',
+      showTitle: true,
+      modalType: ModalType.large,
+      showCancel: false, // Disable default buttons
+      footer: Container(
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Row(
+          children: [
+            const Spacer(),
+            SizedBox(
+              width: 120,
+              child: ButtonWidget(
+                btnText: 'Cancel',
+                textColor: FlarelineColors.darkBlackText,
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
               ),
             ),
           ],
-          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        );
-      },
+        ),
+      ),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Course Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.school,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Course Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Course ID', course.id?.toString() ?? 'Not available'),
+                        _buildDetailRow('Title', course.title),
+                        _buildDetailRow('Description', course.descriptionDisplay),
+                        _buildDetailRow('Specialization', course.specializationDisplayName),
+                        _buildDetailRow('Specialization ID', course.specializationId.toString()),
+                        _buildDetailRow('Creator', course.createdByText),
+                        _buildDetailRow('Attachments', course.hasFileAttachment 
+                            ? '${course.fileAttachmentExtension} - ${course.fileAttachmentName}'
+                            : 'No attachments'),
+                        if (course.specialization != null) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Specialization Information',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.purple.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildDetailRow('Name', course.specialization!.name),
+                          _buildDetailRow('Description', course.specialization!.description ?? 'Not available'),
+                        ],
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        _buildDetailRow('Created At', course.formattedCreatedAt),
+                        _buildDetailRow('Last Updated', course.formattedUpdatedAt),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildStatusChip(String status, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withOpacity(0.4),
-          width: 0.5,
-        ),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
@@ -1441,14 +1381,30 @@ class CourseManagementWidget extends StatelessWidget {
 class _CourseDataProvider extends GetxController {
   final _courses = <Course>[].obs;
   final _isLoading = false.obs;
+  final _specializations = <Specialization>[].obs;
+  final _isLoadingSpecializations = false.obs;
+  final _selectedSpecializationFilter = 'all'.obs;
 
   List<Course> get courses => _courses;
   bool get isLoading => _isLoading.value;
+  List<Specialization> get specializations => _specializations;
+  bool get isLoadingSpecializations => _isLoadingSpecializations.value;
+  String get selectedSpecializationFilter => _selectedSpecializationFilter.value;
+  
+  List<Course> get filteredCourses {
+    if (selectedSpecializationFilter == 'all') {
+      return _courses;
+    }
+    return _courses.where((course) => 
+      course.specializationId.toString() == selectedSpecializationFilter
+    ).toList();
+  }
 
   @override
   void onInit() {
     super.onInit();
     loadData();
+    loadSpecializations();
   }
 
   Future<List<Course>> loadData() async {
@@ -1476,6 +1432,23 @@ class _CourseDataProvider extends GetxController {
   void refreshData() {
     print('🔄 Refreshing course data...');
     loadData();
+  }
+
+  Future<void> loadSpecializations() async {
+    _isLoadingSpecializations.value = true;
+    try {
+      final specializations = await SpecializationService.getSpecializations(Get.context!);
+      _specializations.value = specializations;
+    } catch (e) {
+      print('Error loading specializations: $e');
+    } finally {
+      _isLoadingSpecializations.value = false;
+    }
+  }
+
+  void setSelectedSpecializationFilter(String value) {
+    _selectedSpecializationFilter.value = value;
+    update();
   }
 
   /// Force refresh data and update UI

@@ -84,15 +84,36 @@ class TrainingCenterService {
         final jsonData = jsonDecode(response.body);
         return TrainingCenterResponse.fromJson(jsonData);
       } else {
-        // Try to parse error response
+        // Handle error responses according to API documentation
         try {
           final errorData = jsonDecode(response.body);
-          if (response.statusCode == 400) {
-            // Validation error
-            final errorMessage = errorData['m_ar'] ?? errorData['m_en'] ?? 'فشل في إنشاء مركز التدريب';
-            throw Exception(errorMessage);
+          String errorMessage;
+          
+          switch (response.statusCode) {
+            case 401:
+              errorMessage = errorData['message_ar'] ?? 'غير مصرح';
+              break;
+            case 403:
+              errorMessage = errorData['message_ar'] ?? 'غير مصرح لك بإنشاء مركز تدريب';
+              break;
+            case 422:
+              // Validation error - show specific field errors
+              if (errorData['errors'] != null) {
+                final errors = errorData['errors'] as Map<String, dynamic>;
+                final firstError = errors.values.first;
+                if (firstError is List && firstError.isNotEmpty) {
+                  errorMessage = firstError.first.toString();
+                } else {
+                  errorMessage = errorData['message_ar'] ?? 'بيانات غير صحيحة';
+                }
+              } else {
+                errorMessage = errorData['message_ar'] ?? 'بيانات غير صحيحة';
+              }
+              break;
+            default:
+              errorMessage = errorData['message_ar'] ?? errorData['message_en'] ?? 'فشل في إنشاء مركز التدريب';
           }
-          throw Exception(errorData['m_ar'] ?? 'فشل في إنشاء مركز التدريب');
+          throw Exception(errorMessage);
         } catch (e) {
           throw Exception('فشل في إنشاء مركز التدريب: ${response.statusCode}');
         }
@@ -124,18 +145,39 @@ class TrainingCenterService {
         final jsonData = jsonDecode(response.body);
         return TrainingCenterResponse.fromJson(jsonData);
       } else {
-        // Try to parse error response
+        // Handle error responses according to API documentation
         try {
           final errorData = jsonDecode(response.body);
-          if (response.statusCode == 400) {
-            // Validation error
-            final errorMessage = errorData['m_ar'] ?? errorData['m_en'] ?? 'فشل في تحديث مركز التدريب';
-            throw Exception(errorMessage);
+          String errorMessage;
+          
+          switch (response.statusCode) {
+            case 401:
+              errorMessage = errorData['message_ar'] ?? 'غير مصرح';
+              break;
+            case 403:
+              errorMessage = errorData['message_ar'] ?? 'غير مصرح لك بتحديث مركز التدريب';
+              break;
+            case 404:
+              errorMessage = errorData['message_ar'] ?? 'مركز التدريب غير موجود';
+              break;
+            case 422:
+              // Validation error - show specific field errors
+              if (errorData['errors'] != null) {
+                final errors = errorData['errors'] as Map<String, dynamic>;
+                final firstError = errors.values.first;
+                if (firstError is List && firstError.isNotEmpty) {
+                  errorMessage = firstError.first.toString();
+                } else {
+                  errorMessage = errorData['message_ar'] ?? 'بيانات غير صحيحة';
+                }
+              } else {
+                errorMessage = errorData['message_ar'] ?? 'بيانات غير صحيحة';
+              }
+              break;
+            default:
+              errorMessage = errorData['message_ar'] ?? errorData['message_en'] ?? 'فشل في تحديث مركز التدريب';
           }
-          if (response.statusCode == 404) {
-            throw Exception('مركز التدريب غير موجود');
-          }
-          throw Exception(errorData['m_ar'] ?? 'فشل في تحديث مركز التدريب');
+          throw Exception(errorMessage);
         } catch (e) {
           throw Exception('فشل في تحديث مركز التدريب: ${response.statusCode}');
         }
@@ -182,14 +224,19 @@ class TrainingCenterService {
   }
 
   // Reject training center (change status from pending to rejected)
-  static Future<TrainingCenterResponse> rejectTrainingCenter(int id) async {
+  static Future<TrainingCenterResponse> rejectTrainingCenter(int id, {required String rejectionReason}) async {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
         throw Exception('رمز المصادقة غير موجود');
       }
 
-      final request = RejectTrainingCenterRequest(id: id);
+      // Validate rejection reason is provided
+      if (rejectionReason.trim().isEmpty) {
+        throw Exception('Rejection reason is required');
+      }
+
+      final request = RejectTrainingCenterRequest(id: id, rejectionReason: rejectionReason);
       final response = await http.post(
         Uri.parse('$_baseUrl/training-center/reject'),
         headers: {
@@ -204,12 +251,41 @@ class TrainingCenterService {
         final jsonData = jsonDecode(response.body);
         return TrainingCenterResponse.fromJson(jsonData);
       } else {
-        // Try to parse error response
+        // Handle error responses according to API documentation
         try {
           final errorData = jsonDecode(response.body);
-          throw Exception(errorData['m_en'] ?? 'Failed to reject training center');
+          String errorMessage;
+          
+          switch (response.statusCode) {
+            case 401:
+              errorMessage = errorData['message_ar'] ?? 'غير مصرح';
+              break;
+            case 403:
+              errorMessage = errorData['message_ar'] ?? 'غير مصرح لك برفض مركز التدريب';
+              break;
+            case 404:
+              errorMessage = errorData['message_ar'] ?? 'مركز التدريب غير موجود';
+              break;
+            case 422:
+              // Validation error - show specific field errors
+              if (errorData['errors'] != null) {
+                final errors = errorData['errors'] as Map<String, dynamic>;
+                final firstError = errors.values.first;
+                if (firstError is List && firstError.isNotEmpty) {
+                  errorMessage = firstError.first.toString();
+                } else {
+                  errorMessage = errorData['message_ar'] ?? 'بيانات غير صحيحة';
+                }
+              } else {
+                errorMessage = errorData['message_ar'] ?? 'بيانات غير صحيحة';
+              }
+              break;
+            default:
+              errorMessage = errorData['message_ar'] ?? errorData['message_en'] ?? 'فشل في رفض مركز التدريب';
+          }
+          throw Exception(errorMessage);
         } catch (e) {
-          throw Exception('Failed to reject training center: ${response.statusCode}');
+          throw Exception('فشل في رفض مركز التدريب: ${response.statusCode}');
         }
       }
     } catch (e) {

@@ -11,6 +11,7 @@ class TrainingCenter {
   final String? website;
   final String? description;
   final String status;
+  final String? rejectionReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +24,7 @@ class TrainingCenter {
     this.website,
     this.description,
     required this.status,
+    this.rejectionReason,
     this.createdAt,
     this.updatedAt,
   });
@@ -37,6 +39,7 @@ class TrainingCenter {
       website: json['website'],
       description: json['description'],
       status: json['status'] ?? 'pending',
+      rejectionReason: json['rejection_reason'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -58,6 +61,7 @@ class TrainingCenter {
     if (id != null) data['id'] = id;
     if (website != null) data['website'] = website;
     if (description != null) data['description'] = description;
+    if (rejectionReason != null) data['rejection_reason'] = rejectionReason;
     if (createdAt != null) data['created_at'] = createdAt!.toIso8601String();
     if (updatedAt != null) data['updated_at'] = updatedAt!.toIso8601String();
     
@@ -73,6 +77,7 @@ class TrainingCenter {
     String? website,
     String? description,
     String? status,
+    String? rejectionReason,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -85,12 +90,13 @@ class TrainingCenter {
       website: website ?? this.website,
       description: description ?? this.description,
       status: status ?? this.status,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  // Helper methods for new status values
+  // Helper methods for status values
   bool get isPending => status == 'pending';
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
@@ -111,7 +117,7 @@ class TrainingCenter {
   Color get statusColor {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return Colors.amber; // More yellow than orange
       case 'approved':
         return Colors.green;
       case 'rejected':
@@ -161,7 +167,7 @@ class TrainingCenterCreateRequest {
   final String address;
   final String? website;
   final String? description;
-  final String? status;
+  final String? status; // Optional: approved or rejected
 
   TrainingCenterCreateRequest({
     required this.name,
@@ -183,7 +189,14 @@ class TrainingCenterCreateRequest {
     
     if (website != null) data['website'] = website;
     if (description != null) data['description'] = description;
-    if (status != null) data['status'] = status;
+    if (status != null) {
+      // Validate status values according to API documentation
+      if (status == 'pending' || status == 'approved' || status == 'rejected') {
+        data['status'] = status;
+      } else {
+        throw ArgumentError('Status must be "pending", "approved", or "rejected"');
+      }
+    }
     
     return data;
   }
@@ -198,7 +211,8 @@ class TrainingCenterUpdateRequest {
   final String? address;
   final String? website;
   final String? description;
-  final String? status;
+  final String? status; // Only 'approved' or 'rejected' allowed
+  final String? rejectionReason; // Required if status is 'rejected'
 
   TrainingCenterUpdateRequest({
     required this.id,
@@ -209,6 +223,7 @@ class TrainingCenterUpdateRequest {
     this.website,
     this.description,
     this.status,
+    this.rejectionReason,
   });
 
   Map<String, dynamic> toJson() {
@@ -220,7 +235,15 @@ class TrainingCenterUpdateRequest {
     if (address != null) data['address'] = address;
     if (website != null) data['website'] = website;
     if (description != null) data['description'] = description;
-    if (status != null) data['status'] = status;
+    if (status != null) {
+      // Validate status values according to API documentation
+      if (status == 'pending' || status == 'approved' || status == 'rejected') {
+        data['status'] = status;
+      } else {
+        throw ArgumentError('Status must be "pending", "approved", or "rejected"');
+      }
+    }
+    if (rejectionReason != null) data['rejection_reason'] = rejectionReason;
     
     return data;
   }
@@ -240,11 +263,18 @@ class AcceptTrainingCenterRequest {
 // Reject Training Center Request model
 class RejectTrainingCenterRequest {
   final int id;
+  final String rejectionReason;
 
-  RejectTrainingCenterRequest({required this.id});
+  RejectTrainingCenterRequest({
+    required this.id,
+    required this.rejectionReason,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'id': id};
+    return {
+      'id': id,
+      'rejection_reason': rejectionReason,
+    };
   }
 }
 
@@ -262,14 +292,14 @@ class GetTrainingCentersByStatusRequest {
 // Training Center List Response model
 class TrainingCenterListResponse {
   final List<TrainingCenter> data;
-  final String? mAr;
-  final String? mEn;
+  final String? messageAr;
+  final String? messageEn;
   final int? statusCode;
 
   TrainingCenterListResponse({
     required this.data,
-    this.mAr,
-    this.mEn,
+    this.messageAr,
+    this.messageEn,
     this.statusCode,
   });
 
@@ -279,41 +309,41 @@ class TrainingCenterListResponse {
               ?.map((item) => TrainingCenter.fromJson(item))
               .toList() ??
           [],
-      mAr: json['m_ar'],
-      mEn: json['m_en'],
+      messageAr: json['message_ar'],
+      messageEn: json['message_en'],
       statusCode: json['status_code'],
     );
   }
 
   bool get success => statusCode == 200;
-  String get messageAr => mAr ?? 'تم جلب مراكز التدريب بنجاح';
-  String get messageEn => mEn ?? 'Training centers retrieved successfully';
+  String get messageArText => messageAr ?? 'تم جلب مراكز التدريب بنجاح';
+  String get messageEnText => messageEn ?? 'Training centers retrieved successfully';
 }
 
 // Training Center Response model
 class TrainingCenterResponse {
   final TrainingCenter? data;
-  final String? mAr;
-  final String? mEn;
+  final String? messageAr;
+  final String? messageEn;
   final int? statusCode;
 
   TrainingCenterResponse({
     this.data,
-    this.mAr,
-    this.mEn,
+    this.messageAr,
+    this.messageEn,
     this.statusCode,
   });
 
   factory TrainingCenterResponse.fromJson(Map<String, dynamic> json) {
     return TrainingCenterResponse(
       data: json['data'] != null ? TrainingCenter.fromJson(json['data']) : null,
-      mAr: json['m_ar'],
-      mEn: json['m_en'],
+      messageAr: json['message_ar'],
+      messageEn: json['message_en'],
       statusCode: json['status_code'],
     );
   }
 
   bool get success => statusCode == 200 || statusCode == 201;
-  String get messageAr => mAr ?? 'تم تنفيذ العملية بنجاح';
-  String get messageEn => mEn ?? 'Operation completed successfully';
+  String get messageArText => messageAr ?? 'تم تنفيذ العملية بنجاح';
+  String get messageEnText => messageEn ?? 'Operation completed successfully';
 }

@@ -5,6 +5,7 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/services/user_service.dart';
@@ -127,12 +128,94 @@ class UserManagementWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+              
+              // Company filter section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.filter_list,
+                      color: Colors.blue.shade600,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Filter by Company:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Obx(() => DropdownButtonFormField<String>(
+                        value: provider.selectedCompanyFilter,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: Colors.blue.shade600, width: 2),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                        ),
+                        hint: const Text('Select Company'),
+                        items: [
+                          const DropdownMenuItem(value: 'all', child: Text('All Companies')),
+                          ...provider.companies.map((company) => DropdownMenuItem<String>(
+                            value: company.id.toString(),
+                            child: Text(
+                              company.name,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          )).toList(),
+                        ],
+                        onChanged: provider.isLoadingCompanies ? null : (String? newValue) {
+                          if (newValue != null) {
+                            provider.setSelectedCompanyFilter(newValue);
+                          }
+                        },
+                      )),
+                    ),
+                    const SizedBox(width: 12),
+                    if (provider.selectedCompanyFilter != 'all')
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          provider.setSelectedCompanyFilter('all');
+                        },
+                        tooltip: 'Clear Filter',
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.grey.shade100,
+                          foregroundColor: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
                              Obx(() {
                  if (provider.isLoading) {
                    return const LoadingWidget();
                  }
 
-                 final users = provider.users;
+                 final users = provider.filteredUsers;
 
                  if (users.isEmpty) {
                    return Center(
@@ -353,20 +436,12 @@ class UserManagementWidget extends StatelessWidget {
                                                  horizontal: 8,
                                                  vertical: 4,
                                                ),
-                                               decoration: BoxDecoration(
-                                                 color: Colors.purple.shade50,
-                                                 borderRadius: BorderRadius.circular(16),
-                                                 border: Border.all(
-                                                   color: Colors.purple.shade200,
-                                                   width: 1,
-                                                 ),
-                                               ),
                                                child: Text(
                                                  user.getFirstRoleDisplayName(),
                                                  style: TextStyle(
                                                    fontWeight: FontWeight.w500,
                                                    fontSize: 11,
-                                                   color: Colors.purple.shade700,
+                                                   color: Colors.black87,
                                                  ),
                                                  textAlign: TextAlign.center,
                                                  overflow: TextOverflow.ellipsis,
@@ -387,20 +462,12 @@ class UserManagementWidget extends StatelessWidget {
                                                    horizontal: 8,
                                                    vertical: 4,
                                                  ),
-                                                 decoration: BoxDecoration(
-                                                   color: Colors.blue.shade50,
-                                                   borderRadius: BorderRadius.circular(16),
-                                                   border: Border.all(
-                                                     color: Colors.blue.shade200,
-                                                     width: 1,
-                                                   ),
-                                                 ),
                                                  child: Text(
                                                    user.company?.name ?? 'No company',
                                                    style: TextStyle(
                                                      fontWeight: FontWeight.w500,
                                                      fontSize: 11,
-                                                     color: Colors.blue.shade700,
+                                                     color: Colors.black87,
                                                    ),
                                                    textAlign: TextAlign.center,
                                                    overflow: TextOverflow.ellipsis,
@@ -422,11 +489,7 @@ class UserManagementWidget extends StatelessWidget {
                                                ),
                                                decoration: BoxDecoration(
                                                  color: user.statusColor.withOpacity(0.1),
-                                                 borderRadius: BorderRadius.circular(16),
-                                                 border: Border.all(
-                                                   color: user.statusColor,
-                                                   width: 1,
-                                                 ),
+                                                 borderRadius: BorderRadius.circular(5),
                                                ),
                                                child: Text(
                                                  user.statusDisplayText,
@@ -443,10 +506,6 @@ class UserManagementWidget extends StatelessWidget {
                                          ),
                                          DataCell(
                                            Container(
-                                             constraints: const BoxConstraints(
-                                               minWidth: 80,
-                                               maxWidth: 100,
-                                             ),
                                              child: Row(
                                                mainAxisAlignment: MainAxisAlignment.center,
                                                children: [
@@ -652,34 +711,14 @@ class UserManagementWidget extends StatelessWidget {
                             );
                             
                             // Create user via API
-                            final result = await UserService.createUser(context, newUser);
-                            if (result is bool && result) {
+                            final createdUser = await UserService.createUser(context, newUser);
+                            if (createdUser != null) {
                               // Close modal first for smooth UX
                               Get.back();
                               // Show success message with generated password
                               _showPasswordInfoDialog(context, nameController.text.trim(), passwordController.text);
-                              // Add user to local array for instant table update
-                              provider.addUser(newUser);
-                            } else if (result is String) {
-                              try {
-                                // Parse the JSON response to extract m_ar message
-                                final Map<String, dynamic> responseData = json.decode(result as String);
-                                final String? mArMessage = responseData['m_ar'];
-                                
-                                // Close modal first for smooth UX
-                                Get.back();
-                                
-                                // Show success notification with m_ar message
-                                                                 _showSuccessToast(mArMessage ?? 'تم إنشاء المستخدم بنجاح');
-                                // Add user to local array for instant table update
-                                provider.addUser(newUser);
-                              } catch (e) {
-                                // If parsing fails, show the original result
-                                Get.back();
-                                _showSuccessToast(result.toString());
-                                // Add user to local array for instant table update
-                                provider.addUser(newUser);
-                              }
+                              // Add the created user (with database ID) to local array for instant table update
+                              provider.addUser(createdUser);
                             }
                           } catch (e) {
                             // Handle any errors
@@ -2271,6 +2310,25 @@ class UserManagementWidget extends StatelessWidget {
       title: 'User Details',
       showTitle: true,
       modalType: ModalType.large,
+      showCancel: false, // Disable default buttons
+      footer: Container(
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Row(
+          children: [
+            const Spacer(),
+            SizedBox(
+              width: 120,
+              child: ButtonWidget(
+                btnText: 'Cancel',
+                textColor: FlarelineColors.darkBlackText,
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.6,
         child: Stack(
@@ -2315,8 +2373,7 @@ class UserManagementWidget extends StatelessWidget {
                         _buildDetailRow('Name', user.name),
                         _buildDetailRow('Email', user.email),
                         _buildDetailRow('Role', _getRoleDisplayName(user.role ?? '')),
-                        if (user.company != null)
-                          _buildDetailRow('Company', user.company!.name),
+                        _buildCompanyDetailRow(user),
                         _buildDetailRow('Status', user.isActive ? 'Active' : 'Inactive'),
                         if (user.emailVerifiedAt != null)
                           _buildDetailRow('Email Verified At', user.emailVerifiedAt!),
@@ -2362,6 +2419,113 @@ class UserManagementWidget extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildCompanyDetailRow(User user) {
+    if (user.company == null) {
+      return _buildDetailRow('Company', 'Not assigned');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Company',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.company!.name,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+                if (user.company!.address.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.blue.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          user.company!.address,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue.shade600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (user.company!.phone.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.phone,
+                        size: 14,
+                        color: Colors.blue.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        user.company!.phone,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (user.company!.status != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Colors.blue.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Status: ${user.company!.status}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _UserDataProvider extends GetxController {
@@ -2369,12 +2533,26 @@ class _UserDataProvider extends GetxController {
   final _isLoading = false.obs;
   final _currentPage = 0.obs;
   final _rowsPerPage = 10.obs;
+  final _companies = <Company>[].obs;
+  final _isLoadingCompanies = false.obs;
+  final _selectedCompanyFilter = 'all'.obs;
 
   List<User> get users => _users;
   bool get isLoading => _isLoading.value;
   int get currentPage => _currentPage.value;
   int get rowsPerPage => _rowsPerPage.value;
-  int get totalItems => _users.length;
+  List<Company> get companies => _companies;
+  bool get isLoadingCompanies => _isLoadingCompanies.value;
+  String get selectedCompanyFilter => _selectedCompanyFilter.value;
+  
+  List<User> get filteredUsers {
+    if (selectedCompanyFilter == 'all') {
+      return _users;
+    }
+    return _users.where((user) => user.companyId?.toString() == selectedCompanyFilter).toList();
+  }
+  
+  int get totalItems => filteredUsers.length;
   int get totalPages {
     final total = totalItems;
     if (total == 0) return 1;
@@ -2390,13 +2568,14 @@ class _UserDataProvider extends GetxController {
       return pagedUsers;
     }
     if (end > totalItems) end = totalItems;
-    return _users.sublist(start, end);
+    return filteredUsers.sublist(start, end);
   }
 
   @override
   void onInit() {
     super.onInit();
     loadData();
+    loadCompanies();
   }
 
   Future<List<User>> loadData() async {
@@ -2414,6 +2593,26 @@ class _UserDataProvider extends GetxController {
 
   Future<void> refreshData() async {
     await loadData();
+  }
+
+  Future<void> loadCompanies() async {
+    _isLoadingCompanies.value = true;
+    try {
+      final response = await CompanyService.getAllCompanies();
+      if (response.success) {
+        _companies.value = response.data;
+      }
+    } catch (e) {
+      print('Error loading companies: $e');
+    } finally {
+      _isLoadingCompanies.value = false;
+    }
+  }
+
+  void setSelectedCompanyFilter(String value) {
+    _selectedCompanyFilter.value = value;
+    _currentPage.value = 0; // Reset to first page when filter changes
+    update();
   }
 
   // Add a new user to the local array
