@@ -283,6 +283,20 @@ class TrainingCenterBranchService {
     }
   }
 
+  // Get approved training centers for dropdown selection
+  static Future<List<TrainingCenter>> getApprovedTrainingCentersForSelection() async {
+    try {
+      final response = await TrainingCenterService.getApprovedTrainingCenters();
+      if (response.success) {
+        return response.data;
+      } else {
+        throw Exception(response.messageEn);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Validate training center branch data before API call
   static String? validateTrainingCenterBranchData({
     required String name,

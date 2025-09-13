@@ -372,17 +372,6 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                     ),
                                     numeric: false,
                                   ),
-                                  
-                                  DataColumn(
-                                    label: Expanded(
-                                      child: Text(
-                                        'Created',
-                                        textAlign: TextAlign.start,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    numeric: false,
-                                  ),
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
@@ -447,20 +436,12 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                     horizontal: 8,
                                                     vertical: 4,
                                                   ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.shade50,
-                                                    borderRadius: BorderRadius.circular(16),
-                                                    border: Border.all(
-                                                      color: Colors.green.shade200,
-                                                      width: 1,
-                                                    ),
-                                                  ),
                                                   child: Text(
                                                     branch.trainingCenterName,
                                                     style: TextStyle(
                                                       fontWeight: FontWeight.w500,
                                                       fontSize: 11,
-                                                      color: Colors.green.shade700,
+                                                      color: Colors.black87,
                                                     ),
                                                     textAlign: TextAlign.center,
                                                     overflow: TextOverflow.ellipsis,
@@ -491,8 +472,8 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                     : 'No coordinates set',
                                                 child: Container(
                                                   constraints: const BoxConstraints(
-                                                    minWidth: 100,
-                                                    maxWidth: 120,
+                                                    minWidth: 80,
+                                                    maxWidth: 200,
                                                   ),
                                                   child: Container(
                                                     padding: const EdgeInsets.symmetric(
@@ -501,11 +482,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                     ),
                                                     decoration: BoxDecoration(
                                                       color: branch.hasCoordinates ? Colors.green.shade50 : Colors.grey.shade50,
-                                                      borderRadius: BorderRadius.circular(16),
-                                                      border: Border.all(
-                                                        color: branch.hasCoordinates ? Colors.green.shade200 : Colors.grey.shade200,
-                                                        width: 1,
-                                                      ),
+                                                      borderRadius: BorderRadius.circular(5),
                                                     ),
                                                     child: Row(
                                                       mainAxisSize: MainAxisSize.min,
@@ -520,7 +497,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                           branch.hasCoordinates ? 'Available' : 'Not Set',
                                                           style: TextStyle(
                                                             fontWeight: FontWeight.w500,
-                                                            fontSize: 10,
+                                                            fontSize: 11,
                                                             color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
                                                           ),
                                                         ),
@@ -543,36 +520,6 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                     color: Colors.black87,
                                                   ),
                                                   overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ),
-                                            DataCell(
-                                              Container(
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 100,
-                                                  maxWidth: 150,
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      _formatBranchDate(branch.createdAt),
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.black87,
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                    if (branch.updatedAt != null)
-                                                      Text(
-                                                        'Updated: ${_formatBranchDate(branch.updatedAt)}',
-                                                        style: TextStyle(
-                                                          fontSize: 10,
-                                                          color: Colors.grey[600],
-                                                        ),
-                                                      ),
-                                                  ],
                                                 ),
                                               ),
                                             ),
@@ -798,7 +745,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                
                               // Training Center Selection
                               FutureBuilder<List<TrainingCenter>>(
-                                future: TrainingCenterBranchService.getAllTrainingCentersForSelection(),
+                                future: TrainingCenterBranchService.getApprovedTrainingCentersForSelection(),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return const Center(child: CircularProgressIndicator());
@@ -1206,7 +1153,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                
                               // Training Center Selection
                               FutureBuilder<List<TrainingCenter>>(
-                                future: TrainingCenterBranchService.getAllTrainingCentersForSelection(),
+                                future: TrainingCenterBranchService.getApprovedTrainingCentersForSelection(),
                                 builder: (context, snapshot) {
                                   if (snapshot.connectionState == ConnectionState.waiting) {
                                     return const Center(child: CircularProgressIndicator());
@@ -1587,62 +1534,137 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
       showTitle: true,
       modalType: ModalType.large,
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Branch Information Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Branch Information Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.visibility,
-                              color: Colors.blue.shade600,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Branch Details',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
+                        Icon(
+                          Icons.business,
+                          color: Colors.blue.shade600,
+                          size: 20,
                         ),
-                        const SizedBox(height: 16),
-                        
-                        _buildDetailRow('Branch Name', branch.name),
-                        if (branch.address != null && branch.address!.isNotEmpty)
-                          _buildDetailRow('Address', branch.address!),
-                        if (branch.hasCoordinates)
-                          _buildDetailRow('Coordinates', '${branch.lat}, ${branch.long}'),
-                        if (branch.createdAt != null)
-                          _buildDetailRow('Created At', branch.createdAt.toString()),
-                        if (branch.updatedAt != null)
-                          _buildDetailRow('Updated At', branch.updatedAt.toString()),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Branch Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    
+                    _buildDetailRow('Branch Name', branch.name),
+                    _buildDetailRow('Training Center', branch.trainingCenterName),
+                    _buildDetailRow('Address', branch.address),
+                    _buildDetailRow('Phone Number', branch.phone),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              
+              // Geographic Information Section
+              if (branch.hasCoordinates)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.green.shade600,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Geographic Information',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      _buildDetailRow('Latitude', branch.lat?.toStringAsFixed(7) ?? 'N/A'),
+                      _buildDetailRow('Longitude', branch.long?.toStringAsFixed(7) ?? 'N/A'),
+                      _buildDetailRow('Coordinates', '${branch.lat?.toStringAsFixed(7)}, ${branch.long?.toStringAsFixed(7)}'),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              
+              // System Information Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.orange.shade600,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'System Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    _buildDetailRow('Branch ID', branch.id?.toString() ?? 'N/A'),
+                    _buildDetailRow('Training Center ID', branch.trainingCenterId.toString()),
+                    if (branch.createdAt != null)
+                      _buildDetailRow('Created At', _formatBranchDate(branch.createdAt!)),
+                    if (branch.updatedAt != null)
+                      _buildDetailRow('Updated At', _formatBranchDate(branch.updatedAt!)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1768,7 +1790,7 @@ class TrainingCenterBranchDataProvider extends GetxController {
 
   Future<void> loadTrainingCenters() async {
     try {
-      final response = await TrainingCenterService.getAllTrainingCenters();
+      final response = await TrainingCenterService.getApprovedTrainingCenters();
       
       if (response.success) {
         _trainingCenters.value = response.data;

@@ -62,6 +62,41 @@ class TrainingCenterService {
     }
   }
 
+  // Get approved training centers only
+  static Future<TrainingCenterListResponse> getApprovedTrainingCenters() async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        throw Exception('رمز المصادقة غير موجود');
+      }
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl${ApiEndpoints.getApprovedTrainingCenters}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({}), // Empty body as per API spec
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return TrainingCenterListResponse.fromJson(jsonData);
+      } else {
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          throw Exception(errorData['m_ar'] ?? 'فشل في جلب مراكز التدريب المعتمدة');
+        } catch (e) {
+          throw Exception('فشل في جلب مراكز التدريب المعتمدة: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Create a new training center
   static Future<TrainingCenterResponse> createTrainingCenter(TrainingCenterCreateRequest request) async {
     try {

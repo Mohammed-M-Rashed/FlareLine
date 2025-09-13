@@ -213,14 +213,19 @@ class TrainerService {
   }
 
   // Reject trainer (change status from pending to rejected)
-  static Future<TrainerResponse> rejectTrainer(int id) async {
+  static Future<TrainerResponse> rejectTrainer(int id, {required String rejectionReason}) async {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
         throw Exception('رمز المصادقة غير موجود');
       }
 
-      final request = RejectTrainerRequest(id: id);
+      // Validate rejection reason is provided
+      if (rejectionReason.trim().isEmpty) {
+        throw Exception('Rejection reason is required');
+      }
+
+      final request = RejectTrainerRequest(id: id, rejectionReason: rejectionReason);
       final response = await http.post(
         Uri.parse('$_baseUrl${ApiEndpoints.rejectTrainer}'),
         headers: {

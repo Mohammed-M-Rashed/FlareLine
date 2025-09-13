@@ -150,128 +150,446 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                 await provider.refreshData();
                                 _showSuccessToast('Trainers data refreshed successfully');
                               } catch (e) {
-                                _showErrorToast(e.toString());
+                                _showErrorToast('خطأ في تحديث بيانات المدربين: ${e.toString()}');
                               }
                             },
                           )),
                         ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 120,
-                          child: ButtonWidget(
-                            btnText: 'Add Trainer',
-                            type: 'primary',
-                            onTap: () => _showAddTrainerForm(context),
-                          ),
+                        const SizedBox(width: 16),
+                        Builder(
+                          builder: (context) {
+                            if (TrainerService.hasTrainerManagementPermission()) {
+                              return SizedBox(
+                                width: 140,
+                                child: ButtonWidget(
+                                  btnText: 'Add Trainer',
+                                  type: 'primary',
+                                  onTap: () {
+                                    _showAddTrainerForm(context);
+                                  },
+                                ),
+                              );
+                            } else {
+                              return const SizedBox.shrink();
+                            }
+                          },
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+              Builder(
+                builder: (context) {
+                  if (!TrainerService.hasTrainerManagementPermission()) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Text(
+                          'You do not have permission to manage trainers. Only System Administrators can access this functionality.',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.red,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  }
 
-                             // Loading state
-               if (provider.isLoading)
-                 const LoadingWidget()
-                              else if (provider.trainers.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.person_off,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No trainers found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Add your first trainer to get started',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
+                  return Obx(() {
+                    if (provider.isLoading) {
+                      return const LoadingWidget();
+                    }
+
+                    final trainers = provider.trainers;
+
+                    if (trainers.isEmpty) {
+                      return Center(
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            ButtonWidget(
-                              btnText: 'Retry',
-                              type: 'secondary',
-                              onTap: () => provider.loadData(),
+                            Icon(
+                              Icons.person_outline,
+                              size: 64,
+                              color: Colors.grey[400],
                             ),
-                            const SizedBox(width: 16),
-                            ButtonWidget(
-                              btnText: 'Add Trainer',
-                              type: 'primary',
-                              onTap: () => _showAddTrainerForm(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )
-              else
-                Obx(() {
-                  final trainers = provider.trainers;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Trainer count and summary
-                      CountSummaryWidgetEn(
-                        count: trainers.length,
-                        itemName: 'trainer',
-                        itemNamePlural: 'trainers',
-                        icon: Icons.person,
-                        color: Colors.blue,
-                        filteredCount: provider.filteredTrainers.length,
-                        showFilteredCount: true,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Search and filter section
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Search & Filter',
+                            const SizedBox(height: 16),
+                            Text(
+                              'لا يوجد مدربون',
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Get started by adding your first trainer',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
                               ),
                             ),
                             const SizedBox(height: 16),
-                            Row(
+                            ButtonWidget(
+                              btnText: 'Add First Trainer',
+                              type: 'primary',
+                              onTap: () {
+                                _showAddTrainerForm(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Trainer count and summary
+                        CountSummaryWidgetEn(
+                          count: trainers.length,
+                          itemName: 'trainer',
+                          itemNamePlural: 'trainers',
+                          icon: Icons.person,
+                          color: Colors.blue,
+                          filteredCount: provider.filteredTrainers.length,
+                          showFilteredCount: true,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Search and filter section
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Search & Filter',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  // Search text field
+                                  Expanded(
+                                    flex: 2,
+                                    child: TextFormField(
+                                      controller: provider.searchController,
+                                      decoration: InputDecoration(
+                                        hintText: 'Search trainers...',
+                                        prefixIcon: const Icon(Icons.search),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 16,
+                                        ),
+                                      ),
+                                      onChanged: (value) {
+                                        provider.setSearchQuery(value);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // Status filter dropdown
+                                  Expanded(
+                                    flex: 1,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey.shade400),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Obx(() => DropdownButtonFormField<String>(
+                                        value: provider.selectedStatusFilter == 'all' ? null : provider.selectedStatusFilter,
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 16),
+                                          hintText: 'Filter by Status',
+                                        ),
+                                        items: const [
+                                          DropdownMenuItem<String>(
+                                            value: null,
+                                            child: Text('All Statuses'),
+                                          ),
+                                          DropdownMenuItem<String>(
+                                            value: 'pending',
+                                            child: Text('Pending'),
+                                          ),
+                                          DropdownMenuItem<String>(
+                                            value: 'approved',
+                                            child: Text('Approved'),
+                                          ),
+                                          DropdownMenuItem<String>(
+                                            value: 'rejected',
+                                            child: Text('Rejected'),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          provider.setSelectedStatusFilter(value ?? 'all');
+                                        },
+                                      )),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              // Search help text
+                              Text(
+                                'Search by name, email, phone, specializations, or qualifications',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              // Clear filters button
+                              if (provider.searchQuery.isNotEmpty || provider.selectedStatusFilter != 'all')
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        provider.searchController.clear();
+                                        provider.setSearchQuery('');
+                                        provider.setSelectedStatusFilter('all');
+                                      },
+                                      icon: const Icon(Icons.clear_all, size: 16),
+                                      label: const Text('Clear All Filters'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Search results summary
+                        if (provider.searchQuery.isNotEmpty || provider.selectedStatusFilter != 'all')
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
                               children: [
-                                // Search text field
-                                Expanded(
-                                  flex: 2,
-                                  child: TextFormField(
-                                    controller: provider.searchController,
-                                    decoration: InputDecoration(
-                                      hintText: 'Search trainers...',
-                                      prefixIcon: const Icon(Icons.search),
-                                      border: OutlineInputBorder(
+                                Icon(
+                                  Icons.info_outline,
+                                  size: 16,
+                                  color: Colors.blue.shade600,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Showing ${provider.filteredTrainers.length} result${provider.filteredTrainers.length == 1 ? '' : 's'}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                if (provider.searchQuery.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'for "${provider.searchQuery}"',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                                if (provider.selectedStatusFilter != 'all') ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'with status "${provider.selectedStatusFilter}"',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Data table
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (provider.filteredTrainers.isEmpty) {
+                              return Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(40),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.search_off,
+                                      size: 64,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No trainers found',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Try adjusting your search criteria or filters',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        provider.searchController.clear();
+                                        provider.setSearchQuery('');
+                                        provider.setSelectedStatusFilter('all');
+                                      },
+                                      icon: const Icon(Icons.clear_all, size: 16),
+                                      label: const Text('Clear All Filters'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.blue[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            
+                            return Container(
+                              width: double.infinity,
+                              child: DataTable(
+                                headingRowColor: MaterialStateProperty.resolveWith(
+                                  (states) => GlobalColors.lightGray,
+                                ),
+                                horizontalMargin: 12,
+                                showBottomBorder: true,
+                                showCheckboxColumn: false,
+                                headingTextStyle: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                ),
+                                dividerThickness: 1,
+                                columnSpacing: 8,
+                                dataTextStyle: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black87,
+                                ),
+                                dataRowMinHeight: 60,
+                                dataRowMaxHeight: 60,
+                                headingRowHeight: 50,
+                                columns: [
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Name',
+                                        textAlign: TextAlign.start,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Email',
+                                        textAlign: TextAlign.start,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Phone',
+                                        textAlign: TextAlign.start,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Specializations',
+                                        textAlign: TextAlign.start,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Status',
+                                        textAlign: TextAlign.start,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                  DataColumn(
+                                    label: Expanded(
+                                      child: Text(
+                                        'Actions',
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    numeric: false,
+                                  ),
+                                ],
+                                rows: provider.pagedTrainers
+                                    .map((trainer) => DataRow(
+                                          onSelectChanged: (selected) {},
+                                          cells: [
+                                            DataCell(
+                                              Container(
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 120,
+                                                  maxWidth: 180,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    // Trainer Avatar or Placeholder
+                                                    _buildTrainerPlaceholder(trainer.name),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: Text(
+                                                        trainer.name,
+                                                        style: const TextStyle(
+                                                          fontWeight: FontWeight.w600,
+                                                          fontSize: 12,
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       contentPadding: const EdgeInsets.symmetric(

@@ -42,6 +42,7 @@ class ApiEndpoints {
   // Training centers - New API endpoints
   static const String createTrainingCenter = '/training-center/create';
   static const String getAllTrainingCenters = '/training-center/select';
+  static const String getApprovedTrainingCenters = '/training-center/approved';
   static const String updateTrainingCenter = '/training-center/update';
   
   // Training center branches - New API endpoints

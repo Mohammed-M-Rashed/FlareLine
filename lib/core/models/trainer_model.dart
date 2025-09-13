@@ -14,6 +14,7 @@ class Trainer {
   final List<String> specializations;
   final List<String>? certifications;
   final String status;
+  final String? rejectionReason;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -28,6 +29,7 @@ class Trainer {
     required this.specializations,
     this.certifications,
     required this.status,
+    this.rejectionReason,
     this.createdAt,
     this.updatedAt,
   });
@@ -49,6 +51,7 @@ class Trainer {
               ?.map((item) => item.toString())
               .toList(),
       status: json['status'] ?? 'pending',
+      rejectionReason: json['rejection_reason'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -72,6 +75,7 @@ class Trainer {
     if (qualifications != null) data['qualifications'] = qualifications;
     if (yearsExperience != null) data['years_experience'] = yearsExperience;
     if (certifications != null) data['certifications'] = certifications;
+    if (rejectionReason != null) data['rejection_reason'] = rejectionReason;
     if (createdAt != null) data['created_at'] = createdAt!.toIso8601String();
     if (updatedAt != null) data['updated_at'] = updatedAt!.toIso8601String();
     
@@ -89,6 +93,7 @@ class Trainer {
     List<String>? specializations,
     List<String>? certifications,
     String? status,
+    String? rejectionReason,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -103,6 +108,7 @@ class Trainer {
       specializations: specializations ?? this.specializations,
       certifications: certifications ?? this.certifications,
       status: status ?? this.status,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -141,7 +147,7 @@ class Trainer {
 
   @override
   String toString() {
-    return 'Trainer(id: $id, name: $name, email: $email, phone: $phone, specializations: $specializations, status: $status)';
+    return 'Trainer(id: $id, name: $name, email: $email, phone: $phone, specializations: $specializations, status: $status, rejectionReason: $rejectionReason)';
   }
 
   @override
@@ -157,7 +163,8 @@ class Trainer {
         other.yearsExperience == yearsExperience &&
         listEquals(other.specializations, specializations) &&
         listEquals(other.certifications, certifications) &&
-        other.status == status;
+        other.status == status &&
+        other.rejectionReason == rejectionReason;
   }
 
   @override
@@ -171,7 +178,8 @@ class Trainer {
            (yearsExperience?.hashCode ?? 0) ^
            specializations.hashCode ^
            (certifications?.hashCode ?? 0) ^
-           status.hashCode;
+           status.hashCode ^
+           (rejectionReason?.hashCode ?? 0);
   }
 }
 
@@ -200,11 +208,18 @@ class AcceptTrainerRequest {
 // Reject Trainer Request model
 class RejectTrainerRequest {
   final int id;
+  final String rejectionReason;
 
-  RejectTrainerRequest({required this.id});
+  RejectTrainerRequest({
+    required this.id,
+    required this.rejectionReason,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'id': id};
+    return {
+      'id': id,
+      'rejection_reason': rejectionReason,
+    };
   }
 }
 
