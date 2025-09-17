@@ -28,7 +28,7 @@ class RoleAwareSidebar extends StatelessWidget {
     this.sideBarAsset,
     this.logoWidget,
     this.footerWidget,
-    this.logoFontSize = 30,
+    this.logoFontSize = 20,
     this.isDark,
   }) : expandedMenuName = ValueNotifier('');
 

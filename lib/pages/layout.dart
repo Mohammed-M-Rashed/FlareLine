@@ -23,7 +23,7 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
       darkBg: sideBarDarkColor,
       lightBg: sideBarLightColor,
       width: 280,
-      appName: 'Training System',
+      appName: 'نظام التدريب',
     );
   }
 
@@ -31,7 +31,7 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
   Widget? toolbarWidget(BuildContext context, bool showDrawer) {
     return ToolBarWidget(
       showMore: showDrawer,
-      showChangeTheme: true,
+      showChangeTheme: false,
       userInfoWidget: _userInfoWidget(context),
     );
   }
@@ -45,7 +45,7 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  authController.userData?.name ?? 
+                  authController.userData?.name ??
                   (authController.userEmail.isNotEmpty ? authController.userEmail : 'زائر'),
                   style: const TextStyle(
                     fontSize: 14,

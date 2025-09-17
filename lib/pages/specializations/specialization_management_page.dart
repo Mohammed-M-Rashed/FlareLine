@@ -21,10 +21,7 @@ import 'dart:convert';
 class SpecializationManagementPage extends LayoutWidget {
   const SpecializationManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Specialization Management';
-  }
+
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

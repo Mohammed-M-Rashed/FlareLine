@@ -54,62 +54,11 @@ class ToolBarWidget extends StatelessWidget {
 
           return const SizedBox();
         }),
-        ResponsiveBuilder(builder: (context, sizingInformation) {
-          // Check the sizing information here and return your UI
-          if (!(showMore ?? false) &&
-              sizingInformation.deviceScreenType == DeviceScreenType.desktop) {
-            return Container(
-              margin: const EdgeInsets.only(left: 10),
-              width: 280,
-              child: SearchWidget(),
-            );
-          }
 
-          return const SizedBox();
-        }),
         const Spacer(),
         if (showChangeTheme ?? false) const ToggleWidget(),
         const SizedBox(
           width: 10,
-        ),
-        InkWell(
-          child: Stack(
-            alignment: Alignment.topRight,
-            children: [
-              Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                      color: FlarelineColors.background, shape: BoxShape.circle),
-                  child: SvgPicture.asset('assets/toolbar/alarm.svg',
-                      width: 18, height: 18)),
-              const Align(
-                child: AnimBadge(),
-              )
-            ],
-          ),
-        ),
-        const SizedBox(
-          width: 10,
-        ),
-        InkWell(
-          child: Stack(
-            alignment: Alignment.topRight,
-            children: [
-              Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                      color: FlarelineColors.background, shape: BoxShape.circle),
-                  child: SvgPicture.asset('assets/toolbar/message.svg',
-                      width: 18, height: 18)),
-              const Align(
-                child: AnimBadge(),
-              )
-            ],
-          ),
         ),
         const SizedBox(
           width: 20,
@@ -126,22 +75,22 @@ class ToolBarWidget extends StatelessWidget {
               color: Colors.white,
               context: context,
               position: RelativeRect.fromLTRB(
-                  MediaQuery.of(context).size.width - 100, 80, 0, 0),
+                  0, 80, MediaQuery.of(context).size.width - 100, 0),
               items: <PopupMenuItem<String>>[
-                PopupMenuItem<String>(
-                  value: 'value01',
-                  child: Text('ملفي الشخصي'),
-                  onTap: () async {
-                    onProfileClick(context);
-                  },
-                ),
-                PopupMenuItem<String>(
-                  value: 'value03',
-                  child: Text('الإعدادات'),
-                  onTap: () async {
-
-                  },
-                ),
+                // PopupMenuItem<String>(
+                //   value: 'value01',
+                //   child: Text('ملفي الشخصي'),
+                //   onTap: () async {
+                //     onProfileClick(context);
+                //   },
+                // ),
+                // PopupMenuItem<String>(
+                //   value: 'value03',
+                //   child: Text('الإعدادات'),
+                //   onTap: () async {
+                //
+                //   },
+                // ),
                 PopupMenuItem<String>(
                   value: 'value05',
                   child: Text('تسجيل الخروج'),

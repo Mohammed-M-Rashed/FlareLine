@@ -27,10 +27,6 @@ import 'dart:async'; // Added for Completer
 class TrainingNeedManagementPage extends LayoutWidget {
   const TrainingNeedManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Training Need Management';
-  }
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

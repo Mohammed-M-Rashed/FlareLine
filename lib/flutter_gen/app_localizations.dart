@@ -115,13 +115,13 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In ar, this message translates to:
-  /// **'فلارلاين'**
+  /// **'نظام التدريب'**
   String get appName;
 
   /// No description provided for @slogan.
   ///
   /// In ar, this message translates to:
-  /// **'تطوير ويب بسيط أسرع'**
+  /// **'مركز التطوير الفنى و الاداري'**
   String get slogan;
 
   /// No description provided for @signIn.

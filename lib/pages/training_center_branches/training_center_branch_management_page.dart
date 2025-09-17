@@ -18,10 +18,6 @@ import 'dart:async';
 class TrainingCenterBranchManagementPage extends LayoutWidget {
   const TrainingCenterBranchManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Training Center Branch Management';
-  }
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

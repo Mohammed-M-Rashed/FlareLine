@@ -25,10 +25,6 @@ import 'package:flareline/core/theme/global_theme.dart';
 class UserManagementPage extends LayoutWidget {
   const UserManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'إدارة المستخدمين';
-  }
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

@@ -74,10 +74,7 @@ class CourseAssignmentEntry {
 class PlanCourseAssignmentManagementPage extends LayoutWidget {
   const PlanCourseAssignmentManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Plan Course Assignment Management';
-  }
+
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

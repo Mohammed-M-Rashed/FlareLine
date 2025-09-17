@@ -65,10 +65,6 @@ class NominationEntry {
 class NominationManagementPage extends LayoutWidget {
   const NominationManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Nomination Management';
-  }
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

@@ -21,10 +21,6 @@ import 'dart:async'; // Added for Completer
 class CompanyManagementPage extends LayoutWidget {
   const CompanyManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Company Management';
-  }
 
   @override
   Widget contentDesktopWidget(BuildContext context) {

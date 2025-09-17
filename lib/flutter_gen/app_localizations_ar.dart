@@ -19,10 +19,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'ليس لورم إيبسوم مجرد نص وهمية لصناعة الطباعة والطباعة';
 
   @override
-  String get appName => 'فلارلاين';
+  String get appName => 'نظام التدريب';
 
   @override
-  String get slogan => 'تطوير ويب بسيط أسرع';
+  String get slogan => 'مركز التطوير الفنى و الاداري';
 
   @override
   String get signIn => 'تسجيل الدخول';

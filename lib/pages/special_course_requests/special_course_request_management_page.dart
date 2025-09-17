@@ -23,10 +23,7 @@ import 'dart:async'; // Added for Completer
 class SpecialCourseRequestManagementPage extends LayoutWidget {
   const SpecialCourseRequestManagementPage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    return 'Special Course Request Management';
-  }
+
 
   @override
   Widget contentDesktopWidget(BuildContext context) {
