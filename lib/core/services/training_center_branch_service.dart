@@ -21,7 +21,10 @@ class TrainingCenterBranchService {
       final authController = Get.find<AuthController>();
       final user = authController.userData;
       if (user != null && user.roles.isNotEmpty) {
-        return user.roles.any((role) => role.name == 'system_administrator');
+        return user.roles.any((role) => 
+          role.name == 'system_administrator' || 
+          role.name == 'admin'
+        );
       }
       return false;
     } catch (e) {
@@ -46,6 +49,43 @@ class TrainingCenterBranchService {
           'Accept': 'application/json',
         },
         body: jsonEncode(request.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return TrainingCenterBranchListResponse.fromJson(jsonData);
+      } else {
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          throw Exception(errorData['m_ar'] ?? 'فشل في جلب فروع مراكز التدريب');
+        } catch (e) {
+          throw Exception('فشل في جلب فروع مراكز التدريب: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Get training center branches by center ID using admin API endpoint
+  static Future<TrainingCenterBranchListResponse> adminGetTrainingCenterBranches(int trainingCenterId) async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        throw Exception('رمز المصادقة غير موجود');
+      }
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl${ApiEndpoints.adminGetTrainingCenterBranches}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'training_center_id': trainingCenterId,
+        }),
       );
 
       if (response.statusCode == 200) {

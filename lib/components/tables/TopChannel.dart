@@ -5,9 +5,24 @@ import 'package:flareline_uikit/components/tables/base_table_widget.dart';
 import 'package:flareline_uikit/core/mvvm/base_table_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
-class TopChannelWidget extends TableWidget<TopChannelViewModel> {
+class TopChannelWidget extends StatelessWidget {
   const TopChannelWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Register the view model with GetX if not already registered
+    if (!Get.isRegistered<TopChannelViewModel>()) {
+      Get.put<TopChannelViewModel>(TopChannelViewModel(context), permanent: false);
+    }
+    
+    return _TopChannelTableWidget();
+  }
+}
+
+class _TopChannelTableWidget extends TableWidget<TopChannelViewModel> {
+  const _TopChannelTableWidget({super.key});
 
   @override
   bool get showPaging => false;
@@ -15,11 +30,6 @@ class TopChannelWidget extends TableWidget<TopChannelViewModel> {
   @override
   String? title(BuildContext context) {
     return AppLocalizations.of(context)!.topChannels;
-  }
-
-  @override
-  TopChannelViewModel viewModelBuilder(BuildContext context) {
-    return TopChannelViewModel(context);
   }
 }
 

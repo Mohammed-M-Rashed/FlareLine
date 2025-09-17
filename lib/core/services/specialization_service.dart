@@ -1,12 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 import '../models/specialization_model.dart';
+import '../models/course_model.dart';
 import 'api_service.dart';
 import '../auth/auth_provider.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
+import '../config/api_endpoints.dart';
+import 'auth_service.dart';
 
 class SpecializationService {
+  // Check if user has specialization management permission (System Admin, Admin)
+  static bool hasSpecializationManagementPermission() {
+    try {
+      final authController = Get.find<AuthController>();
+      final user = authController.userData;
+      if (user != null && user.roles.isNotEmpty) {
+        return user.roles.any((role) => 
+          role.name == 'system_administrator' || 
+          role.name == 'admin'
+        );
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Check if user can view specializations (System Admin, Admin only)
+  static bool canViewSpecializations() {
+    try {
+      final authController = Get.find<AuthController>();
+      final user = authController.userData;
+      if (user != null && user.roles.isNotEmpty) {
+        return user.roles.any((role) => 
+          role.name == 'system_administrator' || 
+          role.name == 'admin'
+        );
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Shows a success toast notification for specialization operations in Arabic
   static void _showSuccessToast(BuildContext context, String message) {
     toastification.show(
@@ -52,11 +89,57 @@ class SpecializationService {
     );
   }
 
-  // Get all specializations
+
+  // Get courses by specialization ID using admin API endpoint
+  static Future<List<Course>> adminGetCoursesBySpecialization(BuildContext context, int specializationId) async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        throw Exception('رمز المصادقة غير موجود');
+      }
+
+      final response = await ApiService.post(
+        ApiEndpoints.adminGetCoursesBySpecialization,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: {
+          'specialization_id': specializationId,
+        },
+      );
+
+      if (ApiService.isSuccessResponse(response)) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['data'] != null && responseData['data'] is List) {
+          return (responseData['data'] as List)
+              .map((courseJson) => Course.fromJson(courseJson))
+              .toList();
+        }
+        return [];
+      } else {
+        final errorMessage = ApiService.handleErrorResponse(response);
+        _showErrorToast(context, errorMessage);
+        return [];
+      }
+    } catch (e) {
+      _showErrorToast(context, 'خطأ في جلب الدورات: $e');
+      return [];
+    }
+  }
+
+  // Get all specializations (System Admin, Admin, Company Employee)
   static Future<List<Specialization>> getSpecializations(BuildContext context) async {
     try {
+      // Check if user has permission to view specializations
+      if (!canViewSpecializations()) {
+        _showErrorToast(context, 'غير مصرح لك بعرض التخصصات');
+        return [];
+      }
+
       final response = await ApiService.post(
-        '/specialization/select',
+        ApiEndpoints.selectSpecializations,
         body: {},
       );
       
@@ -77,11 +160,48 @@ class SpecializationService {
     }
   }
 
-  // Create a new specialization
+  // Get specializations for company account (Company Account only)
+  static Future<List<Specialization>> getSpecializationsForCompanyAccount(BuildContext context) async {
+    try {
+      // Check if user is a company account
+      if (!AuthService.hasRole('company_account')) {
+        _showErrorToast(context, 'غير مصرح لك بعرض التخصصات');
+        return [];
+      }
+
+      final response = await ApiService.post(
+        ApiEndpoints.selectSpecializationsForCompanyAccount,
+        body: {},
+      );
+      
+      if (ApiService.isSuccessResponse(response)) {
+        final List<dynamic> data = response.body.isNotEmpty 
+            ? json.decode(response.body)['data'] ?? []
+            : [];
+        
+        return data.map((json) => Specialization.fromJson(json)).toList();
+      } else {
+        final errorMessage = ApiService.handleErrorResponse(response);
+        _showErrorToast(context, errorMessage);
+        return [];
+      }
+    } catch (e) {
+      _showErrorToast(context, 'خطأ في جلب التخصصات: $e');
+      return [];
+    }
+  }
+
+  // Create a new specialization (System Admin, Admin)
   static Future<dynamic> createSpecialization(BuildContext context, Specialization specialization) async {
     try {
+      // Check if user has permission to create specializations
+      if (!hasSpecializationManagementPermission()) {
+        _showErrorToast(context, 'غير مصرح لك بإنشاء التخصصات');
+        return false;
+      }
+
       final response = await ApiService.post(
-        '/specialization/create',
+        ApiEndpoints.createSpecialization,
         body: {
           'name': specialization.name,
           'description': specialization.description,
@@ -101,11 +221,17 @@ class SpecializationService {
     }
   }
 
-  // Update an existing specialization
+  // Update an existing specialization (System Admin, Admin)
   static Future<dynamic> updateSpecialization(BuildContext context, Specialization specialization) async {
     try {
+      // Check if user has permission to update specializations
+      if (!hasSpecializationManagementPermission()) {
+        _showErrorToast(context, 'غير مصرح لك بتحديث التخصصات');
+        return false;
+      }
+
       final response = await ApiService.post(
-        '/specialization/update',
+        ApiEndpoints.updateSpecialization,
         body: {
           'id': specialization.id,
           'name': specialization.name,
@@ -165,18 +291,6 @@ class SpecializationService {
     return null;
   }
 
-  // Check if user has permission to manage specializations
-  static bool hasSpecializationManagementPermission() {
-    try {
-      final authController = Get.find<AuthController>();
-      final userRoles = authController.userData?.roles ?? [];
-      
-      // Only system_administrator can manage specializations
-      return userRoles.contains('system_administrator');
-    } catch (e) {
-      return false;
-    }
-  }
 
   // Get localized message from API response
   static String getLocalizedMessage(Map<String, dynamic> response, String field) {

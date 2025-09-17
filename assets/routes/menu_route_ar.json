@@ -5,68 +5,100 @@
       {
         "icon": "assets/sidebar/dashboard.svg",
         "menuName": "لوحة التحكم",
-        "path": "/dashboard"
+        "path": "/dashboard",
+        "requiredRoles": ["system_administrator", "admin", "company_account", "training_general_manager", "board_chairman"],
+        "description": "لوحة التحكم الرئيسية للنظام"
       },
       {
         "icon": "assets/sidebar/user.svg",
         "menuName": "إدارة المستخدمين",
-        "path": "/userManagement"
+        "path": "/userManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة المستخدمين والصلاحيات"
       },
       {
         "icon": "assets/sidebar/tools.svg",
         "menuName": "إدارة الشركات",
-        "path": "/companyManagement"
+        "path": "/companyManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة بيانات الشركات"
       },
-
       {
         "icon": "assets/sidebar/school.svg",
         "menuName": "إدارة التخصصات",
-        "path": "/specializationManagement"
+        "path": "/specializationManagement",
+        "requiredRoles": ["system_administrator", "admin", "company_account"],
+        "description": "إدارة التخصصات التدريبية"
       },
       {
         "icon": "assets/sidebar/business.svg",
         "menuName": "إدارة مراكز التدريب",
-        "path": "/trainingCenterManagement"
+        "path": "/trainingCenterManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة مراكز التدريب المعتمدة"
       },
       {
         "icon": "assets/sidebar/school.svg",
         "menuName": "إدارة فروع مراكز التدريب",
-        "path": "/trainingCenterBranchManagement"
+        "path": "/trainingCenterBranchManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة فروع مراكز التدريب"
       },
       {
         "icon": "assets/sidebar/school.svg",
         "menuName": "إدارة الدورات",
-        "path": "/courseManagement"
+        "path": "/courseManagement",
+        "requiredRoles": ["system_administrator", "admin", "company_account"],
+        "description": "إدارة الدورات التدريبية"
       },
       {
         "icon": "assets/sidebar/user.svg",
         "menuName": "إدارة المدربين",
-        "path": "/trainerManagement"
+        "path": "/trainerManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة المدربين المعتمدين"
       },
       {
         "icon": "assets/sidebar/task.svg",
         "menuName": "إدارة احتياجات التدريب",
-        "path": "/trainingNeedManagement"
+        "path": "/trainingNeedManagement",
+        "requiredRoles": ["system_administrator", "admin", "company_account"],
+        "description": "إدارة احتياجات التدريب للشركات"
       },
       {
         "icon": "assets/sidebar/task.svg",
         "menuName": "طلبات الدورات الخاصة",
-        "path": "/special-course-request"
+        "path": "/special-course-request",
+        "requiredRoles": ["system_administrator", "admin", "company_account"],
+        "description": "إدارة طلبات الدورات الخاصة"
       },
       {
         "icon": "assets/sidebar/task.svg",
         "menuName": "خطط التدريب للشركات",
-        "path": "/training-plan"
+        "path": "/training-plan",
+        "requiredRoles": ["system_administrator", "admin", "company_account", "training_general_manager", "board_chairman"],
+        "description": "إدارة خطط التدريب والموافقات"
       },
       {
         "icon": "assets/sidebar/task.svg",
         "menuName": "إدارة تخصيصات الدورات",
-        "path": "/plan-course-assignment-management"
+        "path": "/plan-course-assignment-management",
+        "requiredRoles": ["system_administrator", "admin", "company_account"],
+        "description": "إدارة تخصيص الدورات للخطط"
       },
       {
         "icon": "assets/sidebar/user.svg",
         "menuName": "إدارة الترشيحات",
-        "path": "/nomination-management"
+        "path": "/nomination-management",
+        "requiredRoles": ["company_account"],
+        "description": "إدارة ترشيحات الموظفين للدورات"
+      },
+      {
+        "icon": "assets/sidebar/chart.svg",
+        "menuName": "مراقبة الترشيحات",
+        "path": "/nomination-monitoring",
+        "requiredRoles": ["system_administrator", "admin", "company_account"],
+        "description": "مراقبة ومتابعة حالة الترشيحات"
       }
     ]
   }

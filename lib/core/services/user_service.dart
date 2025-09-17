@@ -586,9 +586,9 @@ class UserService {
 
   // Validate if user status can be changed
   static String? validateStatusChange(User user) {
-    if (user.isSystemAdministrator) {
-      print('❌ USER SERVICE: Status change validation failed - User is system administrator');
-      return 'لا يمكن تغيير حالة مدير النظام';
+    if (user.hasUniqueRole) {
+      print('❌ USER SERVICE: Status change validation failed - User has unique role');
+      return user.statusChangeRestrictionMessage;
     }
     
     if (!user.canChangeStatus) {
@@ -601,8 +601,8 @@ class UserService {
 
   // Check if user can be activated
   static String? canActivateUser(User user) {
-    if (user.isSystemAdministrator) {
-      return 'لا يمكن تفعيل مدير النظام';
+    if (user.hasUniqueRole) {
+      return user.statusChangeRestrictionMessage;
     }
     
     if (user.isActive) {
@@ -614,8 +614,8 @@ class UserService {
 
   // Check if user can be deactivated
   static String? canDeactivateUser(User user) {
-    if (user.isSystemAdministrator) {
-      return 'لا يمكن إلغاء تفعيل مدير النظام';
+    if (user.hasUniqueRole) {
+      return user.statusChangeRestrictionMessage;
     }
     
     if (user.isInactive) {

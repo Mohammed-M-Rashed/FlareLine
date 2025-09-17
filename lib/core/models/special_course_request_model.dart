@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 class SpecialCourseRequest {
   final int? id;
   final int companyId;
+  final int specializationId;
   final String title;
   final String description;
   final String? fileAttachment;
   final String status;
-  final String? createdBy;
+  final String? rejectionReason;
+  final int? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   
@@ -19,10 +21,12 @@ class SpecialCourseRequest {
   SpecialCourseRequest({
     this.id,
     required this.companyId,
+    required this.specializationId,
     required this.title,
     required this.description,
     this.fileAttachment,
     required this.status,
+    this.rejectionReason,
     this.createdBy,
     this.createdAt,
     this.updatedAt,
@@ -33,11 +37,13 @@ class SpecialCourseRequest {
     return SpecialCourseRequest(
       id: json['id'],
       companyId: json['company_id'] ?? 0,
+      specializationId: json['specialization_id'] ?? 0,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       fileAttachment: json['file_attachment'],
       status: json['status'] ?? 'pending',
-      createdBy: json['created_by'],
+      rejectionReason: json['rejection_reason'],
+      createdBy: json['created_by'] is int ? json['created_by'] : int.tryParse(json['created_by']?.toString() ?? ''),
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -54,10 +60,12 @@ class SpecialCourseRequest {
     return {
       'id': id,
       'company_id': companyId,
+      'specialization_id': specializationId,
       'title': title,
       'description': description,
       'file_attachment': fileAttachment,
       'status': status,
+      'rejection_reason': rejectionReason,
       'created_by': createdBy,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -68,6 +76,7 @@ class SpecialCourseRequest {
   // Getters for UI convenience
   String get companyName => company?.name ?? 'Unknown Company';
   
+  bool get isDraft => status == 'draft';
   bool get isPending => status == 'pending';
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
@@ -77,6 +86,8 @@ class SpecialCourseRequest {
 
   String get statusDisplay {
     switch (status) {
+      case 'draft':
+        return 'Draft';
       case 'pending':
         return 'Pending';
       case 'approved':
@@ -90,14 +101,16 @@ class SpecialCourseRequest {
 
   Color get statusColor {
     switch (status) {
+      case 'draft':
+        return Colors.grey.shade600;
       case 'pending':
-        return Colors.orange;
+        return Colors.orange.shade600;
       case 'approved':
-        return Colors.green;
+        return Colors.green.shade600;
       case 'rejected':
-        return Colors.red;
+        return Colors.red.shade600;
       default:
-        return Colors.grey;
+        return Colors.grey.shade500;
     }
   }
 
@@ -180,29 +193,29 @@ class Company {
 // Request models for API operations
 class SpecialCourseRequestCreateRequest {
   final int companyId;
+  final int specializationId;
   final String title;
   final String description;
   final String? fileAttachment;
   final String? status;
-  final String? createdBy;
 
   SpecialCourseRequestCreateRequest({
     required this.companyId,
+    required this.specializationId,
     required this.title,
     required this.description,
     this.fileAttachment,
     this.status,
-    this.createdBy,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'company_id': companyId,
+      'specialization_id': specializationId,
       'title': title,
       'description': description,
       if (fileAttachment != null) 'file_attachment': fileAttachment,
       if (status != null) 'status': status,
-      if (createdBy != null) 'created_by': createdBy,
     };
   }
 }
@@ -210,48 +223,35 @@ class SpecialCourseRequestCreateRequest {
 class SpecialCourseRequestUpdateRequest {
   final int id;
   final int? companyId;
+  final int? specializationId;
   final String? title;
   final String? description;
   final String? fileAttachment;
   final String? status;
-  final String? createdBy;
 
   SpecialCourseRequestUpdateRequest({
     required this.id,
     this.companyId,
+    this.specializationId,
     this.title,
     this.description,
     this.fileAttachment,
     this.status,
-    this.createdBy,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       if (companyId != null) 'company_id': companyId,
+      if (specializationId != null) 'specialization_id': specializationId,
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (fileAttachment != null) 'file_attachment': fileAttachment,
       if (status != null) 'status': status,
-      if (createdBy != null) 'created_by': createdBy,
     };
   }
 }
 
-class GetSpecialCourseRequestsByStatusRequest {
-  final String status;
-
-  GetSpecialCourseRequestsByStatusRequest({
-    required this.status,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'status': status,
-    };
-  }
-}
 
 class ApproveSpecialCourseRequestRequest {
   final int id;
@@ -269,14 +269,17 @@ class ApproveSpecialCourseRequestRequest {
 
 class RejectSpecialCourseRequestRequest {
   final int id;
+  final String rejectionReason;
 
   RejectSpecialCourseRequestRequest({
     required this.id,
+    required this.rejectionReason,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'rejection_reason': rejectionReason,
     };
   }
 }
@@ -337,4 +340,18 @@ class SpecialCourseRequestListResponse {
   }
 
   bool get success => statusCode >= 200 && statusCode < 300;
+}
+
+class ForwardSpecialCourseRequestRequest {
+  final int id;
+
+  ForwardSpecialCourseRequestRequest({
+    required this.id,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+    };
+  }
 }

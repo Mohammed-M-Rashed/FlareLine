@@ -42,6 +42,9 @@ class TrainerManagementWidget extends StatefulWidget {
 }
 
 class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with WidgetsBindingObserver {
+  // Loading state variables
+  bool _isCreatingTrainer = false;
+  bool _isEditingTrainer = false;
 
   @override
   void initState() {
@@ -59,14 +62,20 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      // Refresh data when app becomes visible
+      // Refresh data when app becomes visible, but only if we haven't confirmed empty data
       try {
-        final provider = Get.find<TrainerDataProvider>();
-        if (provider.trainers.isEmpty && !provider.isLoading) {
-          provider.loadData();
+        if (Get.isRegistered<TrainerDataProvider>()) {
+          final provider = Get.find<TrainerDataProvider>();
+          if (provider.trainers.isEmpty && !provider.isLoading && !provider.hasLoadedData) {
+            provider.loadData();
+          } else if (provider.hasLoadedData && provider.hasEmptyData) {
+            print('📋 TRAINER PROVIDER: Skipping data load on app resume - already confirmed empty data');
+          }
+        } else {
+          print('⚠️ TRAINER PROVIDER: Provider not registered during app resume');
         }
       } catch (e) {
-        // Provider not found, ignore
+        print('❌ TRAINER PROVIDER: Error during app resume: $e');
       }
     }
   }
@@ -87,11 +96,13 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
               );
             }
             
-            // Ensure data is loaded if not already loaded
-            if (provider.trainers.isEmpty && !provider.isLoading) {
+            // Ensure data is loaded if not already loaded and we haven't confirmed empty data
+            if (provider.trainers.isEmpty && !provider.isLoading && !provider.hasLoadedData) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 provider.loadData();
               });
+            } else if (provider.hasLoadedData && provider.hasEmptyData) {
+              print('📋 TRAINER PROVIDER: Skipping data load - already confirmed empty data');
             }
             
             return _buildWidget(context, provider);
@@ -142,7 +153,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                       children: [
                         SizedBox(
                           width: 120,
-                          child: Obx(() => ButtonWidget(
+                          child: ButtonWidget(
                             btnText: provider.isLoading ? 'Loading...' : 'Refresh',
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () async {
@@ -153,7 +164,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                 _showErrorToast(e.toString());
                               }
                             },
-                          )),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         SizedBox(
@@ -171,67 +182,55 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
               ),
               const SizedBox(height: 16),
 
-                             // Loading state
-               if (provider.isLoading)
-                 const LoadingWidget()
-                              else if (provider.trainers.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.person_off,
-                          size: 64,
-                          color: Colors.grey[400],
+              // Conditional content based on loading and data state
+              if (provider.isLoading)
+                const LoadingWidget()
+              else if (provider.trainers.isEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No trainers found',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[600],
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No trainers found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[600],
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Add your first trainer to get started',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[500],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Add your first trainer to get started',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ButtonWidget(
-                              btnText: 'Retry',
-                              type: 'secondary',
-                              onTap: () => provider.loadData(),
-                            ),
-                            const SizedBox(width: 16),
-                            ButtonWidget(
-                              btnText: 'Add Trainer',
-                              type: 'primary',
-                              onTap: () => _showAddTrainerForm(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ButtonWidget(
+                        btnText: 'Add Trainer',
+                        type: 'primary',
+                        onTap: () => _showAddTrainerForm(context),
+                      ),
+                    ],
+                  ),
+                )
               else
-                Obx(() {
-                  final trainers = provider.trainers;
-
-                  return Column(
+                Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Trainer count and summary
                       CountSummaryWidgetEn(
-                        count: trainers.length,
+                        count: provider.trainers.length,
                         itemName: 'trainer',
                         itemNamePlural: 'trainers',
                         icon: Icons.person,
@@ -294,7 +293,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                       border: Border.all(color: Colors.grey.shade400),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: Obx(() => DropdownButtonFormField<String>(
+                                    child: DropdownButtonFormField<String>(
                                       value: provider.selectedStatusFilter == 'all' ? null : provider.selectedStatusFilter,
                                       decoration: const InputDecoration(
                                         border: InputBorder.none,
@@ -322,7 +321,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                       onChanged: (value) {
                                         provider.setSelectedStatusFilter(value ?? 'all');
                                       },
-                                    )),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -422,6 +421,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                               width: double.infinity,
                               padding: const EdgeInsets.all(40),
                               child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.search_off,
@@ -444,6 +444,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                       fontSize: 14,
                                       color: Colors.grey[500],
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 16),
                                   TextButton.icon(
@@ -783,13 +784,13 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                         ],
                       ),
                     ],
-                  );
-                }), // Fixed: Properly close Obx with } and )
-            ],
-          ),
-        );
-      },
-    );
+                  // End of data display Column
+
+                )] // End of main Column children
+          ), // End of main Column
+        ); // End of SingleChildScrollView
+      }, // End of builder function
+    ); // End of LayoutBuilder
   }
 
   // Build trainer avatar with initials
@@ -1177,39 +1178,107 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
             _showErrorToast('Please select at least one specialization');
             return;
           }
+          
+          // Set loading state
+          setState(() {
+            _isCreatingTrainer = true;
+          });
+          
+          print('🔄 TRAINER CREATE: Starting trainer creation process...');
+          
           try {
-                         final request = TrainerCreateRequest(
-               name: nameController.text.trim(),
-               email: emailController.text.trim(),
-               phone: phoneController.text.trim(),
-               bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
-               qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
-               yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
-               specializations: selectedSpecializations,
-               certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-             );
+            // Log form data for debugging
+            print('📝 TRAINER CREATE: Form data validation passed');
+            print('📝 TRAINER CREATE: Name: ${nameController.text.trim()}');
+            print('📝 TRAINER CREATE: Email: ${emailController.text.trim()}');
+            print('📝 TRAINER CREATE: Phone: ${phoneController.text.trim()}');
+            print('📝 TRAINER CREATE: Specializations: $selectedSpecializations');
+            print('📝 TRAINER CREATE: Years Experience: ${yearsExperienceController.text.trim()}');
             
-                         final response = await TrainerService.createTrainer(request);
-             
-             if (response.success) {
-               // Refresh the data
-               try {
-                 Get.find<TrainerDataProvider>().refreshData();
-               } catch (e) {
-                 // Provider not found, ignore
-               }
-                
-               // Close modal
-               Get.back();
-                
-               // Show success message
-               _showSuccessToast('Trainer created successfully');
-             } else {
-               throw Exception(response.messageEn);
-             }
-          } catch (e) {
-            _showErrorToast(e.toString());
+            final request = TrainerCreateRequest(
+              name: nameController.text.trim(),
+              email: emailController.text.trim(),
+              phone: phoneController.text.trim(),
+              bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
+              qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
+              yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
+              specializations: selectedSpecializations,
+              certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+            );
+            
+            print('📤 TRAINER CREATE: Sending request to API...');
+            final response = await TrainerService.createTrainer(request);
+            
+            print('📥 TRAINER CREATE: Received API response');
+            print('📥 TRAINER CREATE: Success: ${response.success}');
+            print('📥 TRAINER CREATE: Message EN: ${response.messageEn}');
+            print('📥 TRAINER CREATE: Message AR: ${response.messageAr}');
+            
+            if (response.success) {
+              print('✅ TRAINER CREATE: Trainer created successfully');
+              
+              // Refresh the data
+              try {
+                print('🔄 TRAINER CREATE: Refreshing trainer data...');
+                if (Get.isRegistered<TrainerDataProvider>()) {
+                  await Get.find<TrainerDataProvider>().refreshData();
+                  print('✅ TRAINER CREATE: Data refresh completed');
+                } else {
+                  print('⚠️ TRAINER CREATE: TrainerDataProvider not registered, attempting to register...');
+                  Get.put(TrainerDataProvider(), permanent: false);
+                  await Get.find<TrainerDataProvider>().refreshData();
+                  print('✅ TRAINER CREATE: Provider registered and data refresh completed');
+                }
+              } catch (e) {
+                print('❌ TRAINER CREATE: Error refreshing data: $e');
+                print('❌ TRAINER CREATE: Attempting alternative refresh method...');
+                // Try to trigger a rebuild of the GetBuilder widget
+                try {
+                  Get.find<TrainerDataProvider>().update();
+                  print('✅ TRAINER CREATE: Alternative refresh method successful');
+                } catch (e2) {
+                  print('❌ TRAINER CREATE: Alternative refresh also failed: $e2');
+                }
+              }
+              
+              // Close modal
+              Get.back();
+              
+              // Show success message
+              _showSuccessToast('Trainer created successfully');
+              print('✅ TRAINER CREATE: Success toast shown');
+              
+              // Force UI refresh
+              setState(() {});
+            } else {
+              print('❌ TRAINER CREATE: API returned success=false');
+              print('❌ TRAINER CREATE: Error message: ${response.messageEn}');
+              throw Exception(response.messageEn);
+            }
+          } catch (e, stackTrace) {
+            print('❌ TRAINER CREATE: Exception caught during trainer creation');
+            print('❌ TRAINER CREATE: Error type: ${e.runtimeType}');
+            print('❌ TRAINER CREATE: Error message: $e');
+            print('❌ TRAINER CREATE: Stack trace: $stackTrace');
+            
+            // Show user-friendly error message
+            String errorMessage = 'Failed to create trainer';
+            if (e.toString().contains('Exception:')) {
+              errorMessage = e.toString().replaceFirst('Exception: ', '');
+            } else if (e.toString().isNotEmpty) {
+              errorMessage = e.toString();
+            }
+            
+            _showErrorToast(errorMessage);
+            print('❌ TRAINER CREATE: Error toast shown: $errorMessage');
+          } finally {
+            // Reset loading state
+            setState(() {
+              _isCreatingTrainer = false;
+            });
           }
+        } else {
+          print('❌ TRAINER CREATE: Form validation failed');
         }
       },
     );
@@ -1645,40 +1714,109 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
             _showErrorToast('Please select at least one specialization');
             return;
           }
+          
+          // Set loading state
+          setState(() {
+            _isEditingTrainer = true;
+          });
+          
+          print('🔄 TRAINER EDIT: Starting trainer update process...');
+          print('🔄 TRAINER EDIT: Trainer ID: ${trainer.id}');
+          
           try {
-                         final request = TrainerUpdateRequest(
-               id: trainer.id!,
-               name: nameController.text.trim(),
-               email: emailController.text.trim(),
-               phone: phoneController.text.trim(),
-               bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
-               qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
-               yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
-               specializations: selectedSpecializations,
-               certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-             );
+            // Log form data for debugging
+            print('📝 TRAINER EDIT: Form data validation passed');
+            print('📝 TRAINER EDIT: Name: ${nameController.text.trim()}');
+            print('📝 TRAINER EDIT: Email: ${emailController.text.trim()}');
+            print('📝 TRAINER EDIT: Phone: ${phoneController.text.trim()}');
+            print('📝 TRAINER EDIT: Specializations: $selectedSpecializations');
+            print('📝 TRAINER EDIT: Years Experience: ${yearsExperienceController.text.trim()}');
             
-                         final response = await TrainerService.updateTrainer(request);
-             
-             if (response.success) {
-               // Refresh the data
-               try {
-                 Get.find<TrainerDataProvider>().refreshData();
-               } catch (e) {
-                 // Provider not found, ignore
-               }
-                
-               // Close modal
-               Get.back();
-                
-               // Show success message
-               _showSuccessToast('Trainer updated successfully');
-             } else {
-               throw Exception(response.messageEn);
-             }
-          } catch (e) {
-            _showErrorToast(e.toString());
+            final request = TrainerUpdateRequest(
+              id: trainer.id!,
+              name: nameController.text.trim(),
+              email: emailController.text.trim(),
+              phone: phoneController.text.trim(),
+              bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
+              qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
+              yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
+              specializations: selectedSpecializations,
+              certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+            );
+            
+            print('📤 TRAINER EDIT: Sending request to API...');
+            final response = await TrainerService.updateTrainer(request);
+            
+            print('📥 TRAINER EDIT: Received API response');
+            print('📥 TRAINER EDIT: Success: ${response.success}');
+            print('📥 TRAINER EDIT: Message EN: ${response.messageEn}');
+            print('📥 TRAINER EDIT: Message AR: ${response.messageAr}');
+            
+            if (response.success) {
+              print('✅ TRAINER EDIT: Trainer updated successfully');
+              
+              // Refresh the data
+              try {
+                print('🔄 TRAINER EDIT: Refreshing trainer data...');
+                if (Get.isRegistered<TrainerDataProvider>()) {
+                  await Get.find<TrainerDataProvider>().refreshData();
+                  print('✅ TRAINER EDIT: Data refresh completed');
+                } else {
+                  print('⚠️ TRAINER EDIT: TrainerDataProvider not registered, attempting to register...');
+                  Get.put(TrainerDataProvider(), permanent: false);
+                  await Get.find<TrainerDataProvider>().refreshData();
+                  print('✅ TRAINER EDIT: Provider registered and data refresh completed');
+                }
+              } catch (e) {
+                print('❌ TRAINER EDIT: Error refreshing data: $e');
+                print('❌ TRAINER EDIT: Attempting alternative refresh method...');
+                // Try to trigger a rebuild of the GetBuilder widget
+                try {
+                  Get.find<TrainerDataProvider>().update();
+                  print('✅ TRAINER EDIT: Alternative refresh method successful');
+                } catch (e2) {
+                  print('❌ TRAINER EDIT: Alternative refresh also failed: $e2');
+                }
+              }
+              
+              // Close modal
+              Get.back();
+              
+              // Show success message
+              _showSuccessToast('Trainer updated successfully');
+              print('✅ TRAINER EDIT: Success toast shown');
+              
+              // Force UI refresh
+              setState(() {});
+            } else {
+              print('❌ TRAINER EDIT: API returned success=false');
+              print('❌ TRAINER EDIT: Error message: ${response.messageEn}');
+              throw Exception(response.messageEn);
+            }
+          } catch (e, stackTrace) {
+            print('❌ TRAINER EDIT: Exception caught during trainer update');
+            print('❌ TRAINER EDIT: Error type: ${e.runtimeType}');
+            print('❌ TRAINER EDIT: Error message: $e');
+            print('❌ TRAINER EDIT: Stack trace: $stackTrace');
+            
+            // Show user-friendly error message
+            String errorMessage = 'Failed to update trainer';
+            if (e.toString().contains('Exception:')) {
+              errorMessage = e.toString().replaceFirst('Exception: ', '');
+            } else if (e.toString().isNotEmpty) {
+              errorMessage = e.toString();
+            }
+            
+            _showErrorToast(errorMessage);
+            print('❌ TRAINER EDIT: Error toast shown: $errorMessage');
+          } finally {
+            // Reset loading state
+            setState(() {
+              _isEditingTrainer = false;
+            });
           }
+        } else {
+          print('❌ TRAINER EDIT: Form validation failed');
         }
       },
     );
@@ -1837,10 +1975,15 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       if (response.success) {
         // Re-fetch all trainers from the database
         try {
-          final provider = Get.find<TrainerDataProvider>();
-          await provider.refreshData();
+          if (Get.isRegistered<TrainerDataProvider>()) {
+            final provider = Get.find<TrainerDataProvider>();
+            await provider.refreshData();
+            print('✅ TRAINER ACCEPT: Data refresh successful');
+          } else {
+            print('⚠️ TRAINER ACCEPT: TrainerDataProvider not registered');
+          }
         } catch (e) {
-          // Provider not found, ignore
+          print('❌ TRAINER ACCEPT: Error refreshing data: $e');
         }
         
         // Show success message
@@ -1901,11 +2044,15 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       if (response.success) {
         // Re-fetch all trainers from the database
         try {
-          final provider = Get.find<TrainerDataProvider>();
-          await provider.refreshData();
+          if (Get.isRegistered<TrainerDataProvider>()) {
+            final provider = Get.find<TrainerDataProvider>();
+            await provider.refreshData();
+            print('✅ TRAINER REJECT: Data refresh successful');
+          } else {
+            print('⚠️ TRAINER REJECT: TrainerDataProvider not registered');
+          }
         } catch (e) {
-          print(e.toString());
-          // Provider not found, ignore
+          print('❌ TRAINER REJECT: Error refreshing data: $e');
         }
         
         // Show success message
@@ -2248,23 +2395,27 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
 }
 
 class TrainerDataProvider extends GetxController {
-  final _trainers = <Trainer>[].obs;
-  final _isLoading = false.obs;
-  final _currentPage = 0.obs;
-  final _rowsPerPage = 10.obs;
-  final _selectedStatusFilter = 'all'.obs;
-  final _searchQuery = ''.obs;
+  List<Trainer> _trainers = [];
+  bool _isLoading = false;
+  int _currentPage = 0;
+  int _rowsPerPage = 10;
+  String _selectedStatusFilter = 'all';
+  String _searchQuery = '';
+  bool _hasLoadedData = false;
+  bool _hasEmptyData = false;
   
   // Controllers
   final searchController = TextEditingController();
 
   List<Trainer> get trainers => _trainers;
-  bool get isLoading => _isLoading.value;
-  int get currentPage => _currentPage.value;
-  int get rowsPerPage => _rowsPerPage.value;
-  String get selectedStatusFilter => _selectedStatusFilter.value;
-  String get searchQuery => _searchQuery.value;
+  bool get isLoading => _isLoading;
+  int get currentPage => _currentPage;
+  int get rowsPerPage => _rowsPerPage;
+  String get selectedStatusFilter => _selectedStatusFilter;
+  String get searchQuery => _searchQuery;
   int get totalItems => filteredTrainers.length;
+  bool get hasLoadedData => _hasLoadedData;
+  bool get hasEmptyData => _hasEmptyData;
   int get totalPages {
     final total = totalItems;
     if (total == 0) return 1;
@@ -2276,13 +2427,13 @@ class TrainerDataProvider extends GetxController {
     var filtered = _trainers.toList();
     
     // Filter by status
-    if (_selectedStatusFilter.value != 'all') {
-      filtered = filtered.where((t) => t.status == _selectedStatusFilter.value).toList();
+    if (_selectedStatusFilter != 'all') {
+      filtered = filtered.where((t) => t.status == _selectedStatusFilter).toList();
     }
     
     // Filter by search query
-    if (_searchQuery.value.isNotEmpty) {
-      final query = _searchQuery.value.toLowerCase();
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
              filtered = filtered.where((t) =>
            t.name.toLowerCase().contains(query) ||
            t.email.toLowerCase().contains(query) ||
@@ -2304,7 +2455,7 @@ class TrainerDataProvider extends GetxController {
     var end = start + rowsPerPage;
     if (start >= totalItems) {
       // Snap back to last valid page
-      _currentPage.value = totalPages - 1;
+      _currentPage = totalPages - 1;
       return pagedTrainers;
     }
     if (end > totalItems) end = totalItems;
@@ -2322,76 +2473,91 @@ class TrainerDataProvider extends GetxController {
 
   Future<List<Trainer>> loadData() async {
     try {
-      _isLoading.value = true;
+      print('🔄 TRAINER PROVIDER: Starting to load trainers...');
+      _isLoading = true;
       update(); // Update UI to show loading state
       
       // Add timeout to prevent infinite loading
       final response = await TrainerService.getAllTrainers().timeout(
         const Duration(seconds: 30),
         onTimeout: () {
+          print('⏰ TRAINER PROVIDER: Request timeout');
           throw Exception('Request timeout. Please check your connection and try again.');
         },
       );
       
+      print('📡 TRAINER PROVIDER: Response received - Success: ${response.success}, Data count: ${response.data.length}');
+      
       if (response.success) {
-        _trainers.value = response.data;
-        _currentPage.value = 0; // reset page on new data
+        _trainers = response.data;
+        _currentPage = 0; // reset page on new data
+        _hasLoadedData = true; // Mark that data has been loaded
+        _hasEmptyData = response.data.isEmpty; // Track if data is empty
         update(); // Update UI with new data
+        print('✅ TRAINER PROVIDER: Successfully loaded ${response.data.length} trainers');
         return response.data;
       } else {
+        print('❌ TRAINER PROVIDER: API returned error: ${response.messageEn}');
         throw Exception(response.messageEn);
       }
     } catch (e) {
       _trainers.clear();
+      _hasLoadedData = true; // Mark that we attempted to load data
+      _hasEmptyData = true; // Mark as empty due to error
       // Log the error for debugging
-      print('Error loading trainers: $e');
+      print('❌ TRAINER PROVIDER: Error loading trainers: $e');
       update(); // Update UI to show error state
-      rethrow;
+      return []; // Return empty list instead of rethrowing
     } finally {
-      _isLoading.value = false;
+      _isLoading = false;
       update(); // Ensure loading state is updated
+      print('🏁 TRAINER PROVIDER: Loading completed');
     }
   }
 
   Future<void> refreshData() async {
     try {
+      // Force refresh by resetting the loaded data state
+      _hasLoadedData = false;
+      _hasEmptyData = false;
       await loadData();
       // loadData already calls update(), so no need to call it again
     } catch (e) {
-      rethrow;
+      // Error is already handled in loadData, just log it
+      print('Error refreshing trainers: $e');
     }
   }
 
 
   void setRowsPerPage(int value) {
-    _rowsPerPage.value = value;
-    _currentPage.value = 0;
+    _rowsPerPage = value;
+    _currentPage = 0;
     update();
   }
 
   void nextPage() {
     if ((currentPage + 1) * rowsPerPage < totalItems) {
-      _currentPage.value++;
+      _currentPage++;
       update();
     }
   }
 
   void prevPage() {
     if (currentPage > 0) {
-      _currentPage.value--;
+      _currentPage--;
       update();
     }
   }
 
   void setSelectedStatusFilter(String value) {
-    _selectedStatusFilter.value = value;
-    _currentPage.value = 0;
+    _selectedStatusFilter = value;
+    _currentPage = 0;
     update();
   }
 
   void setSearchQuery(String value) {
-    _searchQuery.value = value;
-    _currentPage.value = 0;
+    _searchQuery = value;
+    _currentPage = 0;
     update();
   }
 
@@ -2403,7 +2569,15 @@ class TrainerDataProvider extends GetxController {
 
   // Method to manually trigger data loading (useful for debugging)
   void forceLoadData() {
+    _hasLoadedData = false;
+    _hasEmptyData = false;
     loadData();
+  }
+
+  // Method to reset data state (useful when new data might be available)
+  void resetDataState() {
+    _hasLoadedData = false;
+    _hasEmptyData = false;
   }
 
   // Update trainer status immediately without API call

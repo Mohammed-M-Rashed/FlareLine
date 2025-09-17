@@ -13,16 +13,29 @@ import 'package:flutter/material.dart';
 class SpecialCourseRequestService {
   static String get _baseUrl => ApiConfig.baseUrl;
   
-  // Check if user has special course request management permission
-  static bool hasSpecialCourseRequestManagementPermission() {
+  // Check if user is a Company Account
+  static bool isCompanyAccount() {
     try {
       final authController = Get.find<AuthController>();
       final user = authController.userData;
       if (user != null && user.roles.isNotEmpty) {
-        // System Administrator has full access, Company Account has limited access
+        return user.roles.any((role) => role.name == 'company_account');
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Check if user is Admin or System Administrator
+  static bool isAdminOrSystemAdministrator() {
+    try {
+      final authController = Get.find<AuthController>();
+      final user = authController.userData;
+      if (user != null && user.roles.isNotEmpty) {
         return user.roles.any((role) => 
-          role.name == 'system_administrator' || 
-          role.name == 'company_account'
+          role.name == 'admin' || 
+          role.name == 'system_administrator'
         );
       }
       return false;
@@ -31,32 +44,54 @@ class SpecialCourseRequestService {
     }
   }
 
-  // Check if user can approve/reject special course requests (System Administrator only)
-  static bool canApproveRejectSpecialCourseRequests() {
-    try {
-      final authController = Get.find<AuthController>();
-      final user = authController.userData;
-      if (user != null && user.roles.isNotEmpty) {
-        return user.roles.any((role) => role.name == 'system_administrator');
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
+  // Check if user can create special course requests (Company Account only)
+  static bool canCreateSpecialCourseRequests() {
+    return isCompanyAccount();
   }
 
-  // Get all special course requests
+  // Check if user can update special course requests (Company Account only)
+  static bool canUpdateSpecialCourseRequests() {
+    return isCompanyAccount();
+  }
+
+  // Check if user can view all special course requests (Admin and System Administrator only)
+  static bool canViewAllSpecialCourseRequests() {
+    return isAdminOrSystemAdministrator();
+  }
+
+  // Check if user can view company special course requests (Company Account only)
+  static bool canViewCompanySpecialCourseRequests() {
+    return isCompanyAccount();
+  }
+
+  // Check if user can forward special course requests (Company Account only)
+  static bool canForwardSpecialCourseRequests() {
+    return isCompanyAccount();
+  }
+
+  // Check if user can approve/reject special course requests (Admin and System Administrator only)
+  static bool canApproveRejectSpecialCourseRequests() {
+    return isAdminOrSystemAdministrator();
+  }
+
+  // Get all special course requests (Admin and System Administrator only)
   static Future<SpecialCourseRequestListResponse> getAllSpecialCourseRequests() async {
+    const String methodName = 'getAllSpecialCourseRequests';
+    print('🔍 ERROR_TRACKING: Starting $methodName');
+    
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
+        print('❌ ERROR_TRACKING: $methodName - No authentication token found');
         throw Exception('Authentication token not found. Please login again.');
       }
 
-      if (!hasSpecialCourseRequestManagementPermission()) {
-        throw Exception('You do not have permission to view special course requests.');
+      if (!canViewAllSpecialCourseRequests()) {
+        print('❌ ERROR_TRACKING: $methodName - Permission denied. User does not have admin/system admin role');
+        throw Exception('You do not have permission to view all special course requests. Only Admin and System Administrator can access this endpoint.');
       }
 
+      print('🔍 ERROR_TRACKING: $methodName - Making API call to ${ApiEndpoints.getAllSpecialCourseRequests}');
       final response = await ApiService.post(
         ApiEndpoints.getAllSpecialCourseRequests,
         body: {}, // Empty JSON object as per API spec
@@ -66,9 +101,23 @@ class SpecialCourseRequestService {
         },
       );
 
+      print('🔍 ERROR_TRACKING: $methodName - API response status: ${response.statusCode}');
+      print('🔍 ERROR_TRACKING: $methodName - API response body: ${response.body}');
+
       final responseData = jsonDecode(response.body);
-      return SpecialCourseRequestListResponse.fromJson(responseData);
-    } catch (e) {
+      final result = SpecialCourseRequestListResponse.fromJson(responseData);
+      
+      if (result.success) {
+        print('✅ ERROR_TRACKING: $methodName - Successfully loaded ${result.data.length} special course requests');
+      } else {
+        print('❌ ERROR_TRACKING: $methodName - API returned error: ${result.messageEn}');
+      }
+      
+      return result;
+    } catch (e, stackTrace) {
+      print('❌ ERROR_TRACKING: $methodName - Exception occurred: $e');
+      print('❌ ERROR_TRACKING: $methodName - Stack trace: $stackTrace');
+      
       return SpecialCourseRequestListResponse(
         data: [],
         messageEn: 'Failed to load special course requests: ${e.toString()}',
@@ -78,16 +127,22 @@ class SpecialCourseRequestService {
     }
   }
 
-  // Create special course request
+  // Create special course request (Company Account only)
   static Future<SpecialCourseRequestResponse> createSpecialCourseRequest(SpecialCourseRequestCreateRequest request) async {
+    const String methodName = 'createSpecialCourseRequest';
+    print('🔍 ERROR_TRACKING: Starting $methodName');
+    print('🔍 ERROR_TRACKING: $methodName - Request data: ${request.toJson()}');
+    
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
+        print('❌ ERROR_TRACKING: $methodName - No authentication token found');
         throw Exception('Authentication token not found. Please login again.');
       }
 
-      if (!hasSpecialCourseRequestManagementPermission()) {
-        throw Exception('You do not have permission to create special course requests.');
+      if (!canCreateSpecialCourseRequests()) {
+        print('❌ ERROR_TRACKING: $methodName - Permission denied. User does not have company account role');
+        throw Exception('You do not have permission to create special course requests. Only Company Account can create requests.');
       }
 
       // Validate request data
@@ -99,9 +154,11 @@ class SpecialCourseRequestService {
         status: request.status,
       );
       if (validationError != null) {
+        print('❌ ERROR_TRACKING: $methodName - Validation error: $validationError');
         throw Exception(validationError);
       }
 
+      print('🔍 ERROR_TRACKING: $methodName - Making API call to ${ApiEndpoints.createSpecialCourseRequest}');
       final response = await ApiService.post(
         ApiEndpoints.createSpecialCourseRequest,
         body: request.toJson(),
@@ -111,9 +168,23 @@ class SpecialCourseRequestService {
         },
       );
 
+      print('🔍 ERROR_TRACKING: $methodName - API response status: ${response.statusCode}');
+      print('🔍 ERROR_TRACKING: $methodName - API response body: ${response.body}');
+
       final responseData = jsonDecode(response.body);
-      return SpecialCourseRequestResponse.fromJson(responseData);
-    } catch (e) {
+      final result = SpecialCourseRequestResponse.fromJson(responseData);
+      
+      if (result.success) {
+        print('✅ ERROR_TRACKING: $methodName - Successfully created special course request with ID: ${result.data?.id}');
+      } else {
+        print('❌ ERROR_TRACKING: $methodName - API returned error: ${result.messageEn}');
+      }
+      
+      return result;
+    } catch (e, stackTrace) {
+      print('❌ ERROR_TRACKING: $methodName - Exception occurred: $e');
+      print('❌ ERROR_TRACKING: $methodName - Stack trace: $stackTrace');
+      
       return SpecialCourseRequestResponse(
         messageEn: 'Failed to create special course request: ${e.toString()}',
         messageAr: 'فشل في إنشاء طلب الدورة الخاصة: ${e.toString()}',
@@ -122,7 +193,7 @@ class SpecialCourseRequestService {
     }
   }
 
-  // Update special course request
+  // Update special course request (Company Account only)
   static Future<SpecialCourseRequestResponse> updateSpecialCourseRequest(SpecialCourseRequestUpdateRequest request) async {
     try {
       final token = AuthService.getAuthToken();
@@ -130,8 +201,8 @@ class SpecialCourseRequestService {
         throw Exception('Authentication token not found. Please login again.');
       }
 
-      if (!hasSpecialCourseRequestManagementPermission()) {
-        throw Exception('You do not have permission to update special course requests.');
+      if (!canUpdateSpecialCourseRequests()) {
+        throw Exception('You do not have permission to update special course requests. Only Company Account can update requests.');
       }
 
       // Validate request data
@@ -167,23 +238,21 @@ class SpecialCourseRequestService {
     }
   }
 
-  // Get special course requests by status
-  static Future<SpecialCourseRequestListResponse> getSpecialCourseRequestsByStatus(String status) async {
+  // Get special course requests by company (Company Account only)
+  static Future<SpecialCourseRequestListResponse> getSpecialCourseRequestsByCompany() async {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
         throw Exception('Authentication token not found. Please login again.');
       }
 
-      if (!hasSpecialCourseRequestManagementPermission()) {
-        throw Exception('You do not have permission to view special course requests.');
+      if (!canViewCompanySpecialCourseRequests()) {
+        throw Exception('You do not have permission to view company special course requests. Only Company Account can access this endpoint.');
       }
 
-      final request = GetSpecialCourseRequestsByStatusRequest(status: status);
-
       final response = await ApiService.post(
-        ApiEndpoints.getSpecialCourseRequestsByStatus,
-        body: request.toJson(),
+        ApiEndpoints.getSpecialCourseRequestsByCompany,
+        body: {}, // Empty JSON object as per API spec
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -195,14 +264,14 @@ class SpecialCourseRequestService {
     } catch (e) {
       return SpecialCourseRequestListResponse(
         data: [],
-        messageEn: 'Failed to load special course requests by status: ${e.toString()}',
-        messageAr: 'فشل في تحميل طلبات الدورات الخاصة حسب الحالة: ${e.toString()}',
+        messageEn: 'Failed to load company special course requests: ${e.toString()}',
+        messageAr: 'فشل في تحميل طلبات الدورات الخاصة للشركة: ${e.toString()}',
         statusCode: 500,
       );
     }
   }
 
-  // Approve special course request (System Administrator only)
+  // Approve special course request (Admin and System Administrator only)
   static Future<SpecialCourseRequestResponse> approveSpecialCourseRequest(int id) async {
     try {
       final token = AuthService.getAuthToken();
@@ -211,7 +280,7 @@ class SpecialCourseRequestService {
       }
 
       if (!canApproveRejectSpecialCourseRequests()) {
-        throw Exception('You do not have permission to approve special course requests.');
+        throw Exception('You do not have permission to approve special course requests. Only Admin and System Administrator can approve requests.');
       }
 
       final request = ApproveSpecialCourseRequestRequest(id: id);
@@ -236,8 +305,8 @@ class SpecialCourseRequestService {
     }
   }
 
-  // Reject special course request (System Administrator only)
-  static Future<SpecialCourseRequestResponse> rejectSpecialCourseRequest(int id) async {
+  // Reject special course request (Admin and System Administrator only)
+  static Future<SpecialCourseRequestResponse> rejectSpecialCourseRequest(int id, String rejectionReason) async {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
@@ -245,10 +314,15 @@ class SpecialCourseRequestService {
       }
 
       if (!canApproveRejectSpecialCourseRequests()) {
-        throw Exception('You do not have permission to reject special course requests.');
+        throw Exception('You do not have permission to reject special course requests. Only Admin and System Administrator can reject requests.');
       }
 
-      final request = RejectSpecialCourseRequestRequest(id: id);
+      // Validate rejection reason
+      if (rejectionReason.trim().isEmpty) {
+        throw Exception('Rejection reason is required and cannot be empty.');
+      }
+
+      final request = RejectSpecialCourseRequestRequest(id: id, rejectionReason: rejectionReason);
 
       final response = await ApiService.post(
         ApiEndpoints.rejectSpecialCourseRequest,
@@ -265,6 +339,40 @@ class SpecialCourseRequestService {
       return SpecialCourseRequestResponse(
         messageEn: 'Failed to reject special course request: ${e.toString()}',
         messageAr: 'فشل في رفض طلب الدورة الخاصة: ${e.toString()}',
+        statusCode: 500,
+      );
+    }
+  }
+
+  // Forward special course request (Company Account only)
+  static Future<SpecialCourseRequestResponse> forwardSpecialCourseRequest(int id) async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        throw Exception('Authentication token not found. Please login again.');
+      }
+
+      if (!canForwardSpecialCourseRequests()) {
+        throw Exception('You do not have permission to forward special course requests. Only Company Account can forward requests.');
+      }
+
+      final request = ForwardSpecialCourseRequestRequest(id: id);
+
+      final response = await ApiService.post(
+        ApiEndpoints.forwardSpecialCourseRequest,
+        body: request.toJson(),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      final responseData = jsonDecode(response.body);
+      return SpecialCourseRequestResponse.fromJson(responseData);
+    } catch (e) {
+      return SpecialCourseRequestResponse(
+        messageEn: 'Failed to forward special course request: ${e.toString()}',
+        messageAr: 'فشل في إرسال طلب الدورة الخاصة: ${e.toString()}',
         statusCode: 500,
       );
     }
@@ -339,16 +447,40 @@ class SpecialCourseRequestService {
 
   // Helper method to get current user's company ID (for company accounts)
   static int? getCurrentUserCompanyId() {
+    const String methodName = 'getCurrentUserCompanyId';
+    print('🔍 ERROR_TRACKING: Starting $methodName');
+    
     try {
       final authController = Get.find<AuthController>();
       final user = authController.userData;
+      print('🔍 ERROR_TRACKING: $methodName - user: $user');
+      
       if (user != null) {
-        // This would need to be implemented based on your user model structure
-        // For now, return null and let the form handle company selection
+        print('🔍 ERROR_TRACKING: $methodName - user.companyId: ${user.companyId}');
+        print('🔍 ERROR_TRACKING: $methodName - user.roles: ${user.roles.map((r) => r.name).join(', ')}');
+        print('🔍 ERROR_TRACKING: $methodName - user.company: ${user.company}');
+        
+        // Try to get company ID from user.companyId first
+        if (user.companyId != null) {
+          print('✅ ERROR_TRACKING: $methodName - Found company ID from user.companyId: ${user.companyId}');
+          return user.companyId;
+        }
+        
+        // Fallback: try to get company ID from user.company object
+        if (user.company != null && user.company!.id != null) {
+          print('✅ ERROR_TRACKING: $methodName - Found company ID from user.company.id: ${user.company!.id}');
+          return user.company!.id;
+        }
+        
+        print('❌ ERROR_TRACKING: $methodName - No company ID found in user data');
         return null;
       }
+      
+      print('❌ ERROR_TRACKING: $methodName - User is null');
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ ERROR_TRACKING: $methodName - Exception occurred: $e');
+      print('❌ ERROR_TRACKING: $methodName - Stack trace: $stackTrace');
       return null;
     }
   }
@@ -356,18 +488,18 @@ class SpecialCourseRequestService {
   // Create special course request for current company (convenience method)
   static Future<SpecialCourseRequestResponse> createSpecialCourseRequestForCurrentCompany({
     required int companyId,
+    required int specializationId,
     required String title,
     required String description,
     String? fileAttachment,
-    String? createdBy,
   }) async {
     final request = SpecialCourseRequestCreateRequest(
       companyId: companyId,
+      specializationId: specializationId,
       title: title,
       description: description,
       fileAttachment: fileAttachment,
       status: 'pending', // Default status
-      createdBy: createdBy ?? 'company_request', // Default created_by
     );
 
     return await createSpecialCourseRequest(request);

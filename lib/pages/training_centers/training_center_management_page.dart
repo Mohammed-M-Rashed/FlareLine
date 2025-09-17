@@ -1049,6 +1049,15 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
           );
           
           try {
+            // Log form data for debugging
+            print('📝 TRAINING CENTER CREATE: Form data validation passed');
+            print('📝 TRAINING CENTER CREATE: Name: ${nameController.text.trim()}');
+            print('📝 TRAINING CENTER CREATE: Email: ${emailController.text.trim()}');
+            print('📝 TRAINING CENTER CREATE: Phone: ${phoneController.text.trim()}');
+            print('📝 TRAINING CENTER CREATE: Address: ${addressController.text.trim()}');
+            print('📝 TRAINING CENTER CREATE: Website: ${websiteController.text.trim()}');
+            print('📝 TRAINING CENTER CREATE: Description: ${descriptionController.text.trim()}');
+            
             final request = TrainingCenterCreateRequest(
               name: nameController.text.trim(),
               email: emailController.text.trim(),
@@ -1058,28 +1067,78 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
             );
             
+            print('📤 TRAINING CENTER CREATE: Sending request to API...');
+            
             final response = await TrainingCenterService.createTrainingCenter(request);
+            
+            print('📥 TRAINING CENTER CREATE: Received API response');
+            print('📥 TRAINING CENTER CREATE: Success: ${response.success}');
+            print('📥 TRAINING CENTER CREATE: Message EN: ${response.messageEn}');
+            print('📥 TRAINING CENTER CREATE: Message AR: ${response.messageAr}');
             
             // Close loading dialog
             Navigator.of(context).pop();
             
             if (response.success) {
+              print('✅ TRAINING CENTER CREATE: Training center created successfully');
+              
               // Refresh the data
-              Get.find<TrainingCenterDataProvider>().refreshData();
+              try {
+                print('🔄 TRAINING CENTER CREATE: Refreshing training center data...');
+                if (Get.isRegistered<TrainingCenterDataProvider>()) {
+                  await Get.find<TrainingCenterDataProvider>().refreshData();
+                  print('✅ TRAINING CENTER CREATE: Data refresh completed');
+                } else {
+                  print('⚠️ TRAINING CENTER CREATE: TrainingCenterDataProvider not registered, attempting to register...');
+                  Get.put(TrainingCenterDataProvider(), permanent: false);
+                  await Get.find<TrainingCenterDataProvider>().refreshData();
+                  print('✅ TRAINING CENTER CREATE: Provider registered and data refresh completed');
+                }
+              } catch (e) {
+                print('❌ TRAINING CENTER CREATE: Error refreshing data: $e');
+                print('❌ TRAINING CENTER CREATE: Attempting alternative refresh method...');
+                // Try to trigger a rebuild of the GetBuilder widget
+                try {
+                  Get.find<TrainingCenterDataProvider>().update();
+                  print('✅ TRAINING CENTER CREATE: Alternative refresh method successful');
+                } catch (e2) {
+                  print('❌ TRAINING CENTER CREATE: Alternative refresh also failed: $e2');
+                }
+              }
                
               // Close modal
               Get.back();
                
               // Show success message
               _showSuccessToast(response.messageEnText);
+              print('✅ TRAINING CENTER CREATE: Success toast shown');
+              
+              // Force UI refresh
+              setState(() {});
             } else {
+              print('❌ TRAINING CENTER CREATE: API returned success=false');
+              print('❌ TRAINING CENTER CREATE: Error message: ${response.messageEn}');
               throw Exception(response.messageEn);
             }
-          } catch (e) {
+          } catch (e, stackTrace) {
             // Close loading dialog
             Navigator.of(context).pop();
             
-            _showErrorToast(e.toString());
+            print('❌ TRAINING CENTER CREATE: Exception caught during training center creation');
+            print('❌ TRAINING CENTER CREATE: Error type: ${e.runtimeType}');
+            print('❌ TRAINING CENTER CREATE: Error message: $e');
+            print('❌ TRAINING CENTER CREATE: Stack trace: $stackTrace');
+            
+            // Show user-friendly error message
+            String errorMessage = 'Failed to create training center';
+            if (e.toString().contains('Exception:')) {
+              errorMessage = e.toString().replaceFirst('Exception: ', '');
+            } else if (e.toString().isNotEmpty) {
+              errorMessage = e.toString();
+            }
+            
+            _showErrorToast(errorMessage);
+            print('❌ TRAINING CENTER CREATE: Error toast shown: $errorMessage');
           }
         }
       },
@@ -1359,6 +1418,16 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
           );
           
           try {
+            // Log form data for debugging
+            print('📝 TRAINING CENTER EDIT: Form data validation passed');
+            print('📝 TRAINING CENTER EDIT: ID: ${trainingCenter.id}');
+            print('📝 TRAINING CENTER EDIT: Name: ${nameController.text.trim()}');
+            print('📝 TRAINING CENTER EDIT: Email: ${emailController.text.trim()}');
+            print('📝 TRAINING CENTER EDIT: Phone: ${phoneController.text.trim()}');
+            print('📝 TRAINING CENTER EDIT: Address: ${addressController.text.trim()}');
+            print('📝 TRAINING CENTER EDIT: Website: ${websiteController.text.trim()}');
+            print('📝 TRAINING CENTER EDIT: Description: ${descriptionController.text.trim()}');
+            
             final request = TrainingCenterUpdateRequest(
               id: trainingCenter.id!,
               name: nameController.text.trim(),
@@ -1369,28 +1438,78 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
             );
             
+            print('📤 TRAINING CENTER EDIT: Sending request to API...');
+            
             final response = await TrainingCenterService.updateTrainingCenter(request);
+            
+            print('📥 TRAINING CENTER EDIT: Received API response');
+            print('📥 TRAINING CENTER EDIT: Success: ${response.success}');
+            print('📥 TRAINING CENTER EDIT: Message EN: ${response.messageEn}');
+            print('📥 TRAINING CENTER EDIT: Message AR: ${response.messageAr}');
             
             // Close loading dialog
             Navigator.of(context).pop();
             
             if (response.success) {
+              print('✅ TRAINING CENTER EDIT: Training center updated successfully');
+              
               // Refresh the data
-              Get.find<TrainingCenterDataProvider>().refreshData();
+              try {
+                print('🔄 TRAINING CENTER EDIT: Refreshing training center data...');
+                if (Get.isRegistered<TrainingCenterDataProvider>()) {
+                  await Get.find<TrainingCenterDataProvider>().refreshData();
+                  print('✅ TRAINING CENTER EDIT: Data refresh completed');
+                } else {
+                  print('⚠️ TRAINING CENTER EDIT: TrainingCenterDataProvider not registered, attempting to register...');
+                  Get.put(TrainingCenterDataProvider(), permanent: false);
+                  await Get.find<TrainingCenterDataProvider>().refreshData();
+                  print('✅ TRAINING CENTER EDIT: Provider registered and data refresh completed');
+                }
+              } catch (e) {
+                print('❌ TRAINING CENTER EDIT: Error refreshing data: $e');
+                print('❌ TRAINING CENTER EDIT: Attempting alternative refresh method...');
+                // Try to trigger a rebuild of the GetBuilder widget
+                try {
+                  Get.find<TrainingCenterDataProvider>().update();
+                  print('✅ TRAINING CENTER EDIT: Alternative refresh method successful');
+                } catch (e2) {
+                  print('❌ TRAINING CENTER EDIT: Alternative refresh also failed: $e2');
+                }
+              }
                
               // Close modal
               Get.back();
                
               // Show success message
               _showSuccessToast(response.messageEnText);
+              print('✅ TRAINING CENTER EDIT: Success toast shown');
+              
+              // Force UI refresh
+              setState(() {});
             } else {
+              print('❌ TRAINING CENTER EDIT: API returned success=false');
+              print('❌ TRAINING CENTER EDIT: Error message: ${response.messageEn}');
               throw Exception(response.messageEn);
             }
-          } catch (e) {
+          } catch (e, stackTrace) {
             // Close loading dialog
             Navigator.of(context).pop();
             
-            _showErrorToast(e.toString());
+            print('❌ TRAINING CENTER EDIT: Exception caught during training center update');
+            print('❌ TRAINING CENTER EDIT: Error type: ${e.runtimeType}');
+            print('❌ TRAINING CENTER EDIT: Error message: $e');
+            print('❌ TRAINING CENTER EDIT: Stack trace: $stackTrace');
+            
+            // Show user-friendly error message
+            String errorMessage = 'Failed to update training center';
+            if (e.toString().contains('Exception:')) {
+              errorMessage = e.toString().replaceFirst('Exception: ', '');
+            } else if (e.toString().isNotEmpty) {
+              errorMessage = e.toString();
+            }
+            
+            _showErrorToast(errorMessage);
+            print('❌ TRAINING CENTER EDIT: Error toast shown: $errorMessage');
           }
         }
       },

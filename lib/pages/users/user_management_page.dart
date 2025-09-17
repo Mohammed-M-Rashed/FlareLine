@@ -44,6 +44,21 @@ class UserManagementPage extends LayoutWidget {
 class UserManagementWidget extends StatelessWidget {
   const UserManagementWidget({super.key});
 
+  // Helper method to check if a role is system-level (doesn't require company)
+  static bool isSystemLevelRole(String? role) {
+    return ['system_administrator', 'training_general_manager', 'board_chairman'].contains(role);
+  }
+
+  // Helper method to check if a role can only be assigned to one user
+  static bool isUniqueRole(String? role) {
+    return ['system_administrator', 'training_general_manager', 'board_chairman'].contains(role);
+  }
+
+  // Helper method to check if a role cannot be deactivated
+  static bool isNonDeactivatableRole(String? role) {
+    return ['system_administrator', 'training_general_manager', 'board_chairman'].contains(role);
+  }
+
   @override
   Widget build(BuildContext context) {
     return CommonCard(
@@ -547,7 +562,7 @@ class UserManagementWidget extends StatelessWidget {
                                                      user.isActive ? Icons.block : Icons.check_circle,
                                                      size: 18,
                                                    ),
-                                                   onPressed: (AuthService.isSystemAdministrator() && user.canChangeStatus)
+                                                   onPressed: ((AuthService.isSystemAdministrator() || AuthService.hasRole('admin')) && user.canChangeStatus)
                                                      ? () {
                                                          provider.toggleUserStatus(context, user);
                                                        }
@@ -645,6 +660,14 @@ class UserManagementWidget extends StatelessWidget {
           'label': 'Administrator',
         },
         {
+          'value': 'training_general_manager',
+          'label': 'Training General Manager',
+        },
+        {
+          'value': 'board_chairman',
+          'label': 'Board Chairman',
+        },
+        {
           'value': 'company_account',
           'label': 'Company Account',
         },
@@ -657,6 +680,37 @@ class UserManagementWidget extends StatelessWidget {
       
       // Loading state for form submission
       bool isSubmitting = false;
+      
+      // Helper function to load companies
+      Future<void> loadCompaniesForModal(StateSetter setModalState) async {
+        if (companies.isNotEmpty || isLoadingCompanies) return;
+        
+        setModalState(() {
+          isLoadingCompanies = true;
+        });
+        
+        try {
+          final response = await CompanyService.getAllCompanies();
+          if (response.success) {
+            setModalState(() {
+              companies = response.data ?? [];
+              isLoadingCompanies = false;
+            });
+          } else {
+            setModalState(() {
+              companies = [];
+              isLoadingCompanies = false;
+            });
+            _showErrorToast('فشل في تحميل الشركات');
+          }
+        } catch (error) {
+          setModalState(() {
+            companies = [];
+            isLoadingCompanies = false;
+          });
+          _showErrorToast('خطأ في تحميل الشركات: $error');
+        }
+      }
 
       ModalDialog.show(
         context: context,
@@ -676,7 +730,25 @@ class UserManagementWidget extends StatelessWidget {
                       btnText: isSubmitting ? 'جاري الإنشاء...' : 'حفظ',
                       onTap: isSubmitting ? null : () async {
                         // Check if role requires company
-                        bool requiresCompany = !['system_administrator'].contains(selectedRole);
+                        bool requiresCompany = !isSystemLevelRole(selectedRole);
+                        
+                        // Check if trying to assign a unique role that's already taken
+                        if (isUniqueRole(selectedRole)) {
+                          final existingUser = provider.users.firstWhere(
+                            (user) => user.hasUniqueRole && user.getFirstRoleName() == selectedRole,
+                            orElse: () => User(
+                              id: -1,
+                              name: '',
+                              email: '',
+                              createdAt: '',
+                              updatedAt: '',
+                            ), // Dummy user if not found
+                          );
+                          if (existingUser.id != -1) {
+                            _showErrorToast('هذا الدور محجوز بالفعل لمستخدم آخر');
+                            return;
+                          }
+                        }
                         
                         // Validate form based on role requirements
                         bool isFormValid = formKey.currentState!.validate() && 
@@ -752,28 +824,7 @@ class UserManagementWidget extends StatelessWidget {
             builder: (BuildContext context, StateSetter setModalState) {
               // Initialize companies on first build
               if (companies.isEmpty && !isLoadingCompanies) {
-                setModalState(() {
-                  isLoadingCompanies = true;
-                });
-                
-                CompanyService.getAllCompanies().then((response) {
-                  if (response.success) {
-                    setModalState(() {
-                      companies = response.data;
-                      isLoadingCompanies = false;
-                    });
-                  } else {
-                    setModalState(() {
-                      isLoadingCompanies = false;
-                    });
-                                         _showErrorToast('فشل في تحميل الشركات');
-                  }
-                }).catchError((error) {
-                  setModalState(() {
-                    isLoadingCompanies = false;
-                  });
-                  _showErrorToast('خطأ في تحميل الشركات: $error');
-                });
+                loadCompaniesForModal(setModalState);
               }
               
               return Flexible(
@@ -944,7 +995,7 @@ class UserManagementWidget extends StatelessWidget {
                                               selectedRole = newValue;
                                               
                                               // Reset company if role doesn't require it
-                                              if (['system_administrator'].contains(newValue)) {
+                                              if (isSystemLevelRole(newValue)) {
                                                 selectedCompany = null;
                                               }
                                             });
@@ -1007,7 +1058,7 @@ class UserManagementWidget extends StatelessWidget {
                                 const SizedBox(height: 14), // Reduced spacing from 16 to 14
                                 
                                 // Company Selection - Only show for roles that require it
-                                if (!['system_administrator'].contains(selectedRole))
+                                if (!isSystemLevelRole(selectedRole))
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -1355,7 +1406,7 @@ class UserManagementWidget extends StatelessWidget {
         String? selectedRole = user.getFirstRoleName();
         
         // If user has a system-level role, clear company
-        if (['system_administrator'].contains(selectedRole)) {
+        if (isSystemLevelRole(selectedRole)) {
           // These will be set to null when companies are loaded
         }
        
@@ -1367,6 +1418,14 @@ class UserManagementWidget extends StatelessWidget {
         {
           'value': 'admin',
           'label': 'Administrator',
+        },
+        {
+          'value': 'training_general_manager',
+          'label': 'Training General Manager',
+        },
+        {
+          'value': 'board_chairman',
+          'label': 'Board Chairman',
         },
         {
           'value': 'company_account',
@@ -1381,8 +1440,56 @@ class UserManagementWidget extends StatelessWidget {
       
       // Loading state for form submission
       bool isSubmitting = false;
+      
+      // Helper function to load companies for edit modal
+      Future<void> loadCompaniesForEditModal(StateSetter setModalState) async {
+        if (companies.isNotEmpty || isLoadingCompanies) return;
+        
+        setModalState(() {
+          isLoadingCompanies = true;
+        });
+        
+        try {
+          final response = await CompanyService.getAllCompanies();
+          if (response.success) {
+            setModalState(() {
+              companies = response.data ?? [];
+              isLoadingCompanies = false;
+              
+              // Only pre-select company if the role requires it and companies exist
+              bool requiresCompany = !isSystemLevelRole(selectedRole);
+              
+              if (requiresCompany && user.companyId != null && companies.isNotEmpty) {
+                try {
+                  selectedCompany = companies.firstWhere(
+                    (company) => company.id == user.companyId,
+                  );
+                } catch (e) {
+                  // If user's company is not found in the list, select the first available company
+                  selectedCompany = companies.first;
+                }
+              } else {
+                // For system-level roles or no companies, clear company
+                selectedCompany = null;
+              }
+            });
+          } else {
+            setModalState(() {
+              companies = [];
+              isLoadingCompanies = false;
+            });
+            _showErrorToast('فشل في تحميل الشركات');
+          }
+        } catch (error) {
+          setModalState(() {
+            companies = [];
+            isLoadingCompanies = false;
+          });
+          _showErrorToast('خطأ في تحميل الشركات: $error');
+        }
+      }
 
-                                                 ModalDialog.show(
+      ModalDialog.show(
           context: context,
           title: 'Edit User',
           showTitle: true,
@@ -1400,7 +1507,27 @@ class UserManagementWidget extends StatelessWidget {
                        btnText: isSubmitting ? 'Updating...' : 'Save',
                        onTap: isSubmitting ? null : () async {
                          // Check if role requires company
-                         bool requiresCompany = !['system_administrator'].contains(selectedRole);
+                         bool requiresCompany = !isSystemLevelRole(selectedRole);
+                         
+                         // Check if trying to assign a unique role that's already taken (only if changing role)
+                         if (isUniqueRole(selectedRole) && selectedRole != user.getFirstRoleName()) {
+                           final existingUser = provider.users.firstWhere(
+                             (existingUser) => existingUser.hasUniqueRole && 
+                                             existingUser.getFirstRoleName() == selectedRole &&
+                                             existingUser.id != user.id,
+                             orElse: () => User(
+                               id: -1,
+                               name: '',
+                               email: '',
+                               createdAt: '',
+                               updatedAt: '',
+                             ), // Dummy user if not found
+                           );
+                           if (existingUser.id != -1) {
+                             _showErrorToast('هذا الدور محجوز بالفعل لمستخدم آخر');
+                             return;
+                           }
+                         }
                          
                          // Validate form based on role requirements
                          bool isFormValid = formKey.currentState!.validate() && 
@@ -1498,40 +1625,7 @@ class UserManagementWidget extends StatelessWidget {
             builder: (BuildContext context, StateSetter setModalState) {
               // Initialize companies on first build
               if (companies.isEmpty && !isLoadingCompanies) {
-                setModalState(() {
-                  isLoadingCompanies = true;
-                });
-                
-                CompanyService.getAllCompanies().then((response) {
-                  if (response.success) {
-                    setModalState(() {
-                      companies = response.data;
-                      isLoadingCompanies = false;
-                      
-                      // Only pre-select company if the role requires it
-                      bool requiresCompany = !['system_administrator'].contains(selectedRole);
-                      
-                      if (requiresCompany && user.companyId != null) {
-                        selectedCompany = companies.firstWhere(
-                          (company) => company.id == user.companyId,
-                          orElse: () => companies.first,
-                        );
-                      } else {
-                        // For system-level roles, clear company
-                        selectedCompany = null;
-                      }
-                    });
-                  } else {
-                    setModalState(() {
-                      isLoadingCompanies = false;
-                    });
-                  }
-                }).catchError((error) {
-                  setModalState(() {
-                    isLoadingCompanies = false;
-                  });
-                  _showErrorToast('خطأ في تحميل الشركات: $error');
-                });
+                loadCompaniesForEditModal(setModalState);
               }
               
               return SingleChildScrollView(
@@ -1701,7 +1795,7 @@ class UserManagementWidget extends StatelessWidget {
                                               selectedRole = newValue;
                                               
                                               // Reset company if role doesn't require it
-                                              if (['system_administrator'].contains(newValue)) {
+                                              if (isSystemLevelRole(newValue)) {
                                                 selectedCompany = null;
                                               }
                                             });
@@ -1764,7 +1858,7 @@ class UserManagementWidget extends StatelessWidget {
                                 const SizedBox(height: 14), // Reduced spacing from 16 to 14
                                 
                                 // Company Selection - Only show for roles that require it
-                                if (!['system_administrator'].contains(selectedRole))
+                                if (!isSystemLevelRole(selectedRole))
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -2263,12 +2357,12 @@ class UserManagementWidget extends StatelessWidget {
 
   /// Get tooltip text for status toggle button
   String _getStatusToggleTooltip(User user) {
-    if (!AuthService.isSystemAdministrator()) {
-      return 'يتطلب دور مدير النظام';
+    if (!AuthService.isSystemAdministrator() && !AuthService.hasRole('admin')) {
+      return 'يتطلب دور مدير النظام أو مسؤول';
     }
     
-    if (user.isSystemAdministrator) {
-      return 'لا يمكن تغيير حالة مدير النظام';
+    if (user.hasUniqueRole) {
+      return user.statusChangeRestrictionMessage;
     }
     
     if (user.isActive) {
@@ -2280,7 +2374,7 @@ class UserManagementWidget extends StatelessWidget {
 
   /// Get background color for status toggle button
   Color _getStatusToggleBackgroundColor(User user) {
-    if (!AuthService.isSystemAdministrator() || user.isSystemAdministrator) {
+    if ((!AuthService.isSystemAdministrator() && !AuthService.hasRole('admin')) || user.hasUniqueRole) {
       return Colors.grey.shade100;
     }
     
@@ -2293,7 +2387,7 @@ class UserManagementWidget extends StatelessWidget {
 
   /// Get foreground color for status toggle button
   Color _getStatusToggleForegroundColor(User user) {
-    if (!AuthService.isSystemAdministrator() || user.isSystemAdministrator) {
+    if ((!AuthService.isSystemAdministrator() && !AuthService.hasRole('admin')) || user.hasUniqueRole) {
       return Colors.grey.shade400;
     }
     
@@ -2653,14 +2747,14 @@ class _UserDataProvider extends GetxController {
   // Toggle user status (activate/deactivate)
   void toggleUserStatus(BuildContext context, User user) {
     // Check if current user has permission to perform this action
-    if (!AuthService.isSystemAdministrator()) {
-      _showErrorToast('ليس لديك صلاحية لتنفيذ هذا الإجراء. يتطلب دور مدير النظام.');
+    if (!AuthService.isSystemAdministrator() && !AuthService.hasRole('admin')) {
+      _showErrorToast('ليس لديك صلاحية لتنفيذ هذا الإجراء. يتطلب دور مدير النظام أو مسؤول.');
       return;
     }
 
-    // Check if the target user is a system administrator
-    if (user.isSystemAdministrator) {
-      _showErrorToast('لا يمكن تغيير حالة مدير النظام');
+    // Check if the target user has a unique role that cannot be deactivated
+    if (user.hasUniqueRole) {
+      _showErrorToast(user.statusChangeRestrictionMessage);
       return;
     }
 

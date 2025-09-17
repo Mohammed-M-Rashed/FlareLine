@@ -13,6 +13,7 @@ import 'package:flareline/core/models/training_plan_model.dart';
 import 'package:flareline/core/services/training_plan_service.dart';
 import 'package:flareline/core/services/plan_course_assignment_service.dart';
 import 'package:flareline/core/models/plan_course_assignment_model.dart' as pca_model;
+import 'package:flareline/core/services/auth_service.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:get/get.dart';
@@ -61,6 +62,53 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
     );
   }
 
+  // Helper method to get role color
+  Color _getRoleColor(String role) {
+    switch (role) {
+      case 'Admin':
+        return Colors.blue;
+      case 'General Training Director':
+        return Colors.orange;
+      case 'Board Chairman':
+        return Colors.purple;
+      case 'Company Account':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Show workflow confirmation dialog
+  void _showWorkflowConfirmation(
+    BuildContext context,
+    String title,
+    String message,
+    VoidCallback onConfirm,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onConfirm();
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildWidget(BuildContext context, TrainingPlanDataProvider provider) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -72,67 +120,72 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Training Plan Management',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Manage annual training plans and their information',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
-                            type: 'secondary',
-                            onTap: provider.isLoading ? null : () async {
-                              try {
-                                await provider.refreshData();
-                                _showSuccessToast('Training plans data refreshed successfully');
-                              } catch (e) {
-                                _showErrorToast('خطأ في تحديث بيانات خطط التدريب: ${e.toString()}');
-                              }
-                            },
-                          )),
-                        ),
-                        const SizedBox(width: 16),
-                        Builder(
-                          builder: (context) {
-                            if (TrainingPlanService.hasTrainingPlanManagementPermission()) {
-                              return SizedBox(
-                                width: 140,
-                                child: ButtonWidget(
-                                  btnText: 'Add Training Plan',
-                                  type: 'primary',
-                                  onTap: () {
-                                    _showAddTrainingPlanForm(context);
-                                  },
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Training Plan Management',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
                                 ),
-                              );
-                            } else {
-                              return const SizedBox.shrink();
-                            }
-                          },
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Manage annual training plans and their information',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: Obx(() => ButtonWidget(
+                                btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                                type: 'secondary',
+                                onTap: provider.isLoading ? null : () async {
+                                  try {
+                                    await provider.refreshData();
+                                    _showSuccessToast('Training plans data refreshed successfully');
+                                  } catch (e) {
+                                    _showErrorToast('خطأ في تحديث بيانات خطط التدريب: ${e.toString()}');
+                                  }
+                                },
+                              )),
+                            ),
+                            const SizedBox(width: 16),
+                            Builder(
+                              builder: (context) {
+                                if (TrainingPlanService.canCreateEditTrainingPlans()) {
+                                  return SizedBox(
+                                    width: 140,
+                                    child: ButtonWidget(
+                                      btnText: 'Add Training Plan',
+                                      type: 'primary',
+                                      onTap: () {
+                                        _showAddTrainingPlanForm(context);
+                                      },
+                                    ),
+                                  );
+                                } else {
+                                  return const SizedBox.shrink();
+                                }
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -140,25 +193,7 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                 ),
               ),
               const SizedBox(height: 24),
-              Builder(
-                builder: (context) {
-                  if (!TrainingPlanService.hasTrainingPlanManagementPermission()) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text(
-                          'You do not have permission to manage training plans. Only System Administrators can access this functionality.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.red,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    );
-                  }
-
-                  return Obx(() {
+              Obx(() {
                     if (provider.isLoading) {
                       return const LoadingWidget();
                     }
@@ -198,20 +233,19 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 24),
-                            ButtonWidget(
-                              btnText: 'Add First Training Plan',
-                              type: 'primary',
-                              onTap: () => _showAddTrainingPlanForm(context),
-                            ),
+                            if (TrainingPlanService.canCreateEditTrainingPlans())
+                              ButtonWidget(
+                                btnText: 'Add First Training Plan',
+                                type: 'primary',
+                                onTap: () => _showAddTrainingPlanForm(context),
+                              ),
                           ],
                         ),
                       );
                     }
 
                     return _buildTrainingPlansTable(context, provider, constraints);
-                  });
-                },
-              ),
+                  }),
             ],
           ),
         );
@@ -276,11 +310,12 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All Statuses')),
-                    DropdownMenuItem(value: 'draft', child: Text('Draft')),
-                    DropdownMenuItem(value: 'submitted', child: Text('Submitted')),
-                  ],
+                  items: TrainingPlanService.getStatusOptions().map((status) {
+                    return DropdownMenuItem(
+                      value: status['value'],
+                      child: Text(status['label']!),
+                    );
+                  }).toList(),
                   onChanged: (value) {
                     if (value != null) provider.setSelectedStatusFilter(value);
                   },
@@ -503,14 +538,13 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
     return Container(
       constraints: const BoxConstraints(
         minWidth: 80,
-        maxWidth: 100,
+        maxWidth: 250,
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: item.statusColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: item.statusColor.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
           item.statusDisplay,
@@ -561,63 +595,144 @@ class _TrainingPlanManagementWidgetState extends State<TrainingPlanManagementWid
   }
 
   Widget _buildActionsCell(BuildContext context, TrainingPlan item) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // View button
-        IconButton(
-          icon: const Icon(
-            Icons.visibility,
-            size: 18,
-          ),
-          onPressed: () {
-            _handleAction(context, 'view', item);
-          },
-          tooltip: 'View Details',
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.grey.shade50,
-            foregroundColor: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(width: 8),
-        
-        // Edit button (only for draft or rejected plans)
-        if (item.canBeEdited)
+    return GetBuilder<TrainingPlanDataProvider>(
+      builder: (provider) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // View button
           IconButton(
             icon: const Icon(
-              Icons.edit,
+              Icons.visibility,
               size: 18,
             ),
             onPressed: () {
-              _handleAction(context, 'edit', item);
+              _handleAction(context, 'view', item);
             },
-            tooltip: 'Edit Training Plan',
+            tooltip: 'View Details',
             style: IconButton.styleFrom(
-              backgroundColor: Colors.blue.shade50,
-              foregroundColor: Colors.blue.shade700,
+              backgroundColor: Colors.grey.shade50,
+              foregroundColor: Colors.grey.shade700,
             ),
           ),
-
-        const SizedBox(width: 8),
-
-        // Submit button (only for draft or rejected plans)
-        if (item.canBeSubmitted && TrainingPlanService.canSubmitTrainingPlans())
-          IconButton(
-            icon: const Icon(
-              Icons.send,
-              size: 18,
+          const SizedBox(width: 8),
+          
+          // Edit button (Admin only, only for draft plans)
+          if (provider.isAdmin && item.canBeEdited)
+            IconButton(
+              icon: const Icon(
+                Icons.edit,
+                size: 18,
+              ),
+              onPressed: () {
+                _handleAction(context, 'edit', item);
+              },
+              tooltip: 'Edit Training Plan',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.blue.shade50,
+                foregroundColor: Colors.blue.shade700,
+              ),
             ),
-            onPressed: () {
-              _handleAction(context, 'submit', item);
-            },
-            tooltip: 'Submit Training Plan',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.orange.shade50,
-              foregroundColor: Colors.orange.shade700,
-            ),
-          ),
 
-      ],
+          // Workflow action buttons based on role and status
+          if (provider.isAdmin) ...[
+            // Move to Plan Preparation (Admin only, Draft status)
+            if (item.canBeMovedToPlanPreparation) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(
+                  Icons.build,
+                  size: 18,
+                ),
+                onPressed: () {
+                  _showWorkflowConfirmation(
+                    context,
+                    'Move to Plan Preparation',
+                    'Are you sure you want to move this training plan to plan preparation?',
+                    () => provider.moveToPlanPreparation(item.id!),
+                  );
+                },
+                tooltip: 'Move to Plan Preparation',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.orange.shade50,
+                  foregroundColor: Colors.orange.shade700,
+                ),
+              ),
+            ],
+            
+            // Move to General Manager Approval (Admin only, Plan Preparation status)
+            if (item.canBeMovedToTrainingGeneralManagerApproval) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(
+                  Icons.person,
+                  size: 18,
+                ),
+                onPressed: () {
+                  _showWorkflowConfirmation(
+                    context,
+                    'Move to General Manager Approval',
+                    'Are you sure you want to move this training plan to general manager approval?',
+                    () => provider.moveToGeneralManagerApproval(item.id!),
+                  );
+                },
+                tooltip: 'Move to General Manager Approval',
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.purple.shade50,
+                  foregroundColor: Colors.purple.shade700,
+                ),
+              ),
+            ],
+          ],
+
+          // Move to Board Chairman Approval (General Training Director only)
+          if (provider.isTrainingGeneralManager && item.canBeMovedToBoardChairmanApproval) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(
+                Icons.groups,
+                size: 18,
+              ),
+              onPressed: () {
+                _showWorkflowConfirmation(
+                  context,
+                  'Move to Board Chairman Approval',
+                  'Are you sure you want to move this training plan to board chairman approval?',
+                  () => provider.moveToBoardChairmanApproval(item.id!),
+                );
+              },
+              tooltip: 'Move to Board Chairman Approval',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.indigo.shade50,
+                foregroundColor: Colors.indigo.shade700,
+              ),
+            ),
+          ],
+
+          // Approve Training Plan (Board Chairman only)
+          if (provider.isBoardChairman && item.canBeApproved) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(
+                Icons.check_circle,
+                size: 18,
+              ),
+              onPressed: () {
+                _showWorkflowConfirmation(
+                  context,
+                  'Approve Training Plan',
+                  'Are you sure you want to approve this training plan?',
+                  () => provider.approveTrainingPlan(item.id!),
+                );
+              },
+              tooltip: 'Approve Training Plan',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.green.shade50,
+                foregroundColor: Colors.green.shade700,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1551,6 +1666,21 @@ class TrainingPlanDataProvider extends GetxController {
   final searchController = TextEditingController();
 
   List<TrainingPlan> get trainingPlans => _trainingPlans;
+  
+  // Role checking methods
+  bool get isAdmin => TrainingPlanService.isAdmin();
+  bool get isTrainingGeneralManager => TrainingPlanService.isTrainingGeneralManager();
+  bool get isBoardChairman => TrainingPlanService.isBoardChairman();
+  bool get isCompanyAccount => TrainingPlanService.isCompanyAccount();
+  
+  // Get user role display name
+  String get userRoleDisplay {
+    if (isAdmin) return 'Admin';
+    if (isTrainingGeneralManager) return 'General Training Director';
+    if (isBoardChairman) return 'Board Chairman';
+    if (isCompanyAccount) return 'Company Account';
+    return 'Unknown';
+  }
   bool get isLoading => _isLoading.value;
   int get currentPage => _currentPage.value;
   int get rowsPerPage => _rowsPerPage.value;
@@ -1629,8 +1759,8 @@ class TrainingPlanDataProvider extends GetxController {
     try {
       _isLoading.value = true;
       
-      // Load training plans
-      final response = await TrainingPlanService.getAllTrainingPlans();
+      // Load training plans based on user role
+      final response = await TrainingPlanService.getTrainingPlansByUserRole();
       
       if (response.success) {
         _trainingPlans.value = response.data;
@@ -1694,6 +1824,101 @@ class TrainingPlanDataProvider extends GetxController {
     update();
   }
 
+  // Workflow action methods
+  Future<void> moveToPlanPreparation(int planId) async {
+    try {
+      _isLoading.value = true;
+      final response = await TrainingPlanService.moveToPlanPreparation(planId);
+      
+      if (response.success) {
+        await refreshData();
+        _showSuccessToast('Training plan moved to plan preparation successfully');
+      } else {
+        _showErrorToast(response.messageEn ?? 'Failed to move training plan');
+      }
+    } catch (e) {
+      _showErrorToast('Error: ${e.toString()}');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> moveToGeneralManagerApproval(int planId) async {
+    try {
+      _isLoading.value = true;
+      final response = await TrainingPlanService.moveToTrainingGeneralManagerApproval(planId);
+      
+      if (response.success) {
+        await refreshData();
+        _showSuccessToast('Training plan moved to general manager approval successfully');
+      } else {
+        _showErrorToast(response.messageEn ?? 'Failed to move training plan');
+      }
+    } catch (e) {
+      _showErrorToast('Error: ${e.toString()}');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> moveToBoardChairmanApproval(int planId) async {
+    try {
+      _isLoading.value = true;
+      final response = await TrainingPlanService.moveToBoardChairmanApproval(planId);
+      
+      if (response.success) {
+        await refreshData();
+        _showSuccessToast('Training plan moved to board chairman approval successfully');
+      } else {
+        _showErrorToast(response.messageEn ?? 'Failed to move training plan');
+      }
+    } catch (e) {
+      _showErrorToast('Error: ${e.toString()}');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> approveTrainingPlan(int planId) async {
+    try {
+      _isLoading.value = true;
+      final response = await TrainingPlanService.approveTrainingPlan(planId);
+      
+      if (response.success) {
+        await refreshData();
+        _showSuccessToast('Training plan approved successfully');
+      } else {
+        _showErrorToast(response.messageEn ?? 'Failed to approve training plan');
+      }
+    } catch (e) {
+      _showErrorToast('Error: ${e.toString()}');
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  // Helper methods for toast notifications
+  void _showSuccessToast(String message) {
+    toastification.show(
+      context: Get.context!,
+      type: ToastificationType.success,
+      title: const Text('Success'),
+      description: Text(message),
+      autoCloseDuration: const Duration(seconds: 3),
+    );
+  }
+
+  void _showErrorToast(String message) {
+    toastification.show(
+      context: Get.context!,
+      type: ToastificationType.error,
+      title: const Text('Error'),
+      description: Text(message),
+      autoCloseDuration: const Duration(seconds: 3),
+    );
+  }
+ 
+
   @override
   void onClose() {
     searchController.dispose();
@@ -1717,6 +1942,7 @@ class _ViewTrainingPlanDetailsWidgetState extends State<ViewTrainingPlanDetailsW
   @override
   void initState() {
     super.initState();
+    // Load assignments for all roles
     _loadPlanAssignments();
   }
 
@@ -1729,9 +1955,9 @@ class _ViewTrainingPlanDetailsWidgetState extends State<ViewTrainingPlanDetailsW
         children: [
           // Training Plan Information Section
           _buildPlanInfoSection(),
-          const SizedBox(height: 24),
 
-          // Course Assignments Section
+          // Course Assignments Section (visible to all roles)
+          const SizedBox(height: 24),
           _buildAssignmentsSection(),
         ],
       ),
@@ -1743,9 +1969,9 @@ class _ViewTrainingPlanDetailsWidgetState extends State<ViewTrainingPlanDetailsW
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1789,31 +2015,55 @@ class _ViewTrainingPlanDetailsWidgetState extends State<ViewTrainingPlanDetailsW
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          const SizedBox(height: 4),
+          label == 'Status' 
+              ? _buildStatusHighlight(value)
+              : Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
         ],
       ),
     );
   }
 
+  Widget _buildStatusHighlight(String statusText) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 80,
+        maxWidth: 250,
+      ),
+      decoration: BoxDecoration(
+        color: widget.plan.statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child:  Text(
+        statusText,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: widget.plan.statusColor,
+        ),
+      ),
+    );
+  }
+
   Widget _buildAssignmentsSection() {
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -2040,4 +2290,6 @@ class _ViewTrainingPlanDetailsWidgetState extends State<ViewTrainingPlanDetailsW
       autoCloseDuration: const Duration(seconds: 3),
     );
   }
+
+
 }

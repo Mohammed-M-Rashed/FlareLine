@@ -248,15 +248,42 @@ class User {
     return roles.any((role) => role.name.toLowerCase() == 'system_administrator');
   }
 
+  // Helper method to check if user is a training general manager
+  bool get isTrainingGeneralManager {
+    if (roles.isEmpty) {
+      return role?.toLowerCase() == 'training_general_manager';
+    }
+    return roles.any((role) => role.name.toLowerCase() == 'training_general_manager');
+  }
+
+  // Helper method to check if user is a board chairman
+  bool get isBoardChairman {
+    if (roles.isEmpty) {
+      return role?.toLowerCase() == 'board_chairman';
+    }
+    return roles.any((role) => role.name.toLowerCase() == 'board_chairman');
+  }
+
+  // Helper method to check if user has a unique role (can only be assigned to one user)
+  bool get hasUniqueRole {
+    return isSystemAdministrator || isTrainingGeneralManager || isBoardChairman;
+  }
+
   // Helper method to check if user status can be changed
   bool get canChangeStatus {
-    return !isSystemAdministrator;
+    return !hasUniqueRole;
   }
 
   // Helper method to get status change restriction message
   String get statusChangeRestrictionMessage {
     if (isSystemAdministrator) {
       return 'لا يمكن تغيير حالة مدير النظام';
+    }
+    if (isTrainingGeneralManager) {
+      return 'لا يمكن تغيير حالة المدير العام للتدريب';
+    }
+    if (isBoardChairman) {
+      return 'لا يمكن تغيير حالة رئيس مجلس الإدارة';
     }
     return '';
   }

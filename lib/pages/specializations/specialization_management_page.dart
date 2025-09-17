@@ -9,6 +9,7 @@ import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/services/specialization_service.dart';
+import 'package:flareline/core/services/auth_service.dart';
 import 'package:flareline/core/models/specialization_model.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline_uikit/utils/snackbar_util.dart';
@@ -27,6 +28,41 @@ class SpecializationManagementPage extends LayoutWidget {
 
   @override
   Widget contentDesktopWidget(BuildContext context) {
+    // Check if user has permission to access specializations management
+    if (!SpecializationService.hasSpecializationManagementPermission()) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.lock_outline,
+              size: 64,
+              color: FlarelineColors.gray500,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'غير مصرح لك بالوصول إلى إدارة التخصصات',
+              style: TextStyle(
+                fontSize: 18,
+                color: FlarelineColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'يجب أن تكون مدير النظام أو مدير للوصول إلى هذه الصفحة',
+              style: TextStyle(
+                fontSize: 14,
+                color: FlarelineColors.textTertiary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
     return const Column(
       children: [
         SizedBox(height: 16),

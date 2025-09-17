@@ -4,6 +4,7 @@ import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
 import 'package:flareline_uikit/components/modal/modal_dialog.dart';
 import 'package:flareline_uikit/components/forms/outborder_text_form_field.dart';
+import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/training_need_model.dart';
@@ -16,6 +17,7 @@ import 'package:flareline/core/models/course_model.dart' as course_model;
 import 'package:flareline/core/services/course_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
+import 'package:flareline/core/services/auth_service.dart';
 
 import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
@@ -149,7 +151,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                       child: Padding(
                         padding: EdgeInsets.all(32.0),
                         child: Text(
-                          'You do not have permission to manage training needs. Only System Administrators and Company Accounts can access this functionality.',
+                          'You do not have permission to manage training needs. Only System Administrators, Administrators, and Company Accounts can access this functionality.',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.red,
@@ -279,7 +281,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'all', child: Text('All Statuses')),
+                    DropdownMenuItem(value: 'all_statuses', child: Text('All Statuses')),
                     DropdownMenuItem(value: 'pending', child: Text('Pending')),
                     DropdownMenuItem(value: 'approved', child: Text('Approved')),
                     DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
@@ -293,22 +295,33 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               // Company filter
               Container(
                 width: constraints.maxWidth > 800 ? 300 : double.infinity,
-                child: DropdownButtonFormField<String>(
-                  value: provider.selectedCompanyFilter,
-                  decoration: const InputDecoration(
-                    labelText: 'Filter by Company',
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  ),
-                  items: [
-                    const DropdownMenuItem(value: 'all', child: Text('All Companies')),
-                    ...provider.companies.map((company) => DropdownMenuItem<String>(
-                      value: company.id.toString(),
-                      child: Text(company.name),
-                    )).toList(),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) provider.setSelectedCompanyFilter(value);
+                child: Builder(
+                  builder: (context) {
+                    final items = provider.companyFilterDropdownItems;
+                    final validatedValue = provider._validateDropdownValue(
+                      provider.selectedCompanyFilter, 
+                      items
+                    );
+                    
+                    // Update the selected value if it was invalid
+                    if (validatedValue != provider.selectedCompanyFilter) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        provider.setSelectedCompanyFilter(validatedValue);
+                      });
+                    }
+                    
+                    return DropdownButtonFormField<String>(
+                      value: validatedValue,
+                      decoration: const InputDecoration(
+                        labelText: 'Filter by Company',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      items: items,
+                      onChanged: (value) {
+                        if (value != null) provider.setSelectedCompanyFilter(value);
+                      },
+                    );
                   },
                 ),
               ),
@@ -317,7 +330,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
         ),
 
         // Clear filters button
-        if (provider.searchQuery.isNotEmpty || provider.selectedStatusFilter != 'all' || provider.selectedCompanyFilter != 'all')
+        if (provider.searchQuery.isNotEmpty || provider.selectedStatusFilter != 'all_statuses' || provider.selectedCompanyFilter != 'filter_all_companies')
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -328,8 +341,8 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                   onPressed: () {
                     provider.searchController.clear();
                     provider.setSearchQuery('');
-                    provider.setSelectedStatusFilter('all');
-                    provider.setSelectedCompanyFilter('all');
+                    provider.setSelectedStatusFilter('all_statuses');
+                    provider.setSelectedCompanyFilter('filter_all_companies');
                   },
                   icon: const Icon(Icons.clear_all, size: 16),
                   label: const Text('Clear Filters'),
@@ -409,16 +422,6 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               DataColumn(
                 label: Expanded(
                   child: Text(
-                    'Created',
-                    textAlign: TextAlign.start,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                numeric: false,
-              ),
-              DataColumn(
-                label: Expanded(
-                  child: Text(
                     'Actions',
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
@@ -434,7 +437,6 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                 DataCell(_buildCourseCell(item)),
                 DataCell(_buildParticipantsCell(item)),
                 DataCell(_buildStatusCell(item)),
-                DataCell(_buildCreatedCell(item)),
                 DataCell(_buildActionsCell(context, item)),
               ],
             )).toList(),
@@ -542,14 +544,13 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     return Container(
       constraints: const BoxConstraints(
         minWidth: 80,
-        maxWidth: 100,
+        maxWidth: 250,
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: item.statusColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: item.statusColor.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
           item.statusDisplay,
@@ -604,8 +605,29 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
           ),
         ),
         const SizedBox(width: 10,),
-        // Edit button (only for pending training needs)
-        if (item.isPending)
+        
+        // Forward button (only for draft training needs and company accounts)
+        if (item.isDraft && TrainingNeedService.canForwardTrainingNeeds())
+          IconButton(
+            icon: const Icon(
+              Icons.send,
+              size: 18,
+            ),
+            onPressed: () {
+              _handleAction(context, 'forward', item);
+            },
+            tooltip: 'Forward to Pending',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.blue.shade50,
+              foregroundColor: Colors.blue.shade700,
+            ),
+          ),
+        
+        if (item.isDraft && TrainingNeedService.canForwardTrainingNeeds())
+          const SizedBox(width: 10,),
+        
+        // Edit button (only for draft training needs)
+        if (item.isDraft)
           IconButton(
             icon: const Icon(
               Icons.edit,
@@ -614,7 +636,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
             onPressed: () {
               _handleAction(context, 'edit', item);
             },
-            tooltip: 'Edit Training Need',
+            tooltip: 'Edit Draft Training Need',
             style: IconButton.styleFrom(
               backgroundColor: Colors.blue.shade50,
               foregroundColor: Colors.blue.shade700,
@@ -792,6 +814,9 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
       case 'edit':
         _showEditTrainingNeedForm(context, item);
         break;
+      case 'forward':
+        _forwardTrainingNeed(context, item);
+        break;
       case 'approve':
         _approveTrainingNeed(context, item);
         break;
@@ -806,35 +831,88 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
       context: context,
       title: 'Training Need Details',
       showTitle: true,
-      modalType: ModalType.medium,
+      modalType: ModalType.large,
+      showCancel: false, // Disable default buttons
+      footer: Container(
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Row(
+          children: [
+            const Spacer(),
+            SizedBox(
+              width: 120,
+              child: ButtonWidget(
+                btnText: 'Cancel',
+                textColor: FlarelineColors.darkBlackText,
+                onTap: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.6,
         child: Stack(
           children: [
             SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildDetailRow('Company', item.companyName),
-                    if (item.company?.email != null)
-                      _buildDetailRow('Company Email', item.company!.email!),
-                    if (item.company?.phone != null)
-                      _buildDetailRow('Company Phone', item.company!.phone!),
-                    _buildDetailRow('Course', item.courseName),
-                    if (item.course?.description != null)
-                      _buildDetailRow('Course Description', item.course!.description!),
-                    if (item.course?.specialization?.name != null)
-                      _buildDetailRow('Specialization', item.course!.specialization!.name),
-                    _buildDetailRow('Number of Participants', '${item.numberOfParticipants}'),
-                    _buildDetailRow('Status', item.statusDisplay),
-                    if (item.createdAt != null)
-                      _buildDetailRow('Created At', _formatDateTime(item.createdAt!)),
-                    if (item.updatedAt != null)
-                      _buildDetailRow('Updated At', _formatDateTime(item.updatedAt!)),
-                  ],
-                ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Training Need Information Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.visibility,
+                              color: Colors.blue.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Training Need Details',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildDetailRow('Training Need ID', item.id?.toString() ?? 'Not available'),
+                        _buildDetailRow('Company', item.companyName),
+                        if (item.company?.email != null)
+                          _buildDetailRow('Company Email', item.company!.email!),
+                        if (item.company?.phone != null)
+                          _buildDetailRow('Company Phone', item.company!.phone!),
+                        _buildDetailRow('Course', item.courseName),
+                        if (item.course?.description != null)
+                          _buildDetailRow('Course Description', item.course!.description!),
+                        if (item.course?.specialization?.name != null)
+                          _buildDetailRow('Specialization', item.course!.specialization!.name),
+                        _buildDetailRow('Number of Participants', '${item.numberOfParticipants}'),
+                        _buildStatusDetailRow(item),
+                        if (item.createdAt != null)
+                          _buildDetailRow('Created At', _formatDateTime(item.createdAt!)),
+                        if (item.updatedAt != null)
+                          _buildDetailRow('Updated At', _formatDateTime(item.updatedAt!)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -863,6 +941,44 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusDetailRow(TrainingNeed item) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Status',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: item.statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              item.statusDisplay,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: item.statusColor,
+              ),
             ),
           ),
         ],
@@ -913,11 +1029,118 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
   }
 
   void _rejectTrainingNeed(BuildContext context, TrainingNeed item) async {
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reject Training Need'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Are you sure you want to reject the training need for ${item.companyName}?'),
+              const SizedBox(height: 16),
+              const Text(
+                'Rejection Reason *',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  hintText: 'Please provide a reason for rejection...',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: 3,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Rejection reason is required';
+                  }
+                  if (value.trim().length < 10) {
+                    return 'Rejection reason must be at least 10 characters';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(context).pop({
+                  'confirmed': true,
+                  'reason': reasonController.text.trim(),
+                });
+              }
+            },
+            child: const Text('Reject'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result['confirmed'] == true) {
+      try {
+        final reason = result['reason'] as String;
+        print('🚫 REJECTING TRAINING NEED');
+        print('==========================================');
+        print('🆔 Training Need ID: ${item.id}');
+        print('🏢 Company: ${item.companyName}');
+        print('📋 Course: ${item.courseName}');
+        print('📊 Participants: ${item.numberOfParticipants}');
+        print('📅 Current Status: ${item.status}');
+        print('❌ Rejection Reason: $reason');
+        print('==========================================');
+
+        final response = await TrainingNeedService.rejectTrainingNeed(item.id!, reason);
+        
+        print('📊 REJECTION UI - Response received');
+        print('✅ Success: ${response.success}');
+        print('📝 Message (EN): ${response.messageEn}');
+        print('📝 Message (AR): ${response.messageAr}');
+        print('📊 Status Code: ${response.statusCode}');
+        print('🆔 Training Need ID: ${response.data?.id}');
+        
+        if (response.success) {
+          print('✅ REJECTION UI - Success, refreshing data');
+          Get.find<TrainingNeedDataProvider>().refreshData();
+          _showSuccessToast('Training need rejected successfully');
+        } else {
+          print('❌ REJECTION UI - Server returned error');
+          print('❌ REJECTION UI - Error message: ${response.messageEn}');
+          print('❌ REJECTION UI - Status code: ${response.statusCode}');
+          throw Exception(response.messageEn ?? 'Failed to reject training need');
+        }
+      } catch (e) {
+        print('❌ REJECTION UI - Exception caught');
+        print('❌ REJECTION UI - Exception type: ${e.runtimeType}');
+        print('❌ REJECTION UI - Exception message: ${e.toString()}');
+        print('❌ REJECTION UI - Stack trace: ${StackTrace.current}');
+        _showErrorToast(e.toString());
+      }
+    }
+  }
+
+  void _forwardTrainingNeed(BuildContext context, TrainingNeed item) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Rejection'),
-        content: Text('Are you sure you want to reject the training need for ${item.companyName}?'),
+        title: const Text('Confirm Forward'),
+        content: Text('Are you sure you want to forward the training need for ${item.companyName} from Draft to Pending?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -925,7 +1148,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Reject'),
+            child: const Text('Forward'),
           ),
         ],
       ),
@@ -933,14 +1156,41 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
 
     if (confirmed == true) {
       try {
-        final response = await TrainingNeedService.rejectTrainingNeed(item.id!);
+        // Show loading dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+
+        print('📤 FORWARDING TRAINING NEED');
+        print('==========================================');
+        print('🆔 Training Need ID: ${item.id}');
+        print('🏢 Company: ${item.companyName}');
+        print('📋 Course: ${item.courseName}');
+        print('📊 Participants: ${item.numberOfParticipants}');
+        print('📅 Current Status: ${item.status}');
+        print('==========================================');
+
+        final response = await TrainingNeedService.forwardTrainingNeed(item.id!);
+        
+        // Close loading dialog
+        Navigator.of(context).pop();
+
         if (response.success) {
-          Get.find<TrainingNeedDataProvider>().refreshData();
-          _showSuccessToast('Training need rejected successfully');
+          _showSuccessToast('Training need forwarded successfully');
+          // Refresh the data
+          final provider = Get.find<TrainingNeedDataProvider>();
+          await provider.loadData();
         } else {
-          throw Exception(response.messageEn);
+          _showErrorToast(response.messageEn ?? 'Failed to forward training need');
         }
       } catch (e) {
+        // Close loading dialog
+        Navigator.of(context).pop();
+        print('❌ Error forwarding training need: $e');
         _showErrorToast(e.toString());
       }
     }
@@ -948,7 +1198,16 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
 
   void _showAddTrainingNeedForm(BuildContext context) {
     final formKey = GlobalKey<FormState>();
+    
+    // Initialize with user's company if they are a company user
+    final currentUser = AuthService.getCurrentUser();
     int? selectedCompanyId;
+    
+    // If user is company account, automatically set their company
+    if (AuthService.hasRole('company_account') && currentUser?.companyId != null) {
+      selectedCompanyId = currentUser!.companyId;
+    }
+    
     int? selectedSpecializationId;
     int? selectedCourseId;
     final numberOfParticipantsController = TextEditingController();
@@ -1022,42 +1281,45 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                               ),
                               const SizedBox(height: 16),
                                
-                              // Company field label
-                              const Text(
-                                'Company *',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                              // Company field - show for System Administrators and Admins
+                              if (AuthService.isSystemAdministrator() || AuthService.hasRole('admin')) ...[
+                                // Company field label
+                                const Text(
+                                  'Company *',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              
-                              // Company Dropdown
-                              DropdownButtonFormField<int>(
-                                value: selectedCompanyId,
-                                decoration: const InputDecoration(
-                                  hintText: 'Select a company',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                const SizedBox(height: 8),
+                                
+                                // Company Dropdown
+                                DropdownButtonFormField<int>(
+                                  value: selectedCompanyId,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Select a company',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                  ),
+                                  items: companies.map((company) => DropdownMenuItem<int>(
+                                    value: company.id,
+                                    child: Text(company.name),
+                                  )).toList(),
+                                  validator: (value) {
+                                    if (value == null) {
+                                      return 'Please select a company';
+                                    }
+                                    return null;
+                                  },
+                                  onChanged: (value) {
+                                    setModalState(() {
+                                      selectedCompanyId = value;
+                                    });
+                                  },
                                 ),
-                                items: companies.map((company) => DropdownMenuItem<int>(
-                                  value: company.id,
-                                  child: Text(company.name),
-                                )).toList(),
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Please select a company';
-                                  }
-                                  return null;
-                                },
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    selectedCompanyId = value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 16),
+                                const SizedBox(height: 16),
+                              ],
                                
                               // Specialization field label
                               const Text(
@@ -1098,7 +1360,12 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                                   if (value != null) {
                                     // Load courses for selected specialization
                                     try {
-                                      final loadedCourses = await CourseService.getCoursesBySpecialization(context, value);
+                                      List<course_model.Course> loadedCourses;
+                                      if (AuthService.hasRole('company_account')) {
+                                        loadedCourses = await CourseService.getCoursesBySpecializationForCompanyAccount(context, value);
+                                      } else {
+                                        loadedCourses = await CourseService.getCoursesBySpecialization(context, value);
+                                      }
                                                             setModalState(() {
                         courses = loadedCourses.cast<course_model.Course>();
                       });
@@ -1275,13 +1542,62 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
           );
           
           try {
+            // Validate company access for Company Accounts
+            if (AuthService.hasRole('company_account')) {
+              final currentUser = AuthService.getCurrentUser();
+              if (currentUser?.companyId != null && selectedCompanyId != currentUser!.companyId) {
+                Navigator.of(context).pop(); // Close loading dialog
+                _showErrorToast('You can only create training needs for your own company');
+                return;
+              }
+            }
+            
             final request = TrainingNeedCreateRequest(
               companyId: selectedCompanyId!,
               courseId: selectedCourseId!,
+              specializationId: selectedSpecializationId!,
               numberOfParticipants: int.parse(numberOfParticipantsController.text.trim()),
             );
             
+            // Log the payload for debugging
+            print('🚀 TRAINING NEED CREATE - Payload Logging');
+            print('==========================================');
+            print('📋 Request Details:');
+            print('  • Company ID: ${request.companyId}');
+            print('  • Course ID: ${request.courseId}');
+            print('  • Specialization ID: ${request.specializationId}');
+            print('  • Number of Participants: ${request.numberOfParticipants}');
+            print('');
+            print('👤 User Information:');
+            final currentUser = AuthService.getCurrentUser();
+            print('  • User ID: ${currentUser?.id}');
+            print('  • User Email: ${currentUser?.email}');
+            print('  • User Roles: ${currentUser?.roles.map((r) => r.name).join(', ')}');
+            print('  • User Company ID: ${currentUser?.companyId}');
+            print('');
+            print('📊 Form Data:');
+            print('  • Selected Company ID: $selectedCompanyId');
+            print('  • Selected Specialization ID: $selectedSpecializationId');
+            print('  • Selected Course ID: $selectedCourseId');
+            print('  • Number of Participants (Raw): ${numberOfParticipantsController.text.trim()}');
+            print('');
+            print('🔍 Request JSON:');
+            print('  ${request.toJson()}');
+            print('==========================================');
+            
             final response = await TrainingNeedService.createTrainingNeed(request);
+            
+            // Log the response for debugging
+            print('📡 TRAINING NEED CREATE - Response Logging');
+            print('==========================================');
+            print('✅ Response Details:');
+            print('  • Success: ${response.success}');
+            print('  • Message (EN): ${response.messageEn}');
+            print('  • Message (AR): ${response.messageAr}');
+            print('  • Training Need ID: ${response.data?.id}');
+            print('  • Created At: ${response.data?.createdAt}');
+            print('  • Status: ${response.data?.status}');
+            print('==========================================');
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -1299,6 +1615,15 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               throw Exception(response.messageEn ?? 'Failed to create training need');
             }
           } catch (e) {
+            // Log the error for debugging
+            print('❌ TRAINING NEED CREATE - Error Logging');
+            print('==========================================');
+            print('🚨 Error Details:');
+            print('  • Error Type: ${e.runtimeType}');
+            print('  • Error Message: ${e.toString()}');
+            print('  • Stack Trace: ${StackTrace.current}');
+            print('==========================================');
+            
             // Close loading dialog
             Navigator.of(context).pop();
             
@@ -1311,6 +1636,22 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
 
   void _showEditTrainingNeedForm(BuildContext context, TrainingNeed trainingNeed) {
     final formKey = GlobalKey<FormState>();
+    
+    // Only allow editing of Draft training needs
+    if (!trainingNeed.isDraft) {
+      _showErrorToast('Only Draft training needs can be edited');
+      return;
+    }
+    
+    // For company accounts, ensure they can only edit their own company's training needs
+    final currentUser = AuthService.getCurrentUser();
+    if (AuthService.hasRole('company_account') && currentUser?.companyId != null) {
+      if (trainingNeed.companyId != currentUser!.companyId) {
+        _showErrorToast('You can only edit training needs for your own company');
+        return;
+      }
+    }
+    
     int? selectedCompanyId = trainingNeed.companyId;
     int? selectedSpecializationId = trainingNeed.course?.specializationId;
     int? selectedCourseId = trainingNeed.courseId;
@@ -1340,13 +1681,18 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                 specializations = (data['specializations'] as List<dynamic>?)?.cast<specialization_model.Specialization>() ?? [];
               });
 
-              // Load courses for the current specialization
+              // Load courses for the current specialization based on user role
               if (selectedSpecializationId != null) {
                 try {
-                  final loadedCourses = await CourseService.getCoursesBySpecialization(context, selectedSpecializationId!);
-                                        setModalState(() {
-                        courses = loadedCourses.cast<course_model.Course>();
-                      });
+                  List<course_model.Course> loadedCourses;
+                  if (AuthService.hasRole('company_account')) {
+                    loadedCourses = await CourseService.getCoursesBySpecializationForCompanyAccount(context, selectedSpecializationId!);
+                  } else {
+                    loadedCourses = await CourseService.getCoursesBySpecialization(context, selectedSpecializationId!);
+                  }
+                  setModalState(() {
+                    courses = loadedCourses.cast<course_model.Course>();
+                  });
                 } catch (e) {
                   print('Error loading courses for edit: $e');
                 }
@@ -1397,42 +1743,45 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                               ),
                               const SizedBox(height: 16),
                                
-                              // Company field label
-                              const Text(
-                                'Company *',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                              // Company field - show for System Administrators and Admins
+                              if (AuthService.isSystemAdministrator() || AuthService.hasRole('admin')) ...[
+                                // Company field label
+                                const Text(
+                                  'Company *',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              
-                              // Company Dropdown
-                              DropdownButtonFormField<int>(
-                                value: selectedCompanyId,
-                                decoration: const InputDecoration(
-                                  hintText: 'Select a company',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                const SizedBox(height: 8),
+                                
+                                // Company Dropdown
+                                DropdownButtonFormField<int>(
+                                  value: selectedCompanyId,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Select a company',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                  ),
+                                  items: companies.map((company) => DropdownMenuItem<int>(
+                                    value: company.id,
+                                    child: Text(company.name),
+                                  )).toList(),
+                                  validator: (value) {
+                                    if (value == null) {
+                                      return 'Please select a company';
+                                    }
+                                    return null;
+                                  },
+                                  onChanged: (value) {
+                                    setModalState(() {
+                                      selectedCompanyId = value;
+                                    });
+                                  },
                                 ),
-                                items: companies.map((company) => DropdownMenuItem<int>(
-                                  value: company.id,
-                                  child: Text(company.name),
-                                )).toList(),
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Please select a company';
-                                  }
-                                  return null;
-                                },
-                                onChanged: (value) {
-                                  setModalState(() {
-                                    selectedCompanyId = value;
-                                  });
-                                },
-                              ),
-                              const SizedBox(height: 16),
+                                const SizedBox(height: 16),
+                              ],
                                
                               // Specialization field label
                               const Text(
@@ -1473,7 +1822,12 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                                   if (value != null) {
                                     // Load courses for selected specialization
                                     try {
-                                      final loadedCourses = await CourseService.getCoursesBySpecialization(context, value);
+                                      List<course_model.Course> loadedCourses;
+                                      if (AuthService.hasRole('company_account')) {
+                                        loadedCourses = await CourseService.getCoursesBySpecializationForCompanyAccount(context, value);
+                                      } else {
+                                        loadedCourses = await CourseService.getCoursesBySpecialization(context, value);
+                                      }
                                                             setModalState(() {
                         courses = loadedCourses.cast<course_model.Course>();
                       });
@@ -1650,10 +2004,21 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
           );
           
           try {
+            // Validate company access for Company Accounts
+            if (AuthService.hasRole('company_account')) {
+              final currentUser = AuthService.getCurrentUser();
+              if (currentUser?.companyId != null && selectedCompanyId != currentUser!.companyId) {
+                Navigator.of(context).pop(); // Close loading dialog
+                _showErrorToast('You can only edit training needs for your own company');
+                return;
+              }
+            }
+            
             final request = TrainingNeedUpdateRequest(
               id: trainingNeed.id!,
               companyId: selectedCompanyId,
               courseId: selectedCourseId,
+              specializationId: selectedSpecializationId,
               numberOfParticipants: int.parse(numberOfParticipantsController.text.trim()),
             );
             
@@ -1688,11 +2053,23 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
   // Load dropdown data for forms
   Future<Map<String, List<dynamic>>> _loadDropdownData(BuildContext context) async {
     try {
-      final companiesResponse = await CompanyService.getAllCompanies();
-      final specializations = await SpecializationService.getSpecializations(context);
+      // Load specializations based on user role
+      List<specialization_model.Specialization> specializations;
+      List<company_model.Company> companies = <company_model.Company>[];
+      
+      if (AuthService.hasRole('company_account')) {
+        // Company accounts use the company-specific endpoint and don't need companies data
+        specializations = await SpecializationService.getSpecializationsForCompanyAccount(context);
+        // Companies list remains empty for Company Account users
+      } else {
+        // System Admin and Admin use the general endpoint and need companies data
+        final companiesResponse = await CompanyService.getAllCompanies();
+        companies = companiesResponse.success ? companiesResponse.data : <company_model.Company>[];
+        specializations = await SpecializationService.getSpecializations(context);
+      }
       
       return {
-        'companies': companiesResponse.success ? companiesResponse.data : <company_model.Company>[],
+        'companies': companies,
         'specializations': specializations,
       };
     } catch (e) {
@@ -1738,8 +2115,8 @@ class TrainingNeedDataProvider extends GetxController {
   final _isLoading = false.obs;
   final _currentPage = 0.obs;
   final _rowsPerPage = 10.obs;
-  final _selectedStatusFilter = 'all'.obs;
-  final _selectedCompanyFilter = 'all'.obs;
+  final _selectedStatusFilter = 'all_statuses'.obs;
+  final _selectedCompanyFilter = 'filter_all_companies'.obs;
   final _searchQuery = ''.obs;
   final _companies = <company_model.Company>[].obs;
   
@@ -1754,6 +2131,119 @@ class TrainingNeedDataProvider extends GetxController {
   String get selectedCompanyFilter => _selectedCompanyFilter.value;
   String get searchQuery => _searchQuery.value;
   List<company_model.Company> get companies => _companies;
+  List<company_model.Company> get availableCompanies {
+    // If user is system administrator or admin, show all companies
+    if (AuthService.isSystemAdministrator() || AuthService.hasRole('admin')) {
+      final roleType = AuthService.isSystemAdministrator() ? 'System Administrator' : 'Admin';
+      print('🏢 AVAILABLE COMPANIES - $roleType: ${_companies.length} companies');
+      for (var company in _companies) {
+        print('   - ID: ${company.id}, Name: ${company.name}');
+      }
+      return _companies;
+    }
+    
+    // If user is company user, show only their company
+    final currentUser = AuthService.getCurrentUser();
+    if (currentUser?.companyId != null) {
+      final filteredCompanies = _companies.where((company) => company.id == currentUser!.companyId).toList();
+      print('🏢 AVAILABLE COMPANIES - Company User: ${filteredCompanies.length} companies');
+      for (var company in filteredCompanies) {
+        print('   - ID: ${company.id}, Name: ${company.name}');
+      }
+      return filteredCompanies;
+    }
+    
+    // Fallback: show all companies (should not happen in normal flow)
+    print('🏢 AVAILABLE COMPANIES - Fallback: ${_companies.length} companies');
+    return _companies;
+  }
+
+  List<DropdownMenuItem<String>>? _cachedDropdownItems;
+  int? _lastCompaniesHash;
+  bool _isCreatingItems = false;
+
+  // Method to clear dropdown items cache
+  void _clearDropdownItemsCache() {
+    _cachedDropdownItems = null;
+    _lastCompaniesHash = null;
+  }
+
+  // Method to validate and fix dropdown value
+  String _validateDropdownValue(String currentValue, List<DropdownMenuItem<String>> items) {
+    if (items.isEmpty) {
+      return 'filter_all_companies'; // Default value
+    }
+    
+    // Check if current value exists in items
+    final valueExists = items.any((item) => item.value == currentValue);
+    if (valueExists) {
+      return currentValue;
+    }
+    
+    // If current value doesn't exist, return the first available value
+    return items.first.value ?? 'filter_all_companies';
+  }
+
+  List<DropdownMenuItem<String>> get companyFilterDropdownItems {
+    // Prevent recursive calls during item creation
+    if (_isCreatingItems) {
+      return _cachedDropdownItems ?? [];
+    }
+
+    final companies = availableCompanies;
+    final companiesHash = companies.length.hashCode ^ 
+        companies.fold(0, (prev, company) => prev ^ company.id.hashCode);
+    
+    // Return cached items if companies haven't changed
+    if (_cachedDropdownItems != null && _lastCompaniesHash == companiesHash) {
+      return _cachedDropdownItems!;
+    }
+    
+    _isCreatingItems = true;
+    
+    try {
+      print('🏢 DROPDOWN ITEMS - Creating dropdown items for ${companies.length} companies');
+      
+      final items = <DropdownMenuItem<String>>[];
+      final usedValues = <String>{};
+      
+      if (AuthService.isSystemAdministrator() || AuthService.hasRole('admin')) {
+        items.add(const DropdownMenuItem(value: 'filter_all_companies', child: Text('All Companies')));
+        usedValues.add('filter_all_companies');
+        print('   + Added "filter_all_companies" option');
+      }
+      
+      for (var company in companies) {
+        final companyIdString = company.id.toString();
+        print('   + Company ID: "$companyIdString", Name: "${company.name}"');
+        
+        // Ensure no duplicate values and no conflicts with reserved values
+        if (companyIdString != 'filter_all_companies' && !usedValues.contains(companyIdString)) {
+          items.add(DropdownMenuItem<String>(
+            value: companyIdString,
+            child: Text(company.name),
+          ));
+          usedValues.add(companyIdString);
+        } else {
+          print('   ⚠️ Skipping company with conflicting or duplicate ID: $companyIdString');
+        }
+      }
+      
+      print('🏢 DROPDOWN ITEMS - Final items count: ${items.length}');
+      for (var item in items) {
+        print('   - Value: "${item.value}", Child: "${item.child}"');
+      }
+      
+      // Cache the result
+      _cachedDropdownItems = items;
+      _lastCompaniesHash = companiesHash;
+      
+      return items;
+    } finally {
+      _isCreatingItems = false;
+    }
+  }
+  
   int get totalItems => filteredTrainingNeeds.length;
   int get totalPages {
     final total = totalItems;
@@ -1766,12 +2256,12 @@ class TrainingNeedDataProvider extends GetxController {
     var filtered = _trainingNeeds.toList();
     
     // Filter by status
-    if (_selectedStatusFilter.value != 'all') {
+    if (_selectedStatusFilter.value != 'all_statuses') {
       filtered = filtered.where((tn) => tn.status == _selectedStatusFilter.value).toList();
     }
     
     // Filter by company
-    if (_selectedCompanyFilter.value != 'all') {
+    if (_selectedCompanyFilter.value != 'filter_all_companies') {
       filtered = filtered.where((tn) => tn.companyId.toString() == _selectedCompanyFilter.value).toList();
     }
     
@@ -1817,14 +2307,33 @@ class TrainingNeedDataProvider extends GetxController {
     try {
       _isLoading.value = true;
       
-      // Load training needs
-      final response = await TrainingNeedService.getAllTrainingNeeds();
+      // Load training needs based on user role
+      print('🔄 TRAINING NEEDS MANAGEMENT - Loading data');
+      print('==========================================');
+      print('👤 Current user role: ${AuthService.getCurrentUser()?.roles.map((r) => r.name).join(', ')}');
+      print('🏢 Is company account: ${AuthService.hasRole('company_account')}');
+      print('👑 Is system admin: ${AuthService.hasRole('system_administrator')}');
+      print('⚙️ Is admin: ${AuthService.hasRole('admin')}');
+      
+      TrainingNeedListResponse response;
+      if (AuthService.hasRole('company_account')) {
+        print('🏢 Using company-specific endpoint: /training-need/get-by-company');
+        response = await TrainingNeedService.getTrainingNeedsByCompany();
+      } else {
+        print('🌐 Using all training needs endpoint: /training-need/get-all');
+        print('👥 This endpoint is for Admin and System Administrator roles');
+        response = await TrainingNeedService.getAllTrainingNeeds();
+      }
+      
+      print('📊 Training needs loaded: ${response.data.length} items');
+      print('==========================================');
       
       // Load companies for filter
       try {
         final companiesResponse = await CompanyService.getAllCompanies();
         if (companiesResponse.success) {
           _companies.value = companiesResponse.data;
+          _clearDropdownItemsCache(); // Clear cache when companies are updated
         }
       } catch (e) {
         print('Error loading companies for filter: $e');

@@ -10,6 +10,8 @@ import 'package:flareline/core/models/special_course_request_model.dart';
 import 'package:flareline/core/services/special_course_request_service.dart';
 import 'package:flareline/core/models/company_model.dart' as company_model;
 import 'package:flareline/core/services/company_service.dart';
+import 'package:flareline/core/services/specialization_service.dart';
+import 'package:flareline/core/models/specialization_model.dart';
 import 'package:flareline/core/widgets/course_file_upload.dart';
 import 'package:toastification/toastification.dart';
 
@@ -99,7 +101,7 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                     Row(
                       children: [
                         SizedBox(
-                          width: 120,
+                          width: 140,
                           child: Obx(() => ButtonWidget(
                             btnText: provider.isLoading ? 'Loading...' : 'Refresh',
                             type: 'secondary',
@@ -116,9 +118,9 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                         const SizedBox(width: 16),
                         Builder(
                           builder: (context) {
-                            if (SpecialCourseRequestService.hasSpecialCourseRequestManagementPermission()) {
+                            if (SpecialCourseRequestService.canCreateSpecialCourseRequests()) {
                               return SizedBox(
-                                width: 140,
+                                width: 180,
                                 child: ButtonWidget(
                                   btnText: 'Add Special Course Request',
                                   type: 'primary',
@@ -140,7 +142,7 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
               const SizedBox(height: 24),
               Builder(
                 builder: (context) {
-                  if (!SpecialCourseRequestService.hasSpecialCourseRequestManagementPermission()) {
+                  if (!SpecialCourseRequestService.canViewAllSpecialCourseRequests() && !SpecialCourseRequestService.canViewCompanySpecialCourseRequests()) {
                     return const Center(
                       child: Padding(
                         padding: EdgeInsets.all(32.0),
@@ -196,11 +198,12 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 24),
-                            ButtonWidget(
-                              btnText: 'Add First Special Course Request',
-                              type: 'primary',
-                              onTap: () => _showAddSpecialCourseRequestForm(context),
-                            ),
+                            if (SpecialCourseRequestService.canCreateSpecialCourseRequests())
+                              ButtonWidget(
+                                btnText: 'Add First Special Course Request',
+                                type: 'primary',
+                                onTap: () => _showAddSpecialCourseRequestForm(context),
+                              ),
                           ],
                         ),
                       );
@@ -392,16 +395,6 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
               DataColumn(
                 label: Expanded(
                   child: Text(
-                    'Created',
-                    textAlign: TextAlign.start,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                numeric: false,
-              ),
-              DataColumn(
-                label: Expanded(
-                  child: Text(
                     'Actions',
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
@@ -417,7 +410,6 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                 DataCell(_buildTitleCell(item)),
                 DataCell(_buildStatusCell(item)),
                 DataCell(_buildFileCell(item)),
-                DataCell(_buildCreatedCell(item)),
                 DataCell(_buildActionsCell(context, item)),
               ],
             )).toList(),
@@ -510,21 +502,22 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
         maxWidth: 100,
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: item.statusColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: item.statusColor.withOpacity(0.3)),
+          color: item.statusColor.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(5),
         ),
-        child: Text(
-          item.statusDisplay,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: item.statusColor,
+        child: Flexible(
+          child: Text(
+            item.statusDisplay,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: item.statusColor,
+            ),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
           ),
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
@@ -581,8 +574,8 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           ),
         ),
         const SizedBox(width: 10,),
-        // Edit button (only for pending special course requests)
-        if (item.isPending)
+        // Edit button (only for Company Account users and draft status)
+        if (SpecialCourseRequestService.canUpdateSpecialCourseRequests() && item.isDraft)
           IconButton(
             icon: const Icon(
               Icons.edit,
@@ -595,6 +588,25 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
             style: IconButton.styleFrom(
               backgroundColor: Colors.blue.shade50,
               foregroundColor: Colors.blue.shade700,
+            ),
+          ),
+
+        const SizedBox(width: 10,),
+
+        // Forward button (only for Company Account users and draft status)
+        if (SpecialCourseRequestService.canForwardSpecialCourseRequests() && item.isDraft)
+          IconButton(
+            icon: const Icon(
+              Icons.send,
+              size: 18,
+            ),
+            onPressed: () {
+              _handleAction(context, 'forward', item);
+            },
+            tooltip: 'Forward Special Course Request',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.orange.shade50,
+              foregroundColor: Colors.orange.shade700,
             ),
           ),
 
@@ -769,6 +781,9 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
       case 'edit':
         _showEditSpecialCourseRequestForm(context, item);
         break;
+      case 'forward':
+        _forwardSpecialCourseRequest(context, item);
+        break;
       case 'approve':
         _approveSpecialCourseRequest(context, item);
         break;
@@ -832,10 +847,12 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                           _buildDetailRow('Company Phone', item.company!.phone!),
                         _buildDetailRow('Title', item.title),
                         _buildDetailRow('Description', item.description),
-                        _buildDetailRow('Status', item.statusDisplay),
+                        _buildStatusRow('Status', item.statusDisplay, item.statusColor),
+                        if (item.rejectionReason != null && item.rejectionReason!.isNotEmpty)
+                          _buildRejectionReasonRow('Rejection Reason', item.rejectionReason!),
                         _buildDetailRow('File Attachment', item.hasFileAttachment ? 'Available' : 'None'),
                         if (item.createdBy != null)
-                          _buildDetailRow('Created By', item.createdBy!),
+                          _buildDetailRow('Created By', item.createdBy!.toString()),
                         if (item.createdAt != null)
                           _buildDetailRow('Created At', _formatDateTime(item.createdAt!)),
                         if (item.updatedAt != null)
@@ -879,12 +896,128 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
     );
   }
 
+  Widget _buildStatusRow(String label, String value, Color statusColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRejectionReasonRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.red.shade800,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
   }
 
   String _formatDateTime(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _forwardSpecialCourseRequest(BuildContext context, SpecialCourseRequest item) async {
+    const String methodName = 'forwardSpecialCourseRequest';
+    print('🔍 ERROR_TRACKING: Starting $methodName for item ID: ${item.id}');
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Forward'),
+        content: Text('Are you sure you want to forward the special course request "${item.title}" to administrators for review?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Forward'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        print('🔍 ERROR_TRACKING: $methodName - User confirmed forward action');
+        final response = await SpecialCourseRequestService.forwardSpecialCourseRequest(item.id!);
+        
+        if (response.success) {
+          print('✅ ERROR_TRACKING: $methodName - Successfully forwarded special course request');
+          Get.find<SpecialCourseRequestDataProvider>().refreshData();
+          _showSuccessToast('Special course request forwarded successfully');
+        } else {
+          print('❌ ERROR_TRACKING: $methodName - API returned error: ${response.messageEn}');
+          _showErrorToast(response.messageEn ?? 'Unknown error occurred');
+        }
+      } catch (e, stackTrace) {
+        print('❌ ERROR_TRACKING: $methodName - Exception occurred: $e');
+        print('❌ ERROR_TRACKING: $methodName - Stack trace: $stackTrace');
+        _showErrorToast('Failed to forward special course request: ${e.toString()}');
+      }
+    } else {
+      print('🔍 ERROR_TRACKING: $methodName - User cancelled forward action');
+    }
   }
 
   void _approveSpecialCourseRequest(BuildContext context, SpecialCourseRequest item) async {
@@ -922,18 +1055,52 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
   }
 
   void _rejectSpecialCourseRequest(BuildContext context, SpecialCourseRequest item) async {
+    final reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Rejection'),
-        content: Text('Are you sure you want to reject the special course request "${item.title}" for ${item.companyName}?'),
+        title: const Text('Reject Special Course Request'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Please provide a reason for rejecting "${item.title}":'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Rejection Reason *',
+                  border: OutlineInputBorder(),
+                  hintText: 'Enter the reason for rejection...',
+                ),
+                maxLines: 3,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Rejection reason is required';
+                  }
+                  if (value.trim().length < 10) {
+                    return 'Rejection reason must be at least 10 characters';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(context).pop(true);
+              }
+            },
             child: const Text('Reject'),
           ),
         ],
@@ -941,30 +1108,44 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
     );
 
     if (confirmed == true) {
+      final reason = reasonController.text.trim();
       try {
-        final response = await SpecialCourseRequestService.rejectSpecialCourseRequest(item.id!);
+        final response = await SpecialCourseRequestService.rejectSpecialCourseRequest(item.id!, reason);
         if (response.success) {
           Get.find<SpecialCourseRequestDataProvider>().refreshData();
           _showSuccessToast('Special course request rejected successfully');
         } else {
-          throw Exception(response.messageEn);
+          _showErrorToast(response.messageEn ?? 'Unknown error occurred');
         }
       } catch (e) {
-        _showErrorToast(e.toString());
+        _showErrorToast('Failed to reject special course request: ${e.toString()}');
       }
     }
   }
 
   void _showAddSpecialCourseRequestForm(BuildContext context) {
     final formKey = GlobalKey<FormState>();
-    int? selectedCompanyId;
+    int? selectedSpecializationId;
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
-    final createdByController = TextEditingController();
     String? fileAttachment;
 
+    // Check if user has permission to create special course requests
+    if (!SpecialCourseRequestService.canCreateSpecialCourseRequests()) {
+      _showErrorToast('You do not have permission to create special course requests. Only Company Account users can create requests.');
+      return;
+    }
+
+    // Get current user's company ID
+    final currentUserCompanyId = SpecialCourseRequestService.getCurrentUserCompanyId();
+    print('🔍 DEBUG: Add form - currentUserCompanyId: $currentUserCompanyId');
+    if (currentUserCompanyId == null) {
+      _showErrorToast('Unable to determine your company. Please ensure you are logged in with a company account and try again.');
+      return;
+    }
+
     // Data for dropdowns
-    List<company_model.Company> companies = [];
+    List<Specialization> specializations = [];
     bool isLoadingDropdownData = true;
 
     ModalDialog.show(
@@ -979,9 +1160,9 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           // Load dropdown data on first build
           if (isLoadingDropdownData) {
             isLoadingDropdownData = false;
-            _loadDropdownData(context).then((data) {
+            _loadSpecializations(context).then((data) {
               setModalState(() {
-                companies = (data['companies'] as List<dynamic>?)?.cast<company_model.Company>() ?? [];
+                specializations = data;
               });
             });
           }
@@ -1029,9 +1210,10 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                               ),
                               const SizedBox(height: 16),
                                
-                              // Company field label
+                               
+                              // Specialization field label
                               const Text(
-                                'Company *',
+                                'Specialization *',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -1040,27 +1222,27 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                               ),
                               const SizedBox(height: 8),
                               
-                              // Company Dropdown
+                              // Specialization Dropdown
                               DropdownButtonFormField<int>(
-                                value: selectedCompanyId,
+                                value: selectedSpecializationId,
                                 decoration: const InputDecoration(
-                                  hintText: 'Select a company',
+                                  hintText: 'Select a specialization',
                                   border: OutlineInputBorder(),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                 ),
-                                items: companies.map((company) => DropdownMenuItem<int>(
-                                  value: company.id,
-                                  child: Text(company.name),
+                                items: specializations.map((specialization) => DropdownMenuItem<int>(
+                                  value: specialization.id,
+                                  child: Text(specialization.name),
                                 )).toList(),
                                 validator: (value) {
                                   if (value == null) {
-                                    return 'Please select a company';
+                                    return 'Please select a specialization';
                                   }
                                   return null;
                                 },
                                 onChanged: (value) {
                                   setModalState(() {
-                                    selectedCompanyId = value;
+                                    selectedSpecializationId = value;
                                   });
                                 },
                               ),
@@ -1142,22 +1324,6 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                                 height: 120,
                               ),
                               const SizedBox(height: 16),
-                              
-                              // Created by field
-                              const Text(
-                                'Created By (Optional)',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              OutBorderTextFormField(
-                                hintText: 'Enter creator name',
-                                controller: createdByController,
-                                enabled: !isSubmitting,
-                              ),
                             ],
                           ),
                         ),
@@ -1255,14 +1421,18 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           );
           
           try {
+            print('🔍 ERROR_TRACKING: Add form submission - Creating special course request');
+            print('🔍 ERROR_TRACKING: Add form submission - Company ID: $currentUserCompanyId');
+            print('🔍 ERROR_TRACKING: Add form submission - Specialization ID: $selectedSpecializationId');
+            print('🔍 ERROR_TRACKING: Add form submission - Title: ${titleController.text.trim()}');
+            print('🔍 ERROR_TRACKING: Add form submission - Description: ${descriptionController.text.trim()}');
+            
             final request = SpecialCourseRequestCreateRequest(
-              companyId: selectedCompanyId!,
+              companyId: currentUserCompanyId,
+              specializationId: selectedSpecializationId!,
               title: titleController.text.trim(),
               description: descriptionController.text.trim(),
               fileAttachment: fileAttachment,
-              createdBy: createdByController.text.trim().isNotEmpty 
-                  ? createdByController.text.trim() 
-                  : null,
             );
             
             final response = await SpecialCourseRequestService.createSpecialCourseRequest(request);
@@ -1271,6 +1441,7 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
             Navigator.of(context).pop();
             
             if (response.success) {
+              print('✅ ERROR_TRACKING: Add form submission - Successfully created special course request');
               // Refresh the data
               Get.find<SpecialCourseRequestDataProvider>().refreshData();
                
@@ -1280,9 +1451,13 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
               // Show success message
               _showSuccessToast(response.messageEn ?? 'Special course request created successfully');
             } else {
+              print('❌ ERROR_TRACKING: Add form submission - API returned error: ${response.messageEn}');
               throw Exception(response.messageEn ?? 'Failed to create special course request');
             }
-          } catch (e) {
+          } catch (e, stackTrace) {
+            print('❌ ERROR_TRACKING: Add form submission - Exception occurred: $e');
+            print('❌ ERROR_TRACKING: Add form submission - Stack trace: $stackTrace');
+            
             // Close loading dialog
             Navigator.of(context).pop();
             
@@ -1295,14 +1470,27 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
 
   void _showEditSpecialCourseRequestForm(BuildContext context, SpecialCourseRequest specialCourseRequest) {
     final formKey = GlobalKey<FormState>();
-    int? selectedCompanyId = specialCourseRequest.companyId;
+    int? selectedSpecializationId = specialCourseRequest.specializationId;
     final titleController = TextEditingController(text: specialCourseRequest.title);
     final descriptionController = TextEditingController(text: specialCourseRequest.description);
-    final createdByController = TextEditingController(text: specialCourseRequest.createdBy ?? '');
     String? fileAttachment = specialCourseRequest.fileAttachment;
 
+    // Check if user has permission to update special course requests
+    if (!SpecialCourseRequestService.canUpdateSpecialCourseRequests()) {
+      _showErrorToast('You do not have permission to update special course requests. Only Company Account users can update requests.');
+      return;
+    }
+
+    // Get current user's company ID
+    final currentUserCompanyId = SpecialCourseRequestService.getCurrentUserCompanyId();
+    print('🔍 DEBUG: Edit form - currentUserCompanyId: $currentUserCompanyId');
+    if (currentUserCompanyId == null) {
+      _showErrorToast('Unable to determine your company. Please ensure you are logged in with a company account and try again.');
+      return;
+    }
+
     // Data for dropdowns
-    List<company_model.Company> companies = [];
+    List<Specialization> specializations = [];
     bool isLoadingDropdownData = true;
 
     ModalDialog.show(
@@ -1317,9 +1505,9 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           // Load dropdown data on first build
           if (isLoadingDropdownData) {
             isLoadingDropdownData = false;
-            _loadDropdownData(context).then((data) {
+            _loadSpecializations(context).then((data) {
               setModalState(() {
-                companies = (data['companies'] as List<dynamic>?)?.cast<company_model.Company>() ?? [];
+                specializations = data;
               });
             });
           }
@@ -1367,9 +1555,10 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                               ),
                               const SizedBox(height: 16),
                                
-                              // Company field label
+                               
+                              // Specialization field label
                               const Text(
-                                'Company *',
+                                'Specialization *',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -1378,27 +1567,27 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                               ),
                               const SizedBox(height: 8),
                               
-                              // Company Dropdown
+                              // Specialization Dropdown
                               DropdownButtonFormField<int>(
-                                value: selectedCompanyId,
+                                value: selectedSpecializationId,
                                 decoration: const InputDecoration(
-                                  hintText: 'Select a company',
+                                  hintText: 'Select a specialization',
                                   border: OutlineInputBorder(),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                                 ),
-                                items: companies.map((company) => DropdownMenuItem<int>(
-                                  value: company.id,
-                                  child: Text(company.name),
+                                items: specializations.map((specialization) => DropdownMenuItem<int>(
+                                  value: specialization.id,
+                                  child: Text(specialization.name),
                                 )).toList(),
                                 validator: (value) {
                                   if (value == null) {
-                                    return 'Please select a company';
+                                    return 'Please select a specialization';
                                   }
                                   return null;
                                 },
                                 onChanged: (value) {
                                   setModalState(() {
-                                    selectedCompanyId = value;
+                                    selectedSpecializationId = value;
                                   });
                                 },
                               ),
@@ -1481,22 +1670,6 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                                 height: 120,
                               ),
                               const SizedBox(height: 16),
-                              
-                              // Created by field
-                              const Text(
-                                'Created By (Optional)',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              OutBorderTextFormField(
-                                hintText: 'Enter creator name',
-                                controller: createdByController,
-                                enabled: !isSubmitting,
-                              ),
                             ],
                           ),
                         ),
@@ -1596,13 +1769,11 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           try {
             final request = SpecialCourseRequestUpdateRequest(
               id: specialCourseRequest.id!,
-              companyId: selectedCompanyId,
+              companyId: currentUserCompanyId,
+              specializationId: selectedSpecializationId,
               title: titleController.text.trim(),
               description: descriptionController.text.trim(),
               fileAttachment: fileAttachment,
-              createdBy: createdByController.text.trim().isNotEmpty 
-                  ? createdByController.text.trim() 
-                  : null,
             );
             
             final response = await SpecialCourseRequestService.updateSpecialCourseRequest(request);
@@ -1637,15 +1808,27 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
   Future<Map<String, List<dynamic>>> _loadDropdownData(BuildContext context) async {
     try {
       final companiesResponse = await CompanyService.getAllCompanies();
-      
+      final specializations = await SpecializationService.getSpecializationsForCompanyAccount(context);
+
       return {
         'companies': companiesResponse.success ? companiesResponse.data : <company_model.Company>[],
+        'specializations': specializations,
       };
     } catch (e) {
       print('Error loading dropdown data: $e');
       return {
         'companies': <company_model.Company>[],
+        'specializations': <Specialization>[],
       };
+    }
+  }
+
+  Future<List<Specialization>> _loadSpecializations(BuildContext context) async {
+    try {
+      return await SpecializationService.getSpecializationsForCompanyAccount(context);
+    } catch (e) {
+      print('Error loading specializations: $e');
+      return <Specialization>[];
     }
   }
 
@@ -1759,31 +1942,56 @@ class SpecialCourseRequestDataProvider extends GetxController {
   }
 
   Future<List<SpecialCourseRequest>> loadData() async {
+    const String methodName = 'loadData';
+    print('🔍 ERROR_TRACKING: Starting $methodName');
+    
     try {
       _isLoading.value = true;
       
-      // Load special course requests
-      final response = await SpecialCourseRequestService.getAllSpecialCourseRequests();
+      // Load special course requests based on user role
+      SpecialCourseRequestListResponse response;
+      if (SpecialCourseRequestService.canViewAllSpecialCourseRequests()) {
+        print('🔍 ERROR_TRACKING: $methodName - User has admin/system admin role, using get-all endpoint');
+        // Admin and System Administrator use get-all endpoint
+        response = await SpecialCourseRequestService.getAllSpecialCourseRequests();
+      } else if (SpecialCourseRequestService.canViewCompanySpecialCourseRequests()) {
+        print('🔍 ERROR_TRACKING: $methodName - User has company account role, using get-by-company endpoint');
+        // Company Account uses get-by-company endpoint
+        response = await SpecialCourseRequestService.getSpecialCourseRequestsByCompany();
+      } else {
+        print('❌ ERROR_TRACKING: $methodName - User does not have permission to view special course requests');
+        throw Exception('You do not have permission to view special course requests.');
+      }
       
-      // Load companies for filter
-      try {
-        final companiesResponse = await CompanyService.getAllCompanies();
-        if (companiesResponse.success) {
-          _companies.value = companiesResponse.data;
+      // Load companies for filter (only for Admin and System Administrator)
+      if (SpecialCourseRequestService.canViewAllSpecialCourseRequests()) {
+        try {
+          print('🔍 ERROR_TRACKING: $methodName - Loading companies for filter');
+          final companiesResponse = await CompanyService.getAllCompanies();
+          if (companiesResponse.success) {
+            _companies.value = companiesResponse.data;
+            print('✅ ERROR_TRACKING: $methodName - Successfully loaded ${companiesResponse.data.length} companies');
+          } else {
+            print('❌ ERROR_TRACKING: $methodName - Failed to load companies: ${companiesResponse.messageEn}');
+          }
+        } catch (e) {
+          print('❌ ERROR_TRACKING: $methodName - Error loading companies for filter: $e');
+          // Don't fail the whole operation if companies can't be loaded
         }
-      } catch (e) {
-        print('Error loading companies for filter: $e');
-        // Don't fail the whole operation if companies can't be loaded
       }
       
       if (response.success) {
         _specialCourseRequests.value = response.data;
         _currentPage.value = 0; // reset page on new data
+        print('✅ ERROR_TRACKING: $methodName - Successfully loaded ${response.data.length} special course requests');
         return response.data;
       } else {
+        print('❌ ERROR_TRACKING: $methodName - API returned error: ${response.messageEn}');
         throw Exception(response.messageEn);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ ERROR_TRACKING: $methodName - Exception occurred: $e');
+      print('❌ ERROR_TRACKING: $methodName - Stack trace: $stackTrace');
       _specialCourseRequests.clear();
       rethrow;
     } finally {

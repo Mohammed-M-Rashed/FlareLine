@@ -19,11 +19,15 @@ import 'package:flareline/core/services/course_service.dart';
 import 'package:flareline/core/models/course_assignment_model.dart';
 import 'package:flareline/core/services/course_assignment_service.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
+import 'package:flareline/core/services/auth_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:async';
+
+// Import the new model classes
+import 'package:flareline/core/models/training_plan_model.dart';
 
 // Model class for nomination entries
 class NominationEntry {
@@ -39,6 +43,7 @@ class NominationEntry {
   final String companyName;
   final String trainingPlanName;
   final String courseName;
+  final int? courseAssignmentId; // Track which course assignment this nomination belongs to
 
   NominationEntry({
     required this.id,
@@ -53,6 +58,7 @@ class NominationEntry {
     required this.companyName,
     required this.trainingPlanName,
     required this.courseName,
+    this.courseAssignmentId,
   });
 }
 
@@ -66,11 +72,57 @@ class NominationManagementPage extends LayoutWidget {
 
   @override
   Widget contentDesktopWidget(BuildContext context) {
+    // Check if user has company account role
+    if (!AuthService.hasRole('company_account')) {
+      return _buildAccessDeniedWidget(context);
+    }
+    
     return const Column(
       children: [
         SizedBox(height: 16),
         NominationManagementWidget(),
       ],
+    );
+  }
+
+  Widget _buildAccessDeniedWidget(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.lock_outline,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Access Denied',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'This page is only accessible to Company Accounts.',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ButtonWidget(
+            btnText: 'Go Back',
+            type: 'primary',
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -84,25 +136,32 @@ class NominationManagementWidget extends StatefulWidget {
 
 class _NominationManagementWidgetState extends State<NominationManagementWidget> {
   // State for dropdowns
-  int? _selectedCompanyId;
+  int? _selectedCompanyId; // Will be set from logged-in user's company
   int? _selectedTrainingPlanId;
-  int? _selectedCourseId;
+  int? _selectedCourseAssignmentId;
   int? _selectedPlanCourseAssignmentId; // New field for API integration
   
   // Data lists
-  List<TrainingPlanByCompany> _trainingPlans = [];
-  List<CourseAssignment> _courses = [];
+  List<ApprovedTrainingPlanWithCourses> _approvedTrainingPlans = [];
+  List<PlanCourseAssignmentWithCourse> _availableCourses = [];
   List<NominationEntry> _nominations = [];
   
+  // Seat tracking
+  Map<int, int> _originalSeats = {}; // courseAssignmentId -> original seats
+  Map<int, int> _remainingSeats = {}; // courseAssignmentId -> remaining seats
+  
   // Loading states
-  bool _isLoadingCompanies = false;
   bool _isLoadingTrainingPlans = false;
   bool _isLoadingCourses = false;
+  bool _isLoadingExistingNominations = false;
   
   // Filtering and pagination
   String? _selectedFilterCompany;
   int _currentPage = 0;
   int _itemsPerPage = 10;
+  
+  // Access control
+  bool _hasAccess = false;
   
   // Form controllers for adding nominations
   final _formKey = GlobalKey<FormState>();
@@ -152,12 +211,52 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
   @override
   void initState() {
     super.initState();
-    _loadCompanies();
-    // Don't load training plans on init - wait for company selection
-    // Don't load courses on init - wait for company and training plan selection
+    
+    // Check access permissions
+    _checkAccess();
+    
+    if (_hasAccess) {
+      // Get company ID from logged-in user
+      _getUserCompanyId();
     
     // Add listener to job number controller for auto-fill
     _jobNumberController.addListener(_onJobNumberChanged);
+    }
+  }
+  
+  void _getUserCompanyId() {
+    try {
+      final user = AuthService.getCurrentUser();
+      if (user != null && user.companyId != null) {
+        setState(() {
+          _selectedCompanyId = user.companyId;
+        });
+        print('✅ NOMINATION: User company ID set to: ${user.companyId}');
+        print('✅ NOMINATION: User company name: ${user.company?.name ?? 'Unknown'}');
+        
+        // Load approved training plans with courses for the user's company
+        _loadApprovedTrainingPlansWithCourses();
+      } else {
+        print('❌ NOMINATION: No company ID found for current user');
+        _showErrorToast('Unable to determine your company. Please contact support.');
+      }
+    } catch (e) {
+      print('❌ NOMINATION: Error getting user company ID: $e');
+      _showErrorToast('Error loading user information. Please try again.');
+    }
+  }
+  
+  void _checkAccess() {
+    setState(() {
+      _hasAccess = AuthService.hasRole('company_account');
+    });
+    
+    if (!_hasAccess) {
+      print('🚫 NOMINATION MANAGEMENT: Access denied - User does not have company_account role');
+      _showErrorToast('Access denied. This page is only accessible to Company Accounts.');
+    } else {
+      print('✅ NOMINATION MANAGEMENT: Access granted - User has company_account role');
+    }
   }
 
   @override
@@ -197,6 +296,11 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Check access first
+    if (!_hasAccess) {
+      return _buildAccessDeniedWidget(context);
+    }
+    
     return CommonCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -204,6 +308,47 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
           init: NominationDataProvider(),
           builder: (provider) => _buildWidget(context, provider),
         ),
+      ),
+    );
+  }
+  
+  Widget _buildAccessDeniedWidget(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.lock_outline,
+            size: 80,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Access Denied',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'This page is only accessible to Company Accounts.',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ButtonWidget(
+            btnText: 'Go Back',
+            type: 'primary',
+            onTap: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -218,9 +363,13 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
               // Header section
               _buildHeaderSection(),
               const SizedBox(height: 24),
-              
+
               // Nomination Form Section
               _buildNominationFormSection(),
+              const SizedBox(height: 24),
+
+              // Seat Tracking Section
+              _buildSeatTrackingSection(),
               const SizedBox(height: 24),
               
               // Nominations Table
@@ -285,6 +434,349 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                 )),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeatTrackingSection() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isMobile ? 12 : 16),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.event_seat,
+                    color: Colors.green.shade600,
+                    size: isMobile ? 18 : 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Seat Availability Tracking',
+                      style: TextStyle(
+                        fontSize: isMobile ? 14 : 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_selectedCourseAssignmentId != null) ...[
+                _buildSelectedCourseSeatInfo(isMobile),
+              ] else ...[
+                _buildGeneralSeatInfo(isMobile),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSelectedCourseSeatInfo(bool isMobile) {
+    final selectedCourse = _availableCourses.firstWhere(
+      (course) => course.id == _selectedCourseAssignmentId,
+      orElse: () => _availableCourses.first,
+    );
+    
+    final originalSeats = _originalSeats[_selectedCourseAssignmentId!] ?? 0;
+    final remainingSeats = _remainingSeats[_selectedCourseAssignmentId!] ?? 0;
+    final usedSeats = originalSeats - remainingSeats;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Selected Course: ${selectedCourse.course?.title ?? 'Unknown Course'}',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        isMobile 
+          ? Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSeatInfoCard(
+                        'Total Seats',
+                        originalSeats.toString(),
+                        Colors.blue,
+                        Icons.event_seat,
+                        isMobile,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSeatInfoCard(
+                        'Used Seats',
+                        usedSeats.toString(),
+                        Colors.orange,
+                        Icons.person,
+                        isMobile,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildSeatInfoCard(
+                  'Available Seats',
+                  remainingSeats.toString(),
+                  remainingSeats > 0 ? Colors.green : Colors.red,
+                  remainingSeats > 0 ? Icons.check_circle : Icons.cancel,
+                  isMobile,
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Total Seats',
+                    originalSeats.toString(),
+                    Colors.blue,
+                    Icons.event_seat,
+                    isMobile,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Used Seats',
+                    usedSeats.toString(),
+                    Colors.orange,
+                    Icons.person,
+                    isMobile,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Available',
+                    remainingSeats.toString(),
+                    remainingSeats > 0 ? Colors.green : Colors.red,
+                    remainingSeats > 0 ? Icons.check_circle : Icons.cancel,
+                    isMobile,
+                  ),
+                ),
+              ],
+            ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: originalSeats > 0 ? usedSeats / originalSeats : 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: remainingSeats > 0 ? Colors.green : Colors.red,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGeneralSeatInfo(bool isMobile) {
+    final totalCourses = _availableCourses.length;
+    final totalSeats = _originalSeats.values.fold(0, (sum, seats) => sum + seats);
+    final totalUsed = _originalSeats.entries.fold(0, (sum, entry) {
+      final remaining = _remainingSeats[entry.key] ?? entry.value;
+      return sum + (entry.value - remaining);
+    });
+    final totalAvailable = totalSeats - totalUsed;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Overall Seat Availability',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        isMobile 
+          ? Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSeatInfoCard(
+                        'Courses',
+                        totalCourses.toString(),
+                        Colors.blue,
+                        Icons.book,
+                        isMobile,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSeatInfoCard(
+                        'Total Seats',
+                        totalSeats.toString(),
+                        Colors.blue,
+                        Icons.event_seat,
+                        isMobile,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSeatInfoCard(
+                        'Used',
+                        totalUsed.toString(),
+                        Colors.orange,
+                        Icons.person,
+                        isMobile,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSeatInfoCard(
+                        'Available',
+                        totalAvailable.toString(),
+                        totalAvailable > 0 ? Colors.green : Colors.red,
+                        totalAvailable > 0 ? Icons.check_circle : Icons.cancel,
+                        isMobile,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Courses',
+                    totalCourses.toString(),
+                    Colors.blue,
+                    Icons.book,
+                    isMobile,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Total Seats',
+                    totalSeats.toString(),
+                    Colors.blue,
+                    Icons.event_seat,
+                    isMobile,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Used',
+                    totalUsed.toString(),
+                    Colors.orange,
+                    Icons.person,
+                    isMobile,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSeatInfoCard(
+                    'Available',
+                    totalAvailable.toString(),
+                    totalAvailable > 0 ? Colors.green : Colors.red,
+                    totalAvailable > 0 ? Icons.check_circle : Icons.cancel,
+                    isMobile,
+                  ),
+                ),
+              ],
+            ),
+        if (totalSeats > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: totalUsed / totalSeats,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: totalAvailable > 0 ? Colors.green : Colors.red,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSeatInfoCard(String title, String value, Color color, IconData icon, bool isMobile) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 8 : 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: isMobile ? 16 : 20,
+          ),
+          SizedBox(height: isMobile ? 2 : 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isMobile ? 16 : 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          SizedBox(height: isMobile ? 1 : 2),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: isMobile ? 10 : 12,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -369,11 +861,17 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                   child: ButtonWidget(
                     btnText: 'Add Nomination',
                     type: 'primary',
-                    onTap: _addNomination,
+                    onTap: _canAddNomination() ? _addNomination : null,
                   ),
                 ),
               ],
             ),
+            
+            // Show seat availability message
+            if (_selectedCourseAssignmentId != null) ...[
+              const SizedBox(height: 8),
+              _buildSeatAvailabilityMessage(),
+            ],
           ],
         ),
       ),
@@ -400,25 +898,24 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
             ),
           ),
           const SizedBox(height: 12),
+          // Show company info (read-only)
+          _buildCompanyInfo(),
+          const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 800) {
                 // Mobile layout - single column
                 return Column(
                   children: [
-                    _buildCompanyDropdown(),
-                    const SizedBox(height: 12),
                     _buildTrainingPlanDropdown(),
                     const SizedBox(height: 12),
                     _buildCourseDropdown(),
                   ],
                 );
               } else {
-                // Desktop layout - three columns
+                // Desktop layout - two columns
                 return Row(
                   children: [
-                    Expanded(child: _buildCompanyDropdown()),
-                    const SizedBox(width: 12),
                     Expanded(child: _buildTrainingPlanDropdown()),
                     const SizedBox(width: 12),
                     Expanded(child: _buildCourseDropdown()),
@@ -426,6 +923,46 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                 );
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCompanyInfo() {
+    final user = AuthService.getCurrentUser();
+    final companyName = user?.company?.name ?? 'Your Company';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.business,
+            color: Colors.blue.shade600,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Company: ',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          Text(
+            companyName,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.blue.shade700,
+            ),
           ),
         ],
       ),
@@ -598,128 +1135,6 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
     );
   }
 
-  Widget _buildCompanyDropdown() {
-    return GetBuilder<NominationDataProvider>(
-      builder: (provider) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isMobile = constraints.maxWidth < 600;
-            
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Company',
-                  style: TextStyle(
-                    fontSize: isMobile ? 14 : 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Obx(() => DropdownButtonFormField<int>(
-                        value: _selectedCompanyId,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          hintText: _isLoadingCompanies 
-                              ? 'Loading companies...' 
-                              : Get.find<NominationDataProvider>().companies.isEmpty 
-                                  ? 'No companies available' 
-                                  : 'Select company',
-                          hintStyle: TextStyle(fontSize: isMobile ? 14 : 13),
-                          prefixIcon: _isLoadingCompanies 
-                              ? SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
-                                  ),
-                                )
-                              : Icon(Icons.business, color: Colors.blue.shade600, size: 18),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: isMobile ? 16 : 12, 
-                            vertical: isMobile ? 12 : 8,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                            borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
-                          ),
-                          filled: true,
-                          fillColor: _isLoadingCompanies ? Colors.grey.shade50 : Colors.white,
-                        ),
-                        items: Get.find<NominationDataProvider>().companies.map<DropdownMenuItem<int>>((company) {
-                          return DropdownMenuItem<int>(
-                            value: company.id,
-                            child: Text(
-                              company.name,
-                              style: TextStyle(fontSize: isMobile ? 14 : 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: _isLoadingCompanies || Get.find<NominationDataProvider>().companies.isEmpty ? null : (value) {
-                          setState(() {
-                            _selectedCompanyId = value;
-                            _selectedTrainingPlanId = null;
-                            _selectedCourseId = null;
-                            _selectedPlanCourseAssignmentId = null;
-                            _trainingPlans.clear();
-                            _courses.clear();
-                          });
-                          // Load training plans for the selected company
-                          if (value != null) {
-                            _loadTrainingPlansByCompany(value);
-                          }
-                        },
-                        style: TextStyle(fontSize: isMobile ? 14 : 13),
-                        dropdownColor: Colors.white,
-                        menuMaxHeight: isMobile ? 300 : 250,
-                      )),
-                    ),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      icon: _isLoadingCompanies 
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
-                              ),
-                            )
-                          : const Icon(Icons.refresh, size: 16),
-                      onPressed: _isLoadingCompanies ? null : () {
-                        _loadCompanies();
-                      },
-                      tooltip: _isLoadingCompanies ? 'Loading...' : 'Refresh',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.blue.shade50,
-                        foregroundColor: Colors.blue.shade700,
-                        minimumSize: Size(isMobile ? 40 : 32, isMobile ? 40 : 32),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
   Widget _buildTrainingPlanDropdown() {
     return LayoutBuilder(
@@ -748,35 +1163,39 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                       ? 'Loading training plans...' 
                       : _selectedCompanyId == null
                           ? 'Select company first'
-                          : _trainingPlans.isEmpty
+                          : _approvedTrainingPlans.isEmpty
                               ? 'No training plans available'
                               : 'Select training plan',
-                  hintStyle: TextStyle(fontSize: isMobile ? 14 : 13),
+                  hintStyle: TextStyle(
+                    fontSize: isMobile ? 14 : 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
                   prefixIcon: _isLoadingTrainingPlans 
                       ? SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
                           ),
                         )
-                      : Icon(Icons.school, color: Colors.blue.shade600, size: 18),
+                      : Icon(Icons.school, color: Colors.blue.shade600, size: 20),
                   contentPadding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 16 : 12, 
-                    vertical: isMobile ? 12 : 8,
+                    horizontal: isMobile ? 16 : 14, 
+                    vertical: isMobile ? 16 : 12,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                    borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                    borderSide: BorderSide(color: Colors.blue.shade500, width: 2),
                   ),
                   filled: true,
                   fillColor: _isLoadingTrainingPlans 
@@ -785,103 +1204,79 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                           ? Colors.grey.shade100
                           : Colors.white,
                 ),
-                items: _trainingPlans.map<DropdownMenuItem<int>>((plan) {
+                items: _approvedTrainingPlans.map<DropdownMenuItem<int>>((plan) {
                   return DropdownMenuItem<int>(
                     value: plan.id,
                     child: Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
-                        vertical: isMobile ? 8 : 4,
-                        horizontal: 4,
+                        vertical: isMobile ? 12 : 8,
+                        horizontal: isMobile ? 16 : 12,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            plan.title,
-                            style: TextStyle(
-                              fontSize: isMobile ? 14 : 13, 
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            maxLines: isMobile ? 2 : 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(plan.status).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: _getStatusColor(plan.status).withOpacity(0.3)),
-                                ),
-                                child: Text(
-                                  plan.status.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12 : 10,
-                                    fontWeight: FontWeight.w500,
-                                    color: _getStatusColor(plan.status),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${plan.year}',
-                                style: TextStyle(
-                                  fontSize: isMobile ? 12 : 10, 
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (isMobile && plan.planCourseAssignments.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.book,
-                                  size: 12,
-                                  color: Colors.grey[500],
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${plan.planCourseAssignments.length} course${plan.planCourseAssignments.length > 1 ? 's' : ''}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
+                      child: Text(
+                        plan.title,
+                        style: TextStyle(
+                          fontSize: isMobile ? 14 : 13, 
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          height: 1.2,
+                        ),
+                        maxLines: isMobile ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   );
                 }).toList(),
-                onChanged: (_isLoadingTrainingPlans || _selectedCompanyId == null) ? null : (value) {
+                selectedItemBuilder: (context) {
+                  return _approvedTrainingPlans.map<Widget>((plan) {
+                    return Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 12 : 8,
+                        horizontal: isMobile ? 16 : 12,
+                      ),
+                      child: Text(
+                        plan.title,
+                        style: TextStyle(
+                          fontSize: isMobile ? 14 : 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          height: 1.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList();
+                },
+                onChanged: _isLoadingTrainingPlans ? null : (value) {
                   setState(() {
                     _selectedTrainingPlanId = value;
-                    _selectedCourseId = null;
+                    _selectedCourseAssignmentId = null;
                     _selectedPlanCourseAssignmentId = null;
-                    _courses.clear();
+                    // Clear nominations when training plan changes
+                    _nominations.clear();
                   });
-                  if (value != null && _selectedCompanyId != null) {
-                    _loadCoursesByTrainingPlan(value);
+                  if (value != null) {
+                    _filterCoursesByTrainingPlan(value);
                   }
+                  // Recalculate seat tracking after clearing nominations
+                  _recalculateSeatTracking();
                 },
-                style: TextStyle(fontSize: isMobile ? 14 : 13),
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 13,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
                 dropdownColor: Colors.white,
                 menuMaxHeight: isMobile ? 300 : 250,
+                isDense: false,
                 icon: Icon(
                   Icons.arrow_drop_down,
                   color: (_isLoadingTrainingPlans || _selectedCompanyId == null) 
                       ? Colors.grey[400] 
                       : Colors.grey[600],
+                  size: 24,
                 ),
               ),
             ),
@@ -926,44 +1321,46 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
             Container(
               width: double.infinity,
               child: DropdownButtonFormField<int>(
-                value: _selectedCourseId,
+                value: _selectedCourseAssignmentId,
                 isExpanded: true,
                 decoration: InputDecoration(
                   hintText: _isLoadingCourses 
                       ? 'Loading courses...' 
-                      : _selectedCompanyId == null
-                          ? 'Select company first'
                           : _selectedTrainingPlanId == null 
                               ? 'Select training plan first'
-                              : _courses.isEmpty
+                          : _availableCourses.isEmpty
                                   ? 'No courses available'
                                   : 'Select course',
-                  hintStyle: TextStyle(fontSize: isMobile ? 14 : 13),
+                  hintStyle: TextStyle(
+                    fontSize: isMobile ? 14 : 13,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
                   prefixIcon: _isLoadingCourses 
                       ? SizedBox(
-                          width: 18,
-                          height: 18,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
                           ),
                         )
-                      : Icon(Icons.book, color: Colors.blue.shade600, size: 18),
+                      : Icon(Icons.book, color: Colors.blue.shade600, size: 20),
                   contentPadding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 16 : 12, 
-                    vertical: isMobile ? 12 : 8,
+                    horizontal: isMobile ? 16 : 14, 
+                    vertical: isMobile ? 16 : 12,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(isMobile ? 8 : 6),
-                    borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+                    borderSide: BorderSide(color: Colors.blue.shade500, width: 2),
                   ),
                   filled: true,
                   fillColor: _isLoadingCourses 
@@ -972,113 +1369,83 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                           ? Colors.grey.shade100
                           : Colors.white,
                 ),
-                items: _courses.map<DropdownMenuItem<int>>((course) {
+                items: _availableCourses.map<DropdownMenuItem<int>>((courseAssignment) {
                   return DropdownMenuItem<int>(
-                    value: course.id,
+                    value: courseAssignment.id,
                     child: Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
-                        vertical: isMobile ? 8 : 4,
-                        horizontal: 4,
+                        vertical: isMobile ? 12 : 8,
+                        horizontal: isMobile ? 16 : 12,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            course.title,
-                            style: TextStyle(
-                              fontSize: isMobile ? 14 : 13, 
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
-                            maxLines: isMobile ? 2 : 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: Colors.blue.shade200),
-                                ),
-                                child: Text(
-                                  course.code,
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12 : 10,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  course.specialization.name,
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12 : 10, 
-                                    color: Colors.grey[600],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (isMobile && course.assignments.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.schedule,
-                                  size: 12,
-                                  color: Colors.grey[500],
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${course.assignments.length} assignment${course.assignments.length > 1 ? 's' : ''}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
+                      child: Text(
+                        courseAssignment.course?.title ?? 'Unknown Course',
+                        style: TextStyle(
+                          fontSize: isMobile ? 14 : 13, 
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          height: 1.2,
+                        ),
+                        maxLines: isMobile ? 2 : 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   );
                 }).toList(),
-                onChanged: (_isLoadingCourses || _selectedCompanyId == null || _selectedTrainingPlanId == null) ? null : (value) {
-                  setState(() {
-                    _selectedCourseId = value;
-                    // Find the plan course assignment ID for the selected course
-                    if (value != null) {
-                      final selectedCourse = _courses.firstWhere((course) => course.id == value);
-                      if (selectedCourse.assignments.isNotEmpty) {
-                        _selectedPlanCourseAssignmentId = selectedCourse.assignments.first.id;
-                        print('🎯 Selected plan course assignment ID: $_selectedPlanCourseAssignmentId');
-                      } else {
-                        _selectedPlanCourseAssignmentId = null;
-                        print('⚠️ No assignments found for selected course');
-                      }
-                    } else {
-                      _selectedPlanCourseAssignmentId = null;
-                    }
-                  });
+                selectedItemBuilder: (context) {
+                  return _availableCourses.map<Widget>((courseAssignment) {
+                    return Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 12 : 8,
+                        horizontal: isMobile ? 16 : 12,
+                      ),
+                      child: Text(
+                        courseAssignment.course?.title ?? 'Unknown Course',
+                        style: TextStyle(
+                          fontSize: isMobile ? 14 : 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          height: 1.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList();
                 },
-                style: TextStyle(fontSize: isMobile ? 14 : 13),
+                onChanged: (_isLoadingCourses || _selectedTrainingPlanId == null) ? null : (value) {
+                  setState(() {
+                    _selectedCourseAssignmentId = value;
+                    _selectedPlanCourseAssignmentId = value; // Now they're the same since we're using assignment ID
+                    print('🎯 Selected course assignment ID: $_selectedCourseAssignmentId');
+                  });
+                  
+                  // Load existing nominations for the selected course
+                  if (value != null) {
+                    _loadExistingNominations();
+                  } else {
+                    // Clear nominations if no course is selected
+                    setState(() {
+                      _nominations.clear();
+                    });
+                    _recalculateSeatTracking();
+                  }
+                },
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 13,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
                 dropdownColor: Colors.white,
                 menuMaxHeight: isMobile ? 300 : 250,
+                isDense: false,
                 icon: Icon(
                   Icons.arrow_drop_down,
                   color: (_isLoadingCourses || _selectedCompanyId == null || _selectedTrainingPlanId == null) 
                       ? Colors.grey[400] 
                       : Colors.grey[600],
+                  size: 24,
                 ),
               ),
             ),
@@ -1120,6 +1487,36 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                   color: Colors.blue.shade800,
                 ),
               ),
+              if (_selectedCourseAssignmentId != null && _nominations.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.cloud_download,
+                        size: 14,
+                        color: Colors.green.shade600,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Loaded from server',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.green.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 16),
@@ -1228,6 +1625,43 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
   }
 
   Widget _buildTable() {
+    // Show loading indicator when fetching existing nominations
+    if (_isLoadingExistingNominations) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[300]!),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Loading Existing Nominations...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please wait while we fetch nominations for the selected course.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+    
     if (_nominations.isEmpty) {
       return Container(
         width: double.infinity,
@@ -1254,7 +1688,9 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
             ),
             const SizedBox(height: 8),
             Text(
-              'Add nominations using the form above to see them here.',
+              _selectedCourseAssignmentId != null 
+                  ? 'No existing nominations found for this course. Add nominations using the form above.'
+                  : 'Add nominations using the form above to see them here.',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[500],
@@ -1693,10 +2129,51 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Expanded(
       child: ButtonWidget(
         btnText: 'Save Nominations',
         type: 'primary',
         onTap: _nominations.isNotEmpty ? _saveNominations : null,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: ButtonWidget(
+              btnText: 'Clear Form',
+              type: 'secondary',
+              onTap: _nominations.isNotEmpty ? () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clear Form'),
+                    content: const Text('Are you sure you want to clear the form and reset seat tracking? This will remove all nominations from the table.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _nominations.clear();
+                            _clearForm(resetSeatTracking: true);
+                          });
+                          Navigator.of(context).pop();
+                          _showSuccessToast('Form cleared and seat tracking reset');
+                        },
+                        child: const Text('Clear'),
+                      ),
+                    ],
+                  ),
+                );
+              } : null,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1727,121 +2204,295 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
   }
 
   // Load methods
-  Future<void> _loadCompanies() async {
-    print('🔄 Loading companies...');
-    setState(() {
-      _isLoadingCompanies = true;
-    });
-    
-    try {
-      final response = await CompanyService.getAllCompanies();
-      print('📡 Company API Response: success=${response.success}, dataCount=${response.data.length}');
-      
-      if (response.success) {
-        final provider = Get.find<NominationDataProvider>();
-        provider.setCompanies(response.data);
-        setState(() {
-          _isLoadingCompanies = false;
-        });
-        print('✅ Companies loaded successfully: ${response.data.length} companies');
-      } else {
-        setState(() {
-          _isLoadingCompanies = false;
-        });
-        print('❌ Company API failed: ${response.messageEn}');
-        _showErrorToast('Failed to load companies: ${response.messageEn}');
-      }
-    } catch (e) {
-      setState(() {
-        _isLoadingCompanies = false;
-      });
-      print('💥 Company loading error: $e');
-      _showErrorToast('Error loading companies: ${e.toString()}');
-    }
-  }
 
-  Future<void> _loadTrainingPlansByCompany(int companyId) async {
-    print('🔄 Loading training plans for company ID: $companyId');
+  Future<void> _loadApprovedTrainingPlansWithCourses() async {
+    print('🔄 NOMINATION: Loading approved training plans with courses');
     setState(() {
       _isLoadingTrainingPlans = true;
     });
 
     try {
-      final response = await TrainingPlanByCompanyService.getTrainingPlansByCompany(
-        companyId: companyId,
-      );
-      print('📡 Training Plan API Response: success=${response.success}, dataCount=${response.data.length}');
+      final response = await TrainingPlanService.getApprovedTrainingPlansWithCompanyCourses();
+      print('📡 NOMINATION: API Response: success=${response.success}, dataCount=${response.data.length}');
 
       if (response.success) {
         setState(() {
-          _trainingPlans = response.data;
+          _approvedTrainingPlans = response.data;
           _isLoadingTrainingPlans = false;
         });
-        print('✅ Training plans loaded successfully: ${response.data.length} plans for company $companyId');
+        print('✅ NOMINATION: Approved training plans loaded successfully: ${response.data.length} plans');
+        
+        // Extract all available courses from all training plans
+        _extractAvailableCourses();
       } else {
         setState(() {
           _isLoadingTrainingPlans = false;
         });
-        print('❌ Training Plan API failed: ${response.messageEn}');
+        print('❌ NOMINATION: API failed: ${response.messageEn}');
         _showErrorToast('Failed to load training plans: ${response.messageEn}');
       }
     } catch (e) {
       setState(() {
         _isLoadingTrainingPlans = false;
       });
-      print('💥 Training plan loading error: $e');
+      print('💥 NOMINATION: Error loading approved training plans: $e');
       _showErrorToast('Error loading training plans: ${e.toString()}');
     }
   }
 
-  Future<void> _loadCoursesByTrainingPlan(int trainingPlanId) async {
-    if (_selectedCompanyId == null) {
-      print('❌ Cannot load courses: No company selected');
-      _showErrorToast('Please select a company first');
+  void _extractAvailableCourses() {
+    final allCourses = <PlanCourseAssignmentWithCourse>[];
+    
+    for (final plan in _approvedTrainingPlans) {
+      allCourses.addAll(plan.planCourseAssignments);
+    }
+    
+    // Initialize seat tracking
+    final originalSeats = <int, int>{};
+    final remainingSeats = <int, int>{};
+    
+    for (final course in allCourses) {
+      originalSeats[course.id] = course.seats;
+      remainingSeats[course.id] = course.seats;
+    }
+    
+    setState(() {
+      _availableCourses = allCourses;
+      _originalSeats = originalSeats;
+      _remainingSeats = remainingSeats;
+    });
+    
+    // Recalculate seat tracking based on existing nominations
+    _recalculateSeatTracking();
+    
+    print('✅ NOMINATION: Extracted ${allCourses.length} available courses from ${_approvedTrainingPlans.length} training plans');
+    print('✅ NOMINATION: Initialized seat tracking for ${originalSeats.length} courses');
+  }
+
+  void _recalculateSeatTracking() {
+    // Reset to original values first
+    _remainingSeats = Map.from(_originalSeats);
+    
+    // Deduct seats for existing nominations
+    for (final nomination in _nominations) {
+      if (nomination.courseAssignmentId != null) {
+        final currentSeats = _remainingSeats[nomination.courseAssignmentId!] ?? 0;
+        if (currentSeats > 0) {
+          _remainingSeats[nomination.courseAssignmentId!] = currentSeats - 1;
+          print('🎯 Seat recalculated: ${currentSeats} -> ${currentSeats - 1} for course assignment ${nomination.courseAssignmentId}');
+        }
+      }
+    }
+    
+    print('✅ NOMINATION: Seat tracking recalculated based on ${_nominations.length} existing nominations');
+  }
+
+  Future<void> _loadExistingNominations() async {
+    if (_selectedTrainingPlanId == null || _selectedCompanyId == null || _selectedCourseAssignmentId == null) {
+      print('❌ NOMINATION: Cannot load existing nominations - missing required IDs');
       return;
     }
 
-    print('🔄 Loading courses for training plan ID: $trainingPlanId, company ID: $_selectedCompanyId');
+    // Find the selected course to get the course ID
+    final selectedCourseAssignment = _availableCourses.firstWhere(
+      (course) => course.id == _selectedCourseAssignmentId,
+      orElse: () => _availableCourses.first,
+    );
+    
+    if (selectedCourseAssignment.course?.id == null) {
+      print('❌ NOMINATION: Cannot load existing nominations - course ID not found');
+      return;
+    }
+
     setState(() {
-      _isLoadingCourses = true;
+      _isLoadingExistingNominations = true;
     });
 
     try {
-      final response = await CourseAssignmentService.getCoursesByPlanAndCompany(
-        trainingPlanId: trainingPlanId,
-        companyId: _selectedCompanyId!,
-      );
-      print('📡 Course API Response: success=${response.success}, dataCount=${response.data.length}');
+      print('🔄 NOMINATION: Loading existing nominations...');
+      print('📊 NOMINATION: Training Plan ID: $_selectedTrainingPlanId');
+      print('🏢 NOMINATION: Company ID: $_selectedCompanyId');
+      print('🎓 NOMINATION: Course ID: ${selectedCourseAssignment.course!.id}');
 
-      if (response.success) {
+      final response = await NominationService.getNominationsByTrainingPlanAndCourse(
+        trainingPlanId: _selectedTrainingPlanId!,
+        companyId: _selectedCompanyId!,
+        courseId: selectedCourseAssignment.course!.id,
+      );
+
+      print('📡 NOMINATION: API response received');
+      print('📊 NOMINATION: Status code: ${response.statusCode}');
+      print('📄 NOMINATION: Message: ${response.messageEn}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        // Convert API nominations to NominationEntry objects
+        final existingNominations = response.data!.map((apiNomination) {
+          return NominationEntry(
+            id: apiNomination.id.toString(),
+            employeeName: apiNomination.employeeName,
+            jobNumber: apiNomination.employeeNumber,
+            phoneNumber: apiNomination.phone ?? '',
+            email: apiNomination.email ?? '',
+            englishName: '', // Not provided by API
+            specialization: apiNomination.specialization ?? '',
+            department: apiNomination.department ?? '',
+            yearsOfExperience: apiNomination.experienceYears ?? 0,
+            companyName: AuthService.getCurrentUser()?.company?.name ?? 'Unknown Company',
+            trainingPlanName: _approvedTrainingPlans
+                .firstWhere((plan) => plan.id == _selectedTrainingPlanId)
+                .title,
+            courseName: selectedCourseAssignment.course!.title ?? 'Unknown Course',
+            courseAssignmentId: _selectedCourseAssignmentId,
+          );
+        }).toList();
+
         setState(() {
-          _courses = response.data;
-          _isLoadingCourses = false;
+          // Replace current nominations with existing ones from API
+          _nominations = existingNominations;
+          _isLoadingExistingNominations = false;
         });
-        print('✅ Courses loaded successfully: ${response.data.length} courses for plan $trainingPlanId and company $_selectedCompanyId');
+
+        // Recalculate seat tracking based on existing nominations
+        _recalculateSeatTracking();
+
+        print('✅ NOMINATION: Loaded ${existingNominations.length} existing nominations');
+        print('🎯 NOMINATION: Remaining seats: ${_remainingSeats[_selectedCourseAssignmentId] ?? 0}');
       } else {
         setState(() {
-          _isLoadingCourses = false;
+          // Clear nominations if no existing ones found
+          _nominations.clear();
+          _isLoadingExistingNominations = false;
         });
-        print('❌ Course API failed: ${response.messageEn}');
-        _showErrorToast('Failed to load courses: ${response.messageEn}');
+        
+        // Reset seat tracking
+        _recalculateSeatTracking();
+        
+        print('ℹ️ NOMINATION: No existing nominations found or API error: ${response.messageEn}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       setState(() {
-        _isLoadingCourses = false;
+        _isLoadingExistingNominations = false;
       });
-      print('💥 Course loading error: $e');
-      _showErrorToast('Error loading courses: ${e.toString()}');
+      
+      print('💥 NOMINATION: Error loading existing nominations: $e');
+      print('💥 NOMINATION: Stack trace: $stackTrace');
+      _showErrorToast('Error loading existing nominations: ${e.toString()}');
+    }
+  }
+
+  void _filterCoursesByTrainingPlan(int trainingPlanId) {
+    final selectedPlan = _approvedTrainingPlans.firstWhere(
+      (plan) => plan.id == trainingPlanId,
+      orElse: () => _approvedTrainingPlans.first,
+    );
+    
+        setState(() {
+      _availableCourses = selectedPlan.planCourseAssignments;
+    });
+    
+    print('✅ NOMINATION: Filtered ${selectedPlan.planCourseAssignments.length} courses for training plan: ${selectedPlan.title}');
+  }
+
+
+
+  bool _canAddNomination() {
+    // Check if all required fields are selected
+    if (_selectedTrainingPlanId == null || 
+        _selectedCourseAssignmentId == null || 
+        _selectedCompanyId == null) {
+      return false;
+    }
+    
+    // Check if seats are available
+    final remainingSeats = _remainingSeats[_selectedCourseAssignmentId!] ?? 0;
+    return remainingSeats > 0;
+  }
+
+  Widget _buildSeatAvailabilityMessage() {
+    final remainingSeats = _remainingSeats[_selectedCourseAssignmentId!] ?? 0;
+    final originalSeats = _originalSeats[_selectedCourseAssignmentId!] ?? 0;
+    final usedSeats = originalSeats - remainingSeats;
+    
+    if (remainingSeats <= 0) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.warning,
+              color: Colors.red.shade600,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'All seats are filled ($usedSeats/$originalSeats). Cannot add more nominations.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle,
+              color: Colors.green.shade600,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '$remainingSeats of $originalSeats seats available. You can add $remainingSeats more nomination${remainingSeats == 1 ? '' : 's'}.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
     }
   }
 
   void _addNomination() {
-    print('🔄 Attempting to add nomination...');
+    print('🔄 NOMINATION PAGE: Starting add nomination process');
+    print('📊 NOMINATION PAGE: Current form state validation...');
+    
+    // Additional security check - ensure user has company account role
+    if (!AuthService.hasRole('company_account')) {
+      print('❌ NOMINATION PAGE: Access denied - User does not have company_account role');
+      _showErrorToast('Access denied. Only company accounts can create nominations.');
+      return;
+    }
+    
+    print('✅ NOMINATION PAGE: User has company_account role - proceeding with validation');
     
     if (_formKey.currentState!.validate()) {
       if (_selectedCompanyId == null) {
-        print('❌ Validation failed: No company selected');
-        _showErrorToast('Please select a company first');
+        print('❌ Validation failed: No company ID available');
+        _showErrorToast('Unable to determine your company. Please contact support.');
         return;
       }
       if (_selectedTrainingPlanId == null) {
@@ -1849,7 +2500,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
         _showErrorToast('Please select a training plan first');
         return;
       }
-      if (_selectedCourseId == null) {
+      if (_selectedCourseAssignmentId == null) {
         print('❌ Validation failed: No course selected');
         _showErrorToast('Please select a course first');
         return;
@@ -1861,57 +2512,49 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
       }
       
       // Check if lists are populated
-      if (_isLoadingCompanies) {
-        print('❌ Validation failed: Companies still loading');
-        _showErrorToast('Companies are still loading. Please wait and try again.');
-        return;
-      }
-      if (Get.find<NominationDataProvider>().companies.isEmpty) {
-        print('❌ Validation failed: No companies available');
-        _showErrorToast('No companies available. Please refresh or contact administrator.');
-        return;
-      }
-      if (_trainingPlans.isEmpty) {
+      if (_approvedTrainingPlans.isEmpty) {
         print('❌ Validation failed: No training plans available');
         _showErrorToast('Training plans are still loading. Please wait and try again.');
         return;
       }
-      if (_courses.isEmpty) {
+      if (_availableCourses.isEmpty) {
         print('❌ Validation failed: No courses available');
         _showErrorToast('Courses are still loading. Please wait and try again.');
         return;
       }
 
-      // Debug information
-      print('Selected IDs - Company: $_selectedCompanyId, TrainingPlan: $_selectedTrainingPlanId, Course: $_selectedCourseId');
-      print('Available companies: ${Get.find<NominationDataProvider>().companies.length}');
-      print('Available training plans: ${_trainingPlans.length}');
-      print('Available courses: ${_courses.length}');
+      // Check seat availability before adding nomination
+      final remainingSeats = _remainingSeats[_selectedCourseAssignmentId!] ?? 0;
+      if (remainingSeats <= 0) {
+        print('❌ Seat validation failed: No available seats for course assignment $_selectedCourseAssignmentId');
+        print('🎯 Current remaining seats: $remainingSeats');
+        _showErrorToast('No available seats for this course. All seats have been filled.');
+        return;
+      }
 
-      // Get names safely with fallbacks
-      final companies = Get.find<NominationDataProvider>().companies;
-      print('Looking for company with ID: $_selectedCompanyId');
-      print('Available companies: ${companies.map((c) => '${c.id}: ${c.name}').join(', ')}');
-      
-      final companyName = companies
-          .where((c) => c.id == _selectedCompanyId)
-          .isNotEmpty
-          ? companies.firstWhere((c) => c.id == _selectedCompanyId).name
-          : 'Unknown Company';
+      // Debug information
+      print('Selected IDs - Company: $_selectedCompanyId, TrainingPlan: $_selectedTrainingPlanId, CourseAssignment: $_selectedCourseAssignmentId');
+      print('Available training plans: ${_approvedTrainingPlans.length}');
+      print('Available courses: ${_availableCourses.length}');
+      print('🎯 Seat validation passed: $remainingSeats seats remaining');
+
+      // Get company name from user data
+      final user = AuthService.getCurrentUser();
+      final companyName = user?.company?.name ?? 'Your Company';
       
       print('Selected company name: $companyName');
       
-      final trainingPlanName = _trainingPlans
+      final trainingPlanName = _approvedTrainingPlans
           .where((t) => t.id == _selectedTrainingPlanId)
           .isNotEmpty
-          ? _trainingPlans.firstWhere((t) => t.id == _selectedTrainingPlanId).title
+          ? _approvedTrainingPlans.firstWhere((t) => t.id == _selectedTrainingPlanId).title
           : 'Unknown Training Plan';
       
-      final courseName = _courses
-          .where((c) => c.id == _selectedCourseId)
-          .isNotEmpty
-          ? _courses.firstWhere((c) => c.id == _selectedCourseId).title
-          : 'Unknown Course';
+      final selectedCourseAssignment = _availableCourses.firstWhere(
+        (c) => c.id == _selectedCourseAssignmentId,
+        orElse: () => _availableCourses.first,
+      );
+      final courseName = selectedCourseAssignment.course?.title ?? 'Unknown Course';
 
       final nomination = NominationEntry(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -1926,15 +2569,24 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
         companyName: companyName,
         trainingPlanName: trainingPlanName,
         courseName: courseName,
+        courseAssignmentId: _selectedCourseAssignmentId,
       );
 
       setState(() {
         _nominations.add(nomination);
+        
+        // Reduce available seats for the selected course (we already validated seats are available)
+        if (_selectedCourseAssignmentId != null) {
+          final currentSeats = _remainingSeats[_selectedCourseAssignmentId!] ?? 0;
+          _remainingSeats[_selectedCourseAssignmentId!] = currentSeats - 1;
+          print('🎯 Seat reduced: ${currentSeats} -> ${currentSeats - 1} for course assignment $_selectedCourseAssignmentId');
+        }
       });
       
       print('✅ Nomination added successfully:');
       print('   - Employee: ${nomination.employeeName} (${nomination.jobNumber})');
       print('   - Company: ${nomination.companyName}');
+      print('   - Remaining seats: ${_remainingSeats[_selectedCourseAssignmentId] ?? 0}');
       print('   - Training Plan: ${nomination.trainingPlanName}');
       print('   - Course: ${nomination.courseName}');
       print('   - Total nominations: ${_nominations.length}');
@@ -1944,7 +2596,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
     }
   }
 
-  void _clearForm() {
+  void _clearForm({bool resetSeatTracking = false}) {
     _employeeNameController.clear();
     _jobNumberController.clear();
     _phoneNumberController.clear();
@@ -1953,6 +2605,16 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
     _specializationController.clear();
     _departmentController.clear();
     _yearsOfExperienceController.clear();
+    
+    // Only reset seat tracking if explicitly requested (e.g., when form is manually cleared)
+    if (resetSeatTracking) {
+      setState(() {
+        _remainingSeats = Map.from(_originalSeats);
+      });
+      print('✅ NOMINATION PAGE: Form cleared and seat tracking reset');
+    } else {
+      print('✅ NOMINATION PAGE: Form cleared (seat tracking preserved)');
+    }
   }
 
 
@@ -1978,6 +2640,13 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
               print('✅ Deleting nomination: ${nomination.employeeName} (${nomination.jobNumber})');
               setState(() {
                 _nominations.removeWhere((n) => n.id == nomination.id);
+                
+                // Restore seat if this nomination had a course assignment ID
+                if (nomination.courseAssignmentId != null) {
+                  final currentSeats = _remainingSeats[nomination.courseAssignmentId!] ?? 0;
+                  _remainingSeats[nomination.courseAssignmentId!] = currentSeats + 1;
+                  print('🎯 Seat restored: ${currentSeats} -> ${currentSeats + 1} for course assignment ${nomination.courseAssignmentId}');
+                }
               });
               Navigator.of(context).pop();
               print('✅ Nomination deleted successfully. Remaining nominations: ${_nominations.length}');
@@ -1991,27 +2660,49 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
   }
 
   Future<void> _saveNominations() async {
-    print('💾 Attempting to save nominations...');
+    print('💾 NOMINATION PAGE: Starting save nominations process');
+    print('📊 NOMINATION PAGE: Current nominations count: ${_nominations.length}');
     
     if (_nominations.isEmpty) {
-      print('❌ No nominations to save');
+      print('❌ NOMINATION PAGE: No nominations to save');
       _showErrorToast('No nominations to save');
       return;
     }
 
     if (_selectedPlanCourseAssignmentId == null) {
-      print('❌ No plan course assignment ID selected');
+      print('❌ NOMINATION PAGE: No plan course assignment ID selected');
       _showErrorToast('Please select a course first');
       return;
     }
 
+    // Final seat validation before saving
+    if (_selectedCourseAssignmentId != null) {
+      final originalSeats = _originalSeats[_selectedCourseAssignmentId!] ?? 0;
+      final currentNominations = _nominations.where((n) => n.courseAssignmentId == _selectedCourseAssignmentId).length;
+      
+      if (currentNominations > originalSeats) {
+        print('❌ NOMINATION PAGE: Seat validation failed during save');
+        print('🎯 NOMINATION PAGE: Nominations: $currentNominations, Available seats: $originalSeats');
+        _showErrorToast('Cannot save nominations. You have $currentNominations nominations but only $originalSeats seats available.');
+        return;
+      }
+      
+      print('✅ NOMINATION PAGE: Final seat validation passed - $currentNominations nominations for $originalSeats seats');
+    }
+
     try {
-      print('📊 Preparing to save ${_nominations.length} nominations');
-      print('🎯 Plan Course Assignment ID: $_selectedPlanCourseAssignmentId');
+      print('📊 NOMINATION PAGE: Preparing to save ${_nominations.length} nominations');
+      print('🎯 NOMINATION PAGE: Plan Course Assignment ID: $_selectedPlanCourseAssignmentId');
+      print('🏢 NOMINATION PAGE: Company ID: $_selectedCompanyId');
+      print('📚 NOMINATION PAGE: Training Plan ID: $_selectedTrainingPlanId');
+      print('🎓 NOMINATION PAGE: Course Assignment ID: $_selectedCourseAssignmentId');
+      
       _showLoadingToast('Saving nominations...');
 
       // Convert nominations to new API format
+      print('🔄 NOMINATION PAGE: Converting nominations to API format...');
       final List<Nomination> apiNominations = _nominations.map((nomination) {
+        print('📝 NOMINATION PAGE: Converting nomination for ${nomination.employeeName} (${nomination.jobNumber})');
         return Nomination(
           employeeName: nomination.employeeName,
           employeeNumber: nomination.jobNumber,
@@ -2027,7 +2718,8 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
         );
       }).toList();
 
-      print('📡 Calling API to create nominations...');
+      print('📡 NOMINATION PAGE: Calling API to create nominations...');
+      print('📋 NOMINATION PAGE: API nominations data: ${apiNominations.map((n) => n.toApiJson()).toList()}');
       
       // Call the new API
       final response = await NominationService.createNominations(
@@ -2035,22 +2727,37 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
         nominations: apiNominations,
       );
 
+      print('📡 NOMINATION PAGE: API response received');
+      print('📊 NOMINATION PAGE: Response status code: ${response.statusCode}');
+      print('📄 NOMINATION PAGE: Response message EN: ${response.messageEn}');
+      print('📄 NOMINATION PAGE: Response message AR: ${response.messageAr}');
+      print('📊 NOMINATION PAGE: Response data count: ${response.data?.length ?? 0}');
+
       if (response.statusCode == 200) {
-        print('✅ Nominations saved successfully');
-        print('📊 Created ${response.data?.length ?? 0} nominations');
+        print('✅ NOMINATION PAGE: Nominations saved successfully');
+        print('📊 NOMINATION PAGE: Created ${response.data?.length ?? 0} nominations');
         _showSuccessToast(response.messageEn);
         
         // Clear the form and nominations list
         setState(() {
           _nominations.clear();
           _clearForm();
+          // Reset seat tracking to original values
+          _remainingSeats = Map.from(_originalSeats);
         });
+        print('✅ NOMINATION PAGE: Form cleared and nominations list reset');
+        print('✅ NOMINATION PAGE: Seat tracking reset to original values');
       } else {
-        print('❌ Failed to save nominations: ${response.messageEn}');
+        print('❌ NOMINATION PAGE: Failed to save nominations');
+        print('❌ NOMINATION PAGE: Error status: ${response.statusCode}');
+        print('❌ NOMINATION PAGE: Error message: ${response.messageEn}');
         _showErrorToast(response.messageEn);
       }
-    } catch (e) {
-      print('💥 Error saving nominations: $e');
+    } catch (e, stackTrace) {
+      print('💥 NOMINATION PAGE: Exception occurred during save');
+      print('💥 NOMINATION PAGE: Exception type: ${e.runtimeType}');
+      print('💥 NOMINATION PAGE: Exception message: ${e.toString()}');
+      print('💥 NOMINATION PAGE: Stack trace: $stackTrace');
       _showErrorToast('Error saving nominations: ${e.toString()}');
     }
   }

@@ -138,6 +138,42 @@ class CompanyService {
     }
   }
 
+
+  // Get all companies using admin API endpoint
+  static Future<CompanyListResponse> adminGetAllCompanies() async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        throw Exception('رمز المصادقة غير موجود');
+      }
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl${ApiEndpoints.adminGetAllCompanies}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({}), // Empty body as per API spec
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return CompanyListResponse.fromJson(jsonData);
+      } else {
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          throw Exception(errorData['message_ar'] ?? 'فشل في جلب الشركات');
+        } catch (e) {
+          throw Exception('فشل في جلب الشركات: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Helper method to check if user has permission to manage companies
   static bool hasCompanyManagementPermission() {
     try {
@@ -148,8 +184,11 @@ class CompanyService {
         return false;
       }
       
-      // Check if user has system_administrator role
-      return userData.roles.any((role) => role.name == 'system_administrator');
+      // Check if user has system_administrator or admin role
+      return userData.roles.any((role) => 
+        role.name == 'system_administrator' || 
+        role.name == 'admin'
+      );
     } catch (e) {
       return false;
     }

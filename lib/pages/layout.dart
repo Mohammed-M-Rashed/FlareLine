@@ -5,6 +5,7 @@ import 'package:flareline_uikit/widget/flareline_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flareline/core/auth/auth_provider.dart';
+import 'package:flareline/core/widgets/role_aware_sidebar.dart';
 
 abstract class LayoutWidget extends FlarelineLayoutWidget {
   const LayoutWidget({super.key});
@@ -12,6 +13,18 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
   @override
   String sideBarAsset(BuildContext context) {
     return 'assets/routes/menu_route_ar.json';
+  }
+
+  @override
+  Widget sideBarWidget(BuildContext context) {
+    return RoleAwareSidebar(
+      sideBarAsset: sideBarAsset(context),
+      isDark: isDarkTheme(context),
+      darkBg: sideBarDarkColor,
+      lightBg: sideBarLightColor,
+      width: 280,
+      appName: 'Training System',
+    );
   }
 
   @override

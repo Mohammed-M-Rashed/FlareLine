@@ -89,12 +89,15 @@ class TrainingNeed {
   }
 
   // Helper methods for status values
+  bool get isDraft => status == 'draft';
   bool get isPending => status == 'pending';
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
   
   String get statusDisplay {
     switch (status) {
+      case 'draft':
+        return 'Draft';
       case 'pending':
         return 'Pending';
       case 'approved':
@@ -108,6 +111,8 @@ class TrainingNeed {
 
   Color get statusColor {
     switch (status) {
+      case 'draft':
+        return Colors.grey;
       case 'pending':
         return Colors.orange;
       case 'approved':
@@ -258,11 +263,13 @@ class Specialization {
 class TrainingNeedCreateRequest {
   final int companyId;
   final int courseId;
+  final int specializationId;
   final int numberOfParticipants;
 
   TrainingNeedCreateRequest({
     required this.companyId,
     required this.courseId,
+    required this.specializationId,
     required this.numberOfParticipants,
   });
 
@@ -270,6 +277,7 @@ class TrainingNeedCreateRequest {
     return {
       'company_id': companyId,
       'course_id': courseId,
+      'specialization_id': specializationId,
       'number_of_participants': numberOfParticipants,
     };
   }
@@ -280,12 +288,14 @@ class TrainingNeedUpdateRequest {
   final int id;
   final int? companyId;
   final int? courseId;
+  final int? specializationId;
   final int? numberOfParticipants;
 
   TrainingNeedUpdateRequest({
     required this.id,
     this.companyId,
     this.courseId,
+    this.specializationId,
     this.numberOfParticipants,
   });
 
@@ -294,6 +304,7 @@ class TrainingNeedUpdateRequest {
     
     if (companyId != null) data['company_id'] = companyId;
     if (courseId != null) data['course_id'] = courseId;
+    if (specializationId != null) data['specialization_id'] = specializationId;
     if (numberOfParticipants != null) data['number_of_participants'] = numberOfParticipants;
     
     return data;
@@ -325,11 +336,15 @@ class ApproveTrainingNeedRequest {
 // Reject Training Need Request model
 class RejectTrainingNeedRequest {
   final int id;
+  final String rejection_reason;
 
-  RejectTrainingNeedRequest({required this.id});
+  RejectTrainingNeedRequest({required this.id, required this.rejection_reason});
 
   Map<String, dynamic> toJson() {
-    return {'id': id};
+    return {
+      'id': id,
+      'rejection_reason': rejection_reason,
+    };
   }
 }
 
@@ -386,4 +401,19 @@ class TrainingNeedResponse {
   }
 
   bool get success => statusCode == 200 || statusCode == 201;
+}
+
+// Request model for forwarding training needs
+class ForwardTrainingNeedRequest {
+  final int id;
+
+  ForwardTrainingNeedRequest({
+    required this.id,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+    };
+  }
 }

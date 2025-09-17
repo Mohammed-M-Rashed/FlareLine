@@ -136,13 +136,6 @@ class ToolBarWidget extends StatelessWidget {
                   },
                 ),
                 PopupMenuItem<String>(
-                  value: 'value02',
-                  child: Text('جهات الاتصال'),
-                  onTap: () async {
-                    onContactClick(context);
-                  },
-                ),
-                PopupMenuItem<String>(
                   value: 'value03',
                   child: Text('الإعدادات'),
                   onTap: () async {
@@ -168,9 +161,6 @@ class ToolBarWidget extends StatelessWidget {
     Get.toNamed('/profile');
   }
 
-  void onContactClick(BuildContext context){
-    Get.toNamed('/contacts');
-  }
 
   void onSettingClick(BuildContext context){
     Get.toNamed('/settings');

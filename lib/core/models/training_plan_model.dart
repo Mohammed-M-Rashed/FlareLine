@@ -91,55 +91,93 @@ class TrainingPlan {
   // Getters for UI convenience
   String get creatorName => creator?.name ?? 'Unknown User';
   
+  // Status check methods
   bool get isDraft => status == 'draft';
-  bool get isSubmitted => status == 'submitted';
+  bool get isPlanPreparation => status == 'plan_preparation';
+  bool get isTrainingGeneralManagerApproval => status == 'training_general_manager_approval';
+  bool get isBoardChairmanApproval => status == 'board_chairman_approval';
+  bool get isApproved => status == 'approved';
   
-  // Status workflow: Draft → Submitted (one-way transition)
-  // Only draft plans can be edited and submitted
+  // Workflow permission methods
   bool get canBeEdited => isDraft;
-  bool get canBeSubmitted => isDraft;
-
+  bool get canBeSubmitted => isDraft; // For backward compatibility
+  bool get canBeMovedToPlanPreparation => isDraft;
+  bool get canBeMovedToTrainingGeneralManagerApproval => isPlanPreparation;
+  bool get canBeMovedToBoardChairmanApproval => isTrainingGeneralManagerApproval;
+  bool get canBeApproved => isBoardChairmanApproval;
+  
+  // Role-based action permissions
+  bool get canBeViewedByAdmin => true; // Admin can view all
+  bool get canBeViewedByGeneralManager => isTrainingGeneralManagerApproval;
+  bool get canBeViewedByBoardChairman => isBoardChairmanApproval;
+  bool get canBeViewedByCompany => !isDraft; // Company cannot view draft plans
+  
+  // Status display properties
   String get statusDisplay {
     switch (status) {
       case 'draft':
         return 'Draft';
-      case 'submitted':
-        return 'Submitted';
+      case 'plan_preparation':
+        return 'Plan Preparation';
+      case 'training_general_manager_approval':
+        return 'Training General Manager Approval';
+      case 'board_chairman_approval':
+        return 'Board Chairman Approval';
+      case 'approved':
+        return 'Approved';
       default:
         return status;
     }
   }
-
+  
+  String get statusDisplayAr {
+    switch (status) {
+      case 'draft':
+        return 'مسودة';
+      case 'plan_preparation':
+        return 'إعداد الخطة';
+      case 'training_general_manager_approval':
+        return 'موافقة المدير العام للتدريب';
+      case 'board_chairman_approval':
+        return 'موافقة رئيس مجلس الإدارة';
+      case 'approved':
+        return 'موافق عليه';
+      default:
+        return status;
+    }
+  }
+  
   Color get statusColor {
     switch (status) {
       case 'draft':
-        return Colors.grey;
-      case 'submitted':
-        return Colors.orange;
+        return Colors.grey.shade600;
+      case 'plan_preparation':
+        return Colors.blue.shade600;
+      case 'training_general_manager_approval':
+        return Colors.orange.shade600;
+      case 'board_chairman_approval':
+        return Colors.purple.shade600;
+      case 'approved':
+        return Colors.green.shade600;
       default:
-        return Colors.grey;
+        return Colors.grey.shade400;
     }
   }
-
+  
   IconData get statusIcon {
     switch (status) {
       case 'draft':
         return Icons.edit;
-      case 'submitted':
-        return Icons.hourglass_empty;
+      case 'plan_preparation':
+        return Icons.build;
+      case 'training_general_manager_approval':
+        return Icons.person;
+      case 'board_chairman_approval':
+        return Icons.groups;
+      case 'approved':
+        return Icons.check_circle;
       default:
         return Icons.help;
-    }
-  }
-
-  String get statusDisplayText {
-    switch (status) {
-      case 'draft':
-        return 'مسودة';
-      case 'submitted':
-        return 'مُرسل';
-      default:
-        return status;
     }
   }
 }
@@ -531,19 +569,6 @@ class TrainingPlanByYearRequest {
   }
 }
 
-class TrainingPlanSubmitRequest {
-  final int id;
-
-  TrainingPlanSubmitRequest({
-    required this.id,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-    };
-  }
-}
 
 class TrainingPlanApproveRequest {
   final int id;
@@ -569,6 +594,20 @@ class TrainingPlanRejectRequest {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+    };
+  }
+}
+
+class TrainingPlanByCompanyRequest {
+  final int companyId;
+
+  TrainingPlanByCompanyRequest({
+    required this.companyId,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'company_id': companyId,
     };
   }
 }
@@ -629,6 +668,145 @@ class TrainingPlanListResponse {
       messageEn: json['m_en'],
       statusCode: json['status_code'] ?? 200,
       success: json['success'] ?? false,
+    );
+  }
+}
+
+// Model for approved training plans with company courses
+class ApprovedTrainingPlanWithCourses {
+  final int id;
+  final int year;
+  final String title;
+  final String? description;
+  final String status;
+  final int createdBy;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final User? creator;
+  final List<PlanCourseAssignmentWithCourse> planCourseAssignments;
+
+  ApprovedTrainingPlanWithCourses({
+    required this.id,
+    required this.year,
+    required this.title,
+    this.description,
+    required this.status,
+    required this.createdBy,
+    this.createdAt,
+    this.updatedAt,
+    this.creator,
+    required this.planCourseAssignments,
+  });
+
+  factory ApprovedTrainingPlanWithCourses.fromJson(Map<String, dynamic> json) {
+    return ApprovedTrainingPlanWithCourses(
+      id: json['id'] ?? 0,
+      year: json['year'] ?? DateTime.now().year,
+      title: json['title'] ?? '',
+      description: json['description'],
+      status: json['status'] ?? 'approved',
+      createdBy: json['created_by'] ?? 0,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : null,
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : null,
+      creator: json['creator'] != null 
+          ? User.fromJson(json['creator']) 
+          : null,
+      planCourseAssignments: (json['plan_course_assignments'] as List<dynamic>?)
+          ?.map((assignment) => PlanCourseAssignmentWithCourse.fromJson(assignment))
+          .toList() ?? [],
+    );
+  }
+}
+
+// Model for plan course assignment with course details
+class PlanCourseAssignmentWithCourse {
+  final int id;
+  final int trainingPlanId;
+  final int companyId;
+  final int courseId;
+  final int trainingCenterBranchId;
+  final DateTime startDate;
+  final DateTime endDate;
+  final int seats;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final Company? company;
+  final Course? course;
+
+  PlanCourseAssignmentWithCourse({
+    required this.id,
+    required this.trainingPlanId,
+    required this.companyId,
+    required this.courseId,
+    required this.trainingCenterBranchId,
+    required this.startDate,
+    required this.endDate,
+    required this.seats,
+    this.createdAt,
+    this.updatedAt,
+    this.company,
+    this.course,
+  });
+
+  factory PlanCourseAssignmentWithCourse.fromJson(Map<String, dynamic> json) {
+    return PlanCourseAssignmentWithCourse(
+      id: json['id'] ?? 0,
+      trainingPlanId: json['training_plan_id'] ?? 0,
+      companyId: json['company_id'] ?? 0,
+      courseId: json['course_id'] ?? 0,
+      trainingCenterBranchId: json['training_center_branch_id'] ?? 0,
+      startDate: json['start_date'] != null 
+          ? DateTime.parse(json['start_date']) 
+          : DateTime.now(),
+      endDate: json['end_date'] != null 
+          ? DateTime.parse(json['end_date']) 
+          : DateTime.now(),
+      seats: json['seats'] ?? 0,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : null,
+      updatedAt: json['updated_at'] != null 
+          ? DateTime.parse(json['updated_at']) 
+          : null,
+      company: json['company'] != null 
+          ? Company.fromJson(json['company']) 
+          : null,
+      course: json['course'] != null 
+          ? Course.fromJson(json['course']) 
+          : null,
+    );
+  }
+}
+
+// Response model for approved training plans with courses
+class ApprovedTrainingPlansWithCoursesResponse {
+  final bool success;
+  final List<ApprovedTrainingPlanWithCourses> data;
+  final String? messageAr;
+  final String? messageEn;
+  final int statusCode;
+
+  ApprovedTrainingPlansWithCoursesResponse({
+    required this.success,
+    required this.data,
+    this.messageAr,
+    this.messageEn,
+    required this.statusCode,
+  });
+
+  factory ApprovedTrainingPlansWithCoursesResponse.fromJson(Map<String, dynamic> json) {
+    return ApprovedTrainingPlansWithCoursesResponse(
+      success: json['success'] ?? false,
+      data: (json['data'] as List<dynamic>?)
+          ?.map((plan) => ApprovedTrainingPlanWithCourses.fromJson(plan))
+          .toList() ?? [],
+      messageAr: json['message_ar'],
+      messageEn: json['message_en'],
+      statusCode: json['status_code'] ?? 200,
     );
   }
 }

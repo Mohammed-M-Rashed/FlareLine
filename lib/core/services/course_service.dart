@@ -1,5 +1,6 @@
 import 'package:flareline/core/models/course_model.dart';
 import 'package:flareline/core/services/api_service.dart';
+import 'package:flareline/core/services/auth_service.dart';
 import 'package:flareline/core/config/api_endpoints.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flutter/material.dart';
@@ -298,6 +299,100 @@ class CourseService {
     print('📚 COURSE SERVICE: ===== GETTING ALL COURSES =====');
     
     return await getCourses(context);
+  }
+
+  // Get courses for company account (Company Account only)
+  static Future<List<Course>> getCoursesForCompanyAccount(BuildContext context, {int? specializationId}) async {
+    print('📚 COURSE SERVICE: ===== GETTING COURSES FOR COMPANY ACCOUNT =====');
+    print('🔍 COURSE SERVICE: Specialization ID: $specializationId');
+    
+    try {
+      // Check if user is a company account
+      if (!AuthService.hasRole('company_account')) {
+        _showErrorToast(context, 'غير مصرح لك بعرض الدورات');
+        return [];
+      }
+
+      final requestBody = CourseFilterRequest(specializationId: specializationId).toJson();
+      print('📤 COURSE SERVICE: Request body: $requestBody');
+      
+      print('🌐 COURSE SERVICE: Calling API endpoint: ${ApiEndpoints.selectCoursesForCompanyAccount}');
+      final response = await ApiService.post(ApiEndpoints.selectCoursesForCompanyAccount, body: requestBody);
+      print('📡 COURSE SERVICE: Response received - Status: ${response.statusCode}');
+      
+      if (ApiService.isSuccessResponse(response)) {
+        print('✅ COURSE SERVICE: API call successful, parsing response...');
+        final responseData = jsonDecode(response.body);
+        print('🔍 COURSE SERVICE: Response data: $responseData');
+        
+        final courseListResponse = CourseListResponse.fromJson(responseData);
+        
+        if (courseListResponse.success) {
+          print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
+          return courseListResponse.data;
+        } else {
+          print('❌ COURSE SERVICE: API returned success=false');
+          _showErrorToast(context, courseListResponse.message ?? 'فشل في جلب الدورات');
+          return [];
+        }
+      } else {
+        print('❌ COURSE SERVICE: API call failed - Status: ${response.statusCode}');
+        final errorMessage = ApiService.handleErrorResponse(response);
+        _showErrorToast(context, errorMessage);
+        return [];
+      }
+    } catch (e) {
+      print('❌ COURSE SERVICE: Exception occurred: $e');
+      _showErrorToast(context, 'خطأ في جلب الدورات: $e');
+      return [];
+    }
+  }
+
+  // Get courses by specialization for company account (Company Account only)
+  static Future<List<Course>> getCoursesBySpecializationForCompanyAccount(BuildContext context, int specializationId) async {
+    print('📚 COURSE SERVICE: ===== GETTING COURSES BY SPECIALIZATION FOR COMPANY ACCOUNT =====');
+    print('🔍 COURSE SERVICE: Specialization ID: $specializationId');
+    
+    try {
+      // Check if user is a company account
+      if (!AuthService.hasRole('company_account')) {
+        _showErrorToast(context, 'غير مصرح لك بعرض الدورات');
+        return [];
+      }
+
+      final requestBody = CourseFilterRequest(specializationId: specializationId).toJson();
+      print('📤 COURSE SERVICE: Request body: $requestBody');
+      
+      print('🌐 COURSE SERVICE: Calling API endpoint: ${ApiEndpoints.getCoursesBySpecializationForCompanyAccount}');
+      final response = await ApiService.post(ApiEndpoints.getCoursesBySpecializationForCompanyAccount, body: requestBody);
+      print('📡 COURSE SERVICE: Response received - Status: ${response.statusCode}');
+      
+      if (ApiService.isSuccessResponse(response)) {
+        print('✅ COURSE SERVICE: API call successful, parsing response...');
+        final responseData = jsonDecode(response.body);
+        print('🔍 COURSE SERVICE: Response data: $responseData');
+        
+        final courseListResponse = CourseListResponse.fromJson(responseData);
+        
+        if (courseListResponse.success) {
+          print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
+          return courseListResponse.data;
+        } else {
+          print('❌ COURSE SERVICE: API returned success=false');
+          _showErrorToast(context, courseListResponse.message ?? 'فشل في جلب الدورات');
+          return [];
+        }
+      } else {
+        print('❌ COURSE SERVICE: API call failed - Status: ${response.statusCode}');
+        final errorMessage = ApiService.handleErrorResponse(response);
+        _showErrorToast(context, errorMessage);
+        return [];
+      }
+    } catch (e) {
+      print('❌ COURSE SERVICE: Exception occurred: $e');
+      _showErrorToast(context, 'خطأ في جلب الدورات: $e');
+      return [];
+    }
   }
 
   // Search courses by code or title

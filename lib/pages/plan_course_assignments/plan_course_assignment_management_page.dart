@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flareline_uikit/components/buttons/button_widget.dart';
 import 'package:flareline_uikit/components/card/common_card.dart';
@@ -21,11 +22,13 @@ import 'package:flareline/core/models/training_plan_model.dart' as training_plan
 import 'package:flareline/core/services/training_plan_service.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
+import 'package:flareline/core/auth/auth_provider.dart';
 
 import 'package:get/get.dart';
-import 'dart:convert'; // Added for base64Decode
 import 'dart:typed_data'; // Added for Uint8List
-import 'dart:async'; // Added for Completer
+import 'dart:async';
+
+import '../../core/config/api_endpoints.dart'; // Added for Completer
 
 // Model class for course assignment entries
 class CourseAssignmentEntry {
@@ -39,6 +42,14 @@ class CourseAssignmentEntry {
   final DateTime startDate;
   final DateTime endDate;
   final int seats;
+  
+  // ID fields for API submission (not displayed in table)
+  final int? trainingId;
+  final int? companyId;
+  final int? specializationId;
+  final int? courseId;
+  final int? trainingCenterId;
+  final int? branchId;
 
   CourseAssignmentEntry({
     required this.id,
@@ -51,6 +62,12 @@ class CourseAssignmentEntry {
     required this.startDate,
     required this.endDate,
     required this.seats,
+    this.trainingId,
+    this.companyId,
+    this.specializationId,
+    this.courseId,
+    this.trainingCenterId,
+    this.branchId,
   });
 }
 
@@ -122,10 +139,28 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
   // State for pagination
   int _currentPage = 0;
   int _itemsPerPage = 10;
+  
+  // Flag to prevent dropdown data reloading after form submission
+  bool _isFormSubmitted = false;
+  
+  // Reset form submission flag (useful for starting fresh)
+  void _resetFormSubmissionFlag() {
+    setState(() {
+      _isFormSubmitted = false;
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    
+    // Check authentication status on page load
+    print('🔐 ===== PAGE INITIALIZATION AUTH CHECK =====');
+    if (!_checkAuthenticationStatus()) {
+      _handleAuthenticationError('Page initialization');
+    }
+    print('============================================');
+    
     _loadTrainings();
     _loadSpecializations();
     _loadTrainingCenters();
@@ -409,6 +444,23 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
                             color: Colors.blue.shade800,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.green.shade300),
+                          ),
+                          child: Text(
+                            'IDs stored for API',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -435,10 +487,20 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
-                child:  ButtonWidget(
-                  btnText: 'Save to Training Plan',
-                  type: 'primary',
-                  onTap: _courseAssignments.isNotEmpty ? _saveAssignments : null,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ButtonWidget(
+                            btnText: 'Save to Training Plan',
+                            type: 'primary',
+                            onTap: _courseAssignments.isNotEmpty ? _saveAssignments : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -480,6 +542,17 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     }
 
     try {
+      // Pre-save authentication check
+      if (!_checkAuthenticationStatus()) {
+        _handleAuthenticationError('Pre-save authentication check');
+        return;
+      }
+
+      print('🌐 ===== SAVE PROCESS ENDPOINT TRACKING =====');
+      print('🌐 Starting save process for training plan: $_selectedTrainingId');
+      print('🌐 Number of assignments to save: ${_courseAssignments.length}');
+      print('🌐 ===========================================');
+
       _showLoadingToast('Saving assignments...');
 
       // Debug: Check the state of required lists
@@ -493,8 +566,21 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
       // Load required data if lists are empty
       if (_courses.isEmpty || _branches.isEmpty) {
         print('🔄 Loading required data for save operation...');
-        await _loadAllCourses();
-        await _loadAllBranches();
+        print('🌐 ===== DATA LOADING ENDPOINTS =====');
+        
+        if (_courses.isEmpty) {
+          print('🌐 📚 Loading courses from API...');
+          await _loadAllCourses();
+          print('🌐 📚 Courses loaded: ${_courses.length} items');
+        }
+        
+        if (_branches.isEmpty) {
+          print('🌐 🏢 Loading branches from API...');
+          await _loadAllBranches();
+          print('🌐 🏢 Branches loaded: ${_branches.length} items');
+        }
+        
+        print('🌐 ================================');
         print('   ✅ Data loaded - Courses: ${_courses.length}, Branches: ${_branches.length}');
         
         // Debug: Show some sample data
@@ -506,50 +592,97 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         }
       }
 
-      // Convert course assignments to API format
+      // Convert course assignments to API format using stored IDs
       final List<Map<String, dynamic>> assignments = [];
       for (int i = 0; i < _courseAssignments.length; i++) {
         final assignment = _courseAssignments[i];
         try {
           print('🔄 Processing assignment ${i + 1}/${_courseAssignments.length}:');
-          print('   Company: ${assignment.companyName}');
-          print('   Course: ${assignment.courseName}');
-          print('   Branch: ${assignment.branchName}');
+          print('   Company: ${assignment.companyName} (ID: ${assignment.companyId})');
+          print('   Course: ${assignment.courseName} (ID: ${assignment.courseId})');
+          print('   Branch: ${assignment.branchName} (ID: ${assignment.branchId})');
+          
+          // Validate that all required IDs are present
+          if (assignment.companyId == null) {
+            throw Exception('Company ID is missing for assignment ${i + 1}');
+          }
+          if (assignment.courseId == null) {
+            throw Exception('Course ID is missing for assignment ${i + 1}');
+          }
+          if (assignment.branchId == null) {
+            throw Exception('Branch ID is missing for assignment ${i + 1}');
+          }
           
           final assignmentData = {
-            'company_id': _getCompanyIdByName(assignment.companyName),
-            'course_id': _getCourseIdByName(assignment.courseName),
-            'training_center_branch_id': _getBranchIdByName(assignment.branchName),
+            'company_id': assignment.companyId,
+            'course_id': assignment.courseId,
+            'training_center_branch_id': assignment.branchId,
             'start_date': assignment.startDate.toIso8601String().split('T')[0],
             'end_date': assignment.endDate.toIso8601String().split('T')[0],
             'seats': assignment.seats,
           };
           
           assignments.add(assignmentData);
-          print('   ✅ Assignment ${i + 1} processed successfully');
+          print('   ✅ Assignment ${i + 1} processed successfully with stored IDs');
         } catch (e) {
           print('   ❌ Error processing assignment ${i + 1}: $e');
           throw Exception('Failed to process assignment ${i + 1}: $e');
         }
       }
 
-      // Log the data being sent to server
-      print('📤 Sending data to server:');
+      // Log the complete request body being sent to server
+      final requestBody = {
+        'training_plan_id': _selectedTrainingId,
+        'assignments': assignments,
+      };
+      
+      print('📤 ===== REQUEST BODY DEBUG =====');
       print('   Training Plan ID: $_selectedTrainingId');
       print('   Number of assignments: ${assignments.length}');
-      print('   Assignments data:');
+      print('   Complete Request Body:');
+      print('   ${requestBody.toString()}');
+      print('   ');
+      print('   Individual Assignment Details:');
       for (int i = 0; i < assignments.length; i++) {
         print('     Assignment ${i + 1}:');
         assignments[i].forEach((key, value) {
-          print('       $key: $value');
+          print('       $key: $value (${value.runtimeType})');
         });
+        print('     ---');
       }
-      print('   Full assignments JSON: ${assignments.toString()}');
+      print('   ');
+      print('   JSON String representation:');
+      print('   ${jsonEncode(requestBody)}');
+      print('================================');
+
+      // Final authentication check before API call
+      if (!_checkAuthenticationStatus()) {
+        _handleAuthenticationError('Final authentication check before API call');
+        return;
+      }
+
+      print('🌐 ===== MAIN SAVE ENDPOINT =====');
+      print('🌐 🚀 Calling PlanCourseAssignmentService.replacePlanCourseAssignments');
+      print('🌐 📍 Endpoint: ${ApiEndpoints.storePlanCourseAssignments}');
+      print('🌐 📊 Request data:');
+      print('🌐   - Training Plan ID: $_selectedTrainingId');
+      print('🌐   - Assignments count: ${assignments.length}');
+      print('🌐   - Request body size: ${jsonEncode(assignments).length} characters');
+      print('🌐 ===============================');
 
       final response = await PlanCourseAssignmentService.replacePlanCourseAssignments(
         trainingPlanId: _selectedTrainingId!,
         assignments: assignments,
       );
+
+      print('🌐 ===== SAVE ENDPOINT RESPONSE =====');
+      print('🌐 ✅ Save endpoint completed');
+      print('🌐 📊 Response details:');
+      print('🌐   - Status Code: ${response.statusCode}');
+      print('🌐   - Success: ${response.statusCode == 200}');
+      print('🌐   - Message (EN): ${response.messageEn}');
+      print('🌐   - Message (AR): ${response.messageAr}');
+      print('🌐 ===================================');
 
       // Log the response received from server
       print('📥 Response received from server:');
@@ -561,6 +694,22 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
       if (response.statusCode == 200) {
         _showSuccessToast('Assignments saved successfully');
         print('✅ Assignments saved successfully');
+        
+        // Print summary of all endpoints executed
+        print('🌐 ===== ENDPOINT EXECUTION SUMMARY =====');
+        print('🌐 📋 All endpoints executed during save process:');
+        print('🌐   1. Authentication check (local)');
+        if (_courses.isEmpty) {
+          print('🌐   2. 📚 CourseService.getAllCourses - ${ApiEndpoints.selectCourses}');
+        }
+        if (_branches.isEmpty) {
+          print('🌐   3. 🏢 TrainingCenterBranchService.getAllTrainingCenterBranches - ${ApiEndpoints.getAllTrainingCenterBranches}');
+        }
+        print('🌐   4. 🚀 PlanCourseAssignmentService.replacePlanCourseAssignments - ${ApiEndpoints.storePlanCourseAssignments}');
+        print('🌐 📊 Total API calls made: ${(_courses.isEmpty ? 1 : 0) + (_branches.isEmpty ? 1 : 0) + 1}');
+        print('🌐 ✅ All endpoints completed successfully');
+        print('🌐 ======================================');
+        
         // Optionally clear the assignments after saving
         // setState(() {
         //   _courseAssignments.clear();
@@ -574,11 +723,77 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         _showErrorToast('Failed to save assignments: ${response.messageEn}');
       }
     } catch (e) {
-     // print('❌ Exception saving assignments: ${e.toString()}');
-     // print('   Exception type: ${e.runtimeType}');
-     // _showErrorToast('Error saving assignments: ${e.toString()}');
-      print('${e.toString()}');
+      print('❌ ===== EXCEPTION DEBUG =====');
+      print('   Exception Type: ${e.runtimeType}');
+      print('   Exception Message: ${e.toString()}');
+      print('   Stack Trace:');
+      print('   ${StackTrace.current}');
+      print('   ');
+      print('   Current State:');
+      print('   - Selected Training ID: $_selectedTrainingId');
+      print('   - Course Assignments Count: ${_courseAssignments.length}');
+      print('   - Courses Count: ${_courses.length}');
+      print('   - Branches Count: ${_branches.length}');
+      print('   - Companies Count: ${Get.find<PlanCourseAssignmentDataProvider>().companies.length}');
+      print('=============================');
+      
+      // Print endpoint execution summary even on error
+      print('🌐 ===== ENDPOINT EXECUTION SUMMARY (ERROR) =====');
+      print('🌐 📋 Endpoints attempted during save process:');
+      print('🌐   1. Authentication check (local)');
+      if (_courses.isEmpty) {
+        print('🌐   2. 📚 CourseService.getAllCourses - ${ApiEndpoints.selectCourses}');
+      }
+      if (_branches.isEmpty) {
+        print('🌐   3. 🏢 TrainingCenterBranchService.getAllTrainingCenterBranches - ${ApiEndpoints.getAllTrainingCenterBranches}');
+      }
+      print('🌐   4. 🚀 PlanCourseAssignmentService.replacePlanCourseAssignments - ${ApiEndpoints.storePlanCourseAssignments}');
+      print('🌐 ❌ Process failed before completion');
+      print('🌐 ===========================================');
+      
+      _showErrorToast('Error saving assignments: ${e.toString()}');
     }
+  }
+
+  // Check authentication status
+  bool _checkAuthenticationStatus() {
+    try {
+      final authController = Get.find<AuthController>();
+      print('🔐 ===== AUTHENTICATION STATUS CHECK =====');
+      print('   isAuthenticated: ${authController.isAuthenticated}');
+      print('   isLoggedIn: ${authController.isLoggedIn()}');
+      print('   hasValidToken: ${authController.hasValidToken()}');
+      print('   userEmail: ${authController.userEmail}');
+      print('   tokenLength: ${authController.userToken.length}');
+      print('=========================================');
+      
+      if (!authController.isAuthenticated || !authController.hasValidToken()) {
+        print('❌ Authentication check failed');
+        return false;
+      }
+      
+      print('✅ Authentication check passed');
+      return true;
+    } catch (e) {
+      print('❌ Exception during authentication check: $e');
+      return false;
+    }
+  }
+
+  // Handle authentication error
+  void _handleAuthenticationError(String context) {
+    print('🔐 ===== AUTHENTICATION ERROR HANDLER =====');
+    print('   Context: $context');
+    print('   Time: ${DateTime.now()}');
+    print('   User should be redirected to login');
+    print('==========================================');
+    
+    _showErrorToast('Authentication error, please log in again');
+    
+    // Optionally, you could trigger a logout or redirect to login page here
+    // For example:
+    // Get.find<AuthController>().signOut();
+    // Get.offAllNamed('/login');
   }
 
   // Helper methods to get IDs by name
@@ -676,7 +891,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     final branch = _branches
         .firstWhere((b) => b.id == _selectedBranchId);
 
-    // Create new assignment entry
+    // Create new assignment entry with IDs
     final newAssignment = CourseAssignmentEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       trainingName: training.title,
@@ -688,12 +903,28 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
       startDate: _startDate!,
       endDate: _endDate!,
       seats: _seats,
+      // Store IDs for API submission
+      trainingId: _selectedTrainingId,
+      companyId: _selectedCompanyId,
+      specializationId: _selectedSpecializationId,
+      courseId: _selectedCourseId,
+      trainingCenterId: _selectedTrainingCenterId,
+      branchId: _selectedBranchId,
     );
 
     // Add to the list
     setState(() {
       _courseAssignments.add(newAssignment);
     });
+
+    // Debug: Print stored IDs
+    print('✅ Course assignment added with stored IDs:');
+    print('   Training ID: ${newAssignment.trainingId}');
+    print('   Company ID: ${newAssignment.companyId}');
+    print('   Specialization ID: ${newAssignment.specializationId}');
+    print('   Course ID: ${newAssignment.courseId}');
+    print('   Training Center ID: ${newAssignment.trainingCenterId}');
+    print('   Branch ID: ${newAssignment.branchId}');
 
     // Clear the form
     _clearForm();
@@ -785,8 +1016,14 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
       _seatsController.text = '1';
       _startDateController.clear();
       _endDateController.clear();
-      _courses.clear();
-      _branches.clear();
+      
+      // Don't clear _courses and _branches to prevent dropdown data reload
+      // This allows users to add multiple assignments without reloading dropdown data
+      // _courses.clear();
+      // _branches.clear();
+      
+      // Set flag to prevent dropdown data reloading on subsequent selections
+      _isFormSubmitted = true;
     });
   }
 
@@ -1769,7 +2006,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
       );
 
       if (response.statusCode == 200) {
-        // Convert API assignments to local CourseAssignmentEntry format
+        // Convert API assignments to local CourseAssignmentEntry format with IDs
         final List<CourseAssignmentEntry> assignments = response.data.map((assignment) {
           // Get training name from the selected training
           final selectedTraining = _trainings.isNotEmpty 
@@ -1790,6 +2027,13 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
             startDate: assignment.startDate,
             endDate: assignment.endDate,
             seats: assignment.seats,
+            // Store IDs from API response
+            trainingId: _selectedTrainingId,
+            companyId: assignment.company?.id,
+            specializationId: assignment.course?.specializationId,
+            courseId: assignment.course?.id,
+            trainingCenterId: assignment.trainingCenterBranch?.trainingCenterId,
+            branchId: assignment.trainingCenterBranch?.id,
           );
         }).toList();
 
@@ -1823,15 +2067,15 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     }
   }
 
-  // Load trainings
+  // Load trainings with plan_preparation status using admin API
   Future<void> _loadTrainings() async {
     setState(() {
       _isLoadingTrainings = true;
     });
 
     try {
-      final response = await TrainingPlanService.getAllTrainingPlans();
-      if (response.statusCode == 200) {
+      final response = await TrainingPlanService.adminGetTrainingPlansPlanPreparation();
+      if (response.success) {
         setState(() {
           _trainings = response.data;
           _isLoadingTrainings = false;
@@ -1884,20 +2128,51 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
   // Load all courses without filter (for save operation)
   Future<void> _loadAllCourses() async {
     try {
+      print('🌐 📚 ===== LOADING COURSES ENDPOINT =====');
+      print('🌐 📚 Calling CourseService.getAllCourses');
+      print('🌐 📚 Endpoint: ${ApiEndpoints.selectCourses}');
+      print('🌐 📚 ====================================');
+      
       final courses = await CourseService.getAllCourses(context);
+      
+      print('🌐 📚 ===== COURSES ENDPOINT RESPONSE =====');
+      print('🌐 📚 ✅ Courses loaded successfully');
+      print('🌐 📚 📊 Response data:');
+      print('🌐 📚   - Courses count: ${courses.length}');
+      print('🌐 📚   - Sample courses: ${courses.take(3).map((c) => c.title).toList()}');
+      print('🌐 📚 ====================================');
+      
       setState(() {
         _courses = courses;
       });
       print('✅ Loaded ${_courses.length} courses for save operation');
     } catch (e) {
-      print('❌ Error loading courses: $e');
+      print('🌐 📚 ===== COURSES ENDPOINT ERROR =====');
+      print('🌐 📚 ❌ Error loading courses: $e');
+      print('🌐 📚 =================================');
     }
   }
 
   // Load all branches without filter (for save operation)
   Future<void> _loadAllBranches() async {
     try {
+      print('🌐 🏢 ===== LOADING BRANCHES ENDPOINT =====');
+      print('🌐 🏢 Calling TrainingCenterBranchService.getAllTrainingCenterBranches');
+      print('🌐 🏢 Endpoint: ${ApiEndpoints.getAllTrainingCenterBranches}');
+      print('🌐 🏢 =====================================');
+      
       final response = await TrainingCenterBranchService.getAllTrainingCenterBranches();
+      
+      print('🌐 🏢 ===== BRANCHES ENDPOINT RESPONSE =====');
+      print('🌐 🏢 📊 Response details:');
+      print('🌐 🏢   - Status Code: ${response.statusCode}');
+      print('🌐 🏢   - Success: ${response.statusCode == 200}');
+      print('🌐 🏢   - Message (EN): ${response.messageEn}');
+      print('🌐 🏢   - Message (AR): ${response.messageAr}');
+      print('🌐 🏢   - Data count: ${response.data.length}');
+      print('🌐 🏢   - Sample branches: ${response.data.take(3).map((b) => b.name).toList()}');
+      print('🌐 🏢 =====================================');
+      
       if (response.statusCode == 200) {
         setState(() {
           _branches = response.data;
@@ -1907,15 +2182,20 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         print('❌ Failed to load branches: ${response.messageEn}');
       }
     } catch (e) {
-      print('❌ Error loading branches: $e');
+      print('🌐 🏢 ===== BRANCHES ENDPOINT ERROR =====');
+      print('🌐 🏢 ❌ Error loading branches: $e');
+      print('🌐 🏢 ==================================');
     }
   }
 
-  // Load courses based on selected specialization
+  // Load courses based on selected specialization using admin API
   Future<void> _loadCourses(int? specializationId) async {
     setState(() {
       _isLoadingCourses = true;
-      _courses.clear();
+      // Only clear courses if this is the initial load (form not submitted yet)
+      if (!_isFormSubmitted) {
+        _courses.clear();
+      }
       _selectedCourseId = null;
     });
 
@@ -1927,7 +2207,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     }
 
     try {
-      final courses = await CourseService.getCoursesBySpecialization(context, specializationId);
+      final courses = await SpecializationService.adminGetCoursesBySpecialization(context, specializationId);
       setState(() {
         _courses = courses;
         _isLoadingCourses = false;
@@ -1961,6 +2241,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         setState(() {
           _selectedSpecializationId = value;
         });
+        // Load courses for the selected specialization
         _loadCourses(value);
       },
     );
@@ -1995,14 +2276,14 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     );
   }
 
-  // Load training centers
+  // Load training centers using admin API
   Future<void> _loadTrainingCenters() async {
     setState(() {
       _isLoadingTrainingCenters = true;
     });
 
     try {
-      final response = await TrainingCenterService.getAllTrainingCenters();
+      final response = await TrainingCenterService.adminGetAllTrainingCenters();
       setState(() {
         _trainingCenters = response.data;
         _isLoadingTrainingCenters = false;
@@ -2015,11 +2296,11 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     }
   }
 
-  // Load companies
+  // Load companies using admin API
   Future<void> _loadCompanies() async {
     try {
-      final response = await CompanyService.getAllCompanies();
-      if (response.statusCode == 200) {
+      final response = await CompanyService.adminGetAllCompanies();
+      if (response.success) {
         // Update the provider's companies list
         final provider = Get.find<PlanCourseAssignmentDataProvider>();
         provider.setCompanies(response.data);
@@ -2034,11 +2315,14 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     }
   }
 
-  // Load branches based on selected training center
+  // Load branches based on selected training center using admin API
   Future<void> _loadBranches(int? trainingCenterId) async {
     setState(() {
       _isLoadingBranches = true;
-      _branches.clear();
+      // Only clear branches if this is the initial load (form not submitted yet)
+      if (!_isFormSubmitted) {
+        _branches.clear();
+      }
       _selectedBranchId = null;
     });
 
@@ -2050,7 +2334,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
     }
 
     try {
-      final response = await TrainingCenterBranchService.getTrainingCenterBranchesByTrainingCenter(trainingCenterId);
+      final response = await TrainingCenterBranchService.adminGetTrainingCenterBranches(trainingCenterId);
       setState(() {
         _branches = response.data;
         _isLoadingBranches = false;
@@ -2084,6 +2368,7 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
         setState(() {
           _selectedTrainingCenterId = value;
         });
+        // Load branches for the selected training center
         _loadBranches(value);
       },
     );

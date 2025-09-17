@@ -19,7 +19,10 @@ class TrainingCenterService {
       final authController = Get.find<AuthController>();
       final user = authController.userData;
       if (user != null && user.roles.isNotEmpty) {
-        return user.roles.any((role) => role.name == 'system_administrator');
+        return user.roles.any((role) => 
+          role.name == 'system_administrator' || 
+          role.name == 'admin'
+        );
       }
       return false;
     } catch (e) {
@@ -37,6 +40,41 @@ class TrainingCenterService {
 
       final response = await http.post(
         Uri.parse('$_baseUrl${ApiEndpoints.getAllTrainingCenters}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({}), // Empty body as per API spec
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return TrainingCenterListResponse.fromJson(jsonData);
+      } else {
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          throw Exception(errorData['m_ar'] ?? 'فشل في جلب مراكز التدريب');
+        } catch (e) {
+          throw Exception('فشل في جلب مراكز التدريب: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Get all training centers using admin API endpoint
+  static Future<TrainingCenterListResponse> adminGetAllTrainingCenters() async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        throw Exception('رمز المصادقة غير موجود');
+      }
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl${ApiEndpoints.adminGetAllTrainingCenters}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -232,7 +270,7 @@ class TrainingCenterService {
 
       final request = AcceptTrainingCenterRequest(id: id);
       final response = await http.post(
-        Uri.parse('$_baseUrl/training-center/accept'),
+        Uri.parse('$_baseUrl${ApiEndpoints.acceptTrainingCenter}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -273,7 +311,7 @@ class TrainingCenterService {
 
       final request = RejectTrainingCenterRequest(id: id, rejectionReason: rejectionReason);
       final response = await http.post(
-        Uri.parse('$_baseUrl/training-center/reject'),
+        Uri.parse('$_baseUrl${ApiEndpoints.rejectTrainingCenter}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -338,7 +376,7 @@ class TrainingCenterService {
 
       final request = GetTrainingCentersByStatusRequest(status: status);
       final response = await http.post(
-        Uri.parse('$_baseUrl/training-center/by-status'),
+        Uri.parse('$_baseUrl${ApiEndpoints.getTrainingCentersByStatus}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

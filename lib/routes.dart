@@ -1,6 +1,5 @@
 import 'package:flareline/deferred_widget.dart';
 import 'package:flareline/pages/modal/modal_page.dart' deferred as modal;
-import 'package:flareline/pages/table/contacts_page.dart' deferred as contacts;
 import 'package:flareline/pages/toast/toast_page.dart' deferred as toast;
 import 'package:flareline/pages/tools/tools_page.dart' deferred as tools;
 import 'package:flutter/material.dart';
@@ -28,11 +27,13 @@ import 'package:flareline/pages/training_center_branches/training_center_branch_
 import 'package:flareline/pages/courses/course_management_page.dart';
 import 'package:flareline/pages/trainers/trainer_management_page.dart';
 import 'package:flareline/pages/training_needs/training_need_management_page.dart';
-import 'package:flareline/pages/special_course_requests/special_course_request_management_page.dart';
 import 'package:flareline/pages/training_plans/training_plan_management_page.dart';
 import 'package:flareline/pages/plan_course_assignments/plan_course_assignment_management_page.dart';
 import 'package:flareline/pages/nominations/nomination_management_page.dart';
+import 'package:flareline/pages/nominations/nomination_monitoring_page.dart';
+import 'package:flareline/core/widgets/role_based_sidebar_test.dart';
 import 'package:get/get.dart';
+import 'package:flareline/pages/special_course_requests/special_course_request_management_page.dart';
 
 typedef PathWidgetBuilder = Widget Function(BuildContext, String?);
 
@@ -102,10 +103,6 @@ final List<GetPage> routes = [
     page: () => DeferredWidget(alert.loadLibrary, () => alert.AlertPage()),
   ),
   GetPage(
-    name: '/contacts',
-    page: () => DeferredWidget(contacts.loadLibrary, () => contacts.ContactsPage()),
-  ),
-  GetPage(
     name: '/tools',
     page: () => DeferredWidget(tools.loadLibrary, () => tools.ToolsPage()),
   ),
@@ -165,6 +162,18 @@ final List<GetPage> routes = [
             GetPage(
               name: '/nomination-management',
               page: () => const NominationManagementPage(),
+              // Note: Role-based access control is handled within the page component
+              // This ensures only company_account users can access the nomination management
+            ),
+            GetPage(
+              name: '/nomination-monitoring',
+              page: () => const NominationMonitoringPage(),
+              // Note: Role-based access control is handled within the page component
+              // This ensures admin and company_account users can access nomination monitoring
+            ),
+            GetPage(
+              name: '/role-based-sidebar-test',
+              page: () => const RoleBasedSidebarTest(),
             ),
 ];
 

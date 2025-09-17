@@ -88,6 +88,22 @@ class ApiService {
       print('📡 API SERVICE: Response body length: ${response.body.length}');
       print('📡 API SERVICE: Response body preview: ${response.body.length > 500 ? response.body.substring(0, 500) + '...' : response.body}');
       
+      // Check for authentication errors
+      if (response.statusCode == 401) {
+        print('🔐 API SERVICE: ===== AUTHENTICATION ERROR DETECTED =====');
+        print('🔐 API SERVICE: Status Code: 401 Unauthorized');
+        print('🔐 API SERVICE: Response body: ${response.body}');
+        print('🔐 API SERVICE: This indicates the token is invalid or expired');
+        print('🔐 API SERVICE: User needs to log in again');
+        print('🔐 API SERVICE: ===========================================');
+      } else if (response.statusCode == 403) {
+        print('🔐 API SERVICE: ===== AUTHORIZATION ERROR DETECTED =====');
+        print('🔐 API SERVICE: Status Code: 403 Forbidden');
+        print('🔐 API SERVICE: Response body: ${response.body}');
+        print('🔐 API SERVICE: This indicates insufficient permissions');
+        print('🔐 API SERVICE: =========================================');
+      }
+      
       if (response.statusCode >= 400) {
         print('🔍 API SERVICE: Client error detected');
         print('🔍 API SERVICE: HTTP status code: ${response.statusCode}');

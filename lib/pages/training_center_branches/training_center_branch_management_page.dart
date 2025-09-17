@@ -1576,6 +1576,10 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                     _buildDetailRow('Training Center', branch.trainingCenterName),
                     _buildDetailRow('Address', branch.address),
                     _buildDetailRow('Phone Number', branch.phone),
+                    if (branch.createdAt != null)
+                      _buildDetailRow('Created At', _formatBranchDate(branch.createdAt!)),
+                    if (branch.updatedAt != null)
+                      _buildDetailRow('Updated At', _formatBranchDate(branch.updatedAt!)),
                   ],
                 ),
               ),
@@ -1620,49 +1624,6 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                     ],
                   ),
                 ),
-              const SizedBox(height: 16),
-              
-              // System Information Section
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: Colors.orange.shade600,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'System Information',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.orange.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    _buildDetailRow('Branch ID', branch.id?.toString() ?? 'N/A'),
-                    _buildDetailRow('Training Center ID', branch.trainingCenterId.toString()),
-                    if (branch.createdAt != null)
-                      _buildDetailRow('Created At', _formatBranchDate(branch.createdAt!)),
-                    if (branch.updatedAt != null)
-                      _buildDetailRow('Updated At', _formatBranchDate(branch.updatedAt!)),
-                  ],
-                ),
-              ),
             ],
           ),
         ),

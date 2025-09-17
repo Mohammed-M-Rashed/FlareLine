@@ -19,7 +19,10 @@ class TrainerService {
       final authController = Get.find<AuthController>();
       final user = authController.userData;
       if (user != null && user.roles.isNotEmpty) {
-        return user.roles.any((role) => role.name == 'system_administrator');
+        return user.roles.any((role) => 
+          role.name == 'system_administrator' || 
+          role.name == 'admin'
+        );
       }
       return false;
     } catch (e) {
