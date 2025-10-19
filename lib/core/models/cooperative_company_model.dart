@@ -1,4 +1,4 @@
-class Company {
+class CooperativeCompany {
   final int? id;
   final String name;
   final String address;
@@ -12,7 +12,7 @@ class Company {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  Company({
+  CooperativeCompany({
     this.id,
     required this.name,
     required this.address,
@@ -27,8 +27,8 @@ class Company {
     this.updatedAt,
   });
 
-  factory Company.fromJson(Map<String, dynamic> json) {
-    return Company(
+  factory CooperativeCompany.fromJson(Map<String, dynamic> json) {
+    return CooperativeCompany(
       id: json['id'],
       name: json['name'] ?? '',
       address: json['address'] ?? '',
@@ -63,7 +63,7 @@ class Company {
     };
   }
 
-  Company copyWith({
+  CooperativeCompany copyWith({
     int? id,
     String? name,
     String? address,
@@ -77,7 +77,7 @@ class Company {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return Company(
+    return CooperativeCompany(
       id: id ?? this.id,
       name: name ?? this.name,
       address: address ?? this.address,
@@ -95,13 +95,13 @@ class Company {
 
   @override
   String toString() {
-    return 'Company(id: $id, name: $name, address: $address, phone: $phone, image: ${image != null ? "has_image" : "no_image"}, apiUrl: $apiUrl)';
+    return 'CooperativeCompany(id: $id, name: $name, address: $address, phone: $phone, image: ${image != null ? "has_image" : "no_image"}, apiUrl: $apiUrl)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is Company &&
+    return other is CooperativeCompany &&
         other.id == id &&
         other.name == name &&
         other.address == address &&
@@ -116,72 +116,17 @@ class Company {
   }
 }
 
-// API Response models for company management
-class CompanyListResponse {
-  final bool success;
-  final List<Company> data;
-  final String messageAr;
-  final String messageEn;
-  final int statusCode;
-
-  CompanyListResponse({
-    required this.success,
-    required this.data,
-    required this.messageAr,
-    required this.messageEn,
-    required this.statusCode,
-  });
-
-  factory CompanyListResponse.fromJson(Map<String, dynamic> json) {
-    return CompanyListResponse(
-      success: json['success'] ?? false,
-      data: (json['data'] as List<dynamic>?)
-              ?.map((item) => Company.fromJson(item))
-              .toList() ??
-          [],
-      messageAr: json['message_ar'] ?? '',
-      messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
-    );
-  }
-}
-
-class CompanyResponse {
-  final bool success;
-  final Company? data;
-  final String messageAr;
-  final String messageEn;
-  final int statusCode;
-
-  CompanyResponse({
-    required this.success,
-    this.data,
-    required this.messageAr,
-    required this.messageEn,
-    required this.statusCode,
-  });
-
-  factory CompanyResponse.fromJson(Map<String, dynamic> json) {
-    return CompanyResponse(
-      success: json['success'] ?? false,
-      data: json['data'] != null ? Company.fromJson(json['data']) : null,
-      messageAr: json['message_ar'] ?? '',
-      messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
-    );
-  }
-}
-
-class CompanyCreateRequest {
+// Request models for API calls
+class CooperativeCompanyCreateRequest {
   final String name;
   final String address;
   final String phone;
-  final String? image; // Base64 encoded image
-  final String? apiUrl; // API URL for external integration
+  final String? image;
+  final String? apiUrl;
   final int? countryId;
   final int? cityId;
 
-  CompanyCreateRequest({
+  CooperativeCompanyCreateRequest({
     required this.name,
     required this.address,
     required this.phone,
@@ -205,17 +150,17 @@ class CompanyCreateRequest {
   }
 }
 
-class CompanyUpdateRequest {
+class CooperativeCompanyUpdateRequest {
   final int id;
   final String? name;
   final String? address;
   final String? phone;
-  final String? image; // Base64 encoded image
-  final String? apiUrl; // API URL for external integration
+  final String? image;
+  final String? apiUrl;
   final int? countryId;
   final int? cityId;
 
-  CompanyUpdateRequest({
+  CooperativeCompanyUpdateRequest({
     required this.id,
     this.name,
     this.address,
@@ -228,6 +173,7 @@ class CompanyUpdateRequest {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {'id': id};
+    
     if (name != null) data['name'] = name;
     if (address != null) data['address'] = address;
     if (phone != null) data['phone'] = phone;
@@ -235,6 +181,62 @@ class CompanyUpdateRequest {
     if (apiUrl != null) data['api_url'] = apiUrl;
     if (countryId != null) data['country_id'] = countryId;
     if (cityId != null) data['city_id'] = cityId;
+    
     return data;
+  }
+}
+
+// Response models
+class CooperativeCompanyResponse {
+  final bool success;
+  final String? messageAr;
+  final String? messageEn;
+  final int? statusCode;
+  final CooperativeCompany? data;
+
+  CooperativeCompanyResponse({
+    required this.success,
+    this.messageAr,
+    this.messageEn,
+    this.statusCode,
+    this.data,
+  });
+
+  factory CooperativeCompanyResponse.fromJson(Map<String, dynamic> json) {
+    return CooperativeCompanyResponse(
+      success: json['success'] ?? false,
+      messageAr: json['message_ar'],
+      messageEn: json['message_en'],
+      statusCode: json['status_code'],
+      data: json['data'] != null ? CooperativeCompany.fromJson(json['data']) : null,
+    );
+  }
+}
+
+class CooperativeCompanyListResponse {
+  final bool success;
+  final String? messageAr;
+  final String? messageEn;
+  final int? statusCode;
+  final List<CooperativeCompany> data;
+
+  CooperativeCompanyListResponse({
+    required this.success,
+    this.messageAr,
+    this.messageEn,
+    this.statusCode,
+    required this.data,
+  });
+
+  factory CooperativeCompanyListResponse.fromJson(Map<String, dynamic> json) {
+    return CooperativeCompanyListResponse(
+      success: json['success'] ?? false,
+      messageAr: json['message_ar'],
+      messageEn: json['message_en'],
+      statusCode: json['status_code'],
+      data: (json['data'] as List<dynamic>?)
+          ?.map((item) => CooperativeCompany.fromJson(item))
+          .toList() ?? [],
+    );
   }
 }

@@ -10,12 +10,11 @@ import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/services/user_service.dart';
 import 'package:flareline/core/services/company_service.dart';
+import 'package:flareline/components/small_refresh_button.dart';
 import 'package:toastification/toastification.dart';
-
 import 'package:flareline/core/models/user_model.dart';
 import 'package:flareline/core/models/company_model.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
-
 import 'package:get/get.dart';
 import 'dart:math';
 import 'dart:convert';
@@ -107,21 +106,17 @@ class UserManagementWidget extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'جاري التحميل...' : 'تحديث',
-                            type: 'secondary',
-                            onTap: provider.isLoading ? null : () async {
-                              try {
-                                await provider.refreshData();
-                                _showSuccessToast('Users data refreshed successfully');
-                              } catch (e) {
-                                _showErrorToast('فشل في تحديث بيانات المستخدمين: ${e.toString()}');
-                              }
-                            },
-                          )),
-                        ),
+                        Obx(() => SmallRefreshButton(
+                          isLoading: provider.isLoading,
+                          onTap: () async {
+                            try {
+                              await provider.refreshData();
+                              _showSuccessToast('Users data refreshed successfully');
+                            } catch (e) {
+                              _showErrorToast('فشل في تحديث بيانات المستخدمين: ${e.toString()}');
+                            }
+                          },
+                        )),
                         const SizedBox(width: 16),
                         SizedBox(
                           width: 140,
@@ -2581,26 +2576,6 @@ class UserManagementWidget extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         user.company!.phone,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-                if (user.company!.status != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 14,
-                        color: Colors.blue.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Status: ${user.company!.status}',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.blue.shade600,

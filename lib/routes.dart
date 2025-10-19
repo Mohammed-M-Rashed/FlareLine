@@ -20,6 +20,12 @@ import 'package:flareline/pages/setting/settings_page.dart' deferred as settings
 import 'package:flareline/pages/table/tables_page.dart' deferred as tables;
 import 'package:flareline/pages/users/user_management_page.dart';
 import 'package:flareline/pages/companies/company_management_page.dart';
+import 'package:flareline/pages/cooperative_companies/cooperative_company_management_page.dart';
+import 'package:flareline/pages/countries/country_management_page.dart';
+import 'package:flareline/pages/cities/city_management_page.dart';
+import 'package:flareline/pages/education_levels/education_levels_management_page.dart';
+import 'package:flareline/pages/education_specializations/education_specializations_management_page.dart';
+import 'package:flareline/pages/languages/languages_management_page.dart';
 
 import 'package:flareline/pages/specializations/specialization_management_page.dart';
 import 'package:flareline/pages/training_centers/training_center_management_page.dart';
@@ -121,6 +127,30 @@ final List<GetPage> routes = [
   GetPage(
     name: '/companyManagement',
     page: () => const CompanyManagementPage(),
+  ),
+  GetPage(
+    name: '/cooperativeCompanyManagement',
+    page: () => const CooperativeCompanyManagementPage(),
+  ),
+  GetPage(
+    name: '/countryManagement',
+    page: () => const CountryManagementPage(),
+  ),
+  GetPage(
+    name: '/cityManagement',
+    page: () => const CityManagementPage(),
+  ),
+  GetPage(
+    name: '/educationLevelsManagement',
+    page: () => const EducationLevelsManagementPage(),
+  ),
+  GetPage(
+    name: '/educationSpecializationsManagement',
+    page: () => const EducationSpecializationsManagementPage(),
+  ),
+  GetPage(
+    name: '/languagesManagement',
+    page: () => const LanguagesManagementPage(),
   ),
 
             GetPage(

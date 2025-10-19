@@ -9,11 +9,17 @@ import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/trainer_model.dart';
 import 'package:flareline/core/services/trainer_service.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
+import 'package:flareline/components/small_refresh_button.dart';
 import 'package:toastification/toastification.dart';
 import 'package:get/get.dart';
+import 'package:collection/collection.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:async';
+
+import '../../core/services/city_service.dart';
+import '../../core/models/country_model.dart';
+import '../../core/models/city_model.dart';
 
 class TrainerManagementPage extends LayoutWidget {
   const TrainerManagementPage({super.key});
@@ -38,14 +44,13 @@ class TrainerManagementWidget extends StatefulWidget {
 }
 
 class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with WidgetsBindingObserver {
-  // Loading state variables
-  bool _isCreatingTrainer = false;
-  bool _isEditingTrainer = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Initialize CityDataProvider
+    Get.put(CityDataProvider(), permanent: true);
   }
 
   @override
@@ -54,21 +59,27 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
     super.dispose();
   }
 
+  /// Ensures TrainerDataProvider is registered and returns it
+  TrainerDataProvider _ensureProvider() {
+    if (Get.isRegistered<TrainerDataProvider>()) {
+      return Get.find<TrainerDataProvider>();
+    } else {
+      print('⚠️ TRAINER PROVIDER: Provider not registered, creating new instance...');
+      return Get.put(TrainerDataProvider(), permanent: true);
+    }
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       // Refresh data when app becomes visible, but only if we haven't confirmed empty data
       try {
-        if (Get.isRegistered<TrainerDataProvider>()) {
-          final provider = Get.find<TrainerDataProvider>();
-          if (provider.trainers.isEmpty && !provider.isLoading && !provider.hasLoadedData) {
-            provider.loadData();
-          } else if (provider.hasLoadedData && provider.hasEmptyData) {
-            print('📋 TRAINER PROVIDER: Skipping data load on app resume - already confirmed empty data');
-          }
-        } else {
-          print('⚠️ TRAINER PROVIDER: Provider not registered during app resume');
+        final provider = _ensureProvider();
+        if (provider.trainers.isEmpty && !provider.isLoading && !provider.hasLoadedData) {
+          provider.loadData();
+        } else if (provider.hasLoadedData && provider.hasEmptyData) {
+          print('📋 TRAINER PROVIDER: Skipping data load on app resume - already confirmed empty data');
         }
       } catch (e) {
         print('❌ TRAINER PROVIDER: Error during app resume: $e');
@@ -82,7 +93,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: GetBuilder<TrainerDataProvider>(
-          init: Get.put(TrainerDataProvider(), permanent: false),
+          init: Get.put(TrainerDataProvider(), permanent: true),
           global: false,
           builder: (provider) {
             // Ensure provider is properly initialized
@@ -147,20 +158,16 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                     ),
                     Row(
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
-                            type: 'secondary',
-                            onTap: provider.isLoading ? null : () async {
-                              try {
-                                await provider.refreshData();
-                                _showSuccessToast('Trainers data refreshed successfully');
-                              } catch (e) {
-                                _showErrorToast(e.toString());
-                              }
-                            },
-                          ),
+                        SmallRefreshButton(
+                          isLoading: provider.isLoading,
+                          onTap: () async {
+                            try {
+                              await provider.refreshData();
+                              _showSuccessToast('Trainers data refreshed successfully');
+                            } catch (e) {
+                              _showErrorToast(e.toString());
+                            }
+                          },
                         ),
                         const SizedBox(width: 12),
                         SizedBox(
@@ -537,6 +544,26 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                 DataColumn(
                                   label: Expanded(
                                     child: Text(
+                                      'Country',
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  numeric: false,
+                                ),
+                                DataColumn(
+                                  label: Expanded(
+                                    child: Text(
+                                      'City',
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  numeric: false,
+                                ),
+                                DataColumn(
+                                  label: Expanded(
+                                    child: Text(
                                       'Status',
                                       textAlign: TextAlign.center,
                                       overflow: TextOverflow.ellipsis,
@@ -676,6 +703,66 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                        ),
                                      ),
                                    ),
+                                  // Country DataCell
+                                  DataCell(
+                                    Container(
+                                      constraints: const BoxConstraints(
+                                        minWidth: 100,
+                                        maxWidth: 120,
+                                      ),
+                                      child: GetBuilder<CityDataProvider>(
+                                        builder: (cityProvider) {
+                                          String countryName = _getCountryNameSync(trainer, cityProvider);
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            child: Text(
+                                              countryName,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 11,
+                                                color: Colors.black87,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  // City DataCell
+                                  DataCell(
+                                    Container(
+                                      constraints: const BoxConstraints(
+                                        minWidth: 100,
+                                        maxWidth: 120,
+                                      ),
+                                      child: GetBuilder<CityDataProvider>(
+                                        builder: (cityProvider) {
+                                          String cityName = _getCityNameSync(trainer, cityProvider);
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            child: Text(
+                                              cityName,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 11,
+                                                color: Colors.black87,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
                                   DataCell(
                                     Container(
                                       constraints: const BoxConstraints(
@@ -824,7 +911,105 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
     final yearsExperienceController = TextEditingController();
 
     final certificationsController = TextEditingController();
+    final addressController = TextEditingController();
     List<String> selectedSpecializations = [];
+    int? selectedCountryId;
+    int? selectedCityId;
+
+    // Create the save callback outside StatefulBuilder but inside method scope
+    Future<void> onSaveTap() async {
+      if (formKey.currentState!.validate()) {
+        if (selectedSpecializations.isEmpty) {
+          _showErrorToast('Please select at least one specialization');
+          return;
+        }
+        
+        print('🔄 TRAINER CREATE: Starting trainer creation process...');
+        
+        try {
+          // Log form data for debugging
+          print('📝 TRAINER CREATE: Form data validation passed');
+          print('📝 TRAINER CREATE: Name: ${nameController.text.trim()}');
+          print('📝 TRAINER CREATE: Email: ${emailController.text.trim()}');
+          print('📝 TRAINER CREATE: Phone: ${phoneController.text.trim()}');
+          print('📝 TRAINER CREATE: Specializations: $selectedSpecializations');
+          print('📝 TRAINER CREATE: Years Experience: ${yearsExperienceController.text.trim()}');
+          
+          final request = TrainerCreateRequest(
+            name: nameController.text.trim(),
+            email: emailController.text.trim(),
+            phone: phoneController.text.trim(),
+            bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
+            qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
+            yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
+            specializations: selectedSpecializations,
+            certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+            address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+            countryId: selectedCountryId,
+            cityId: selectedCityId,
+          );
+          
+          print('📤 TRAINER CREATE: Sending request to API...');
+          final response = await TrainerService.createTrainer(request);
+          
+          print('📥 TRAINER CREATE: Received API response');
+          print('📥 TRAINER CREATE: Success: ${response.success}');
+          print('📥 TRAINER CREATE: Message EN: ${response.messageEn}');
+          print('📥 TRAINER CREATE: Message AR: ${response.messageAr}');
+          
+          if (response.success) {
+            print('✅ TRAINER CREATE: Trainer created successfully');
+            
+            // Refresh the data
+            try {
+              print('🔄 TRAINER CREATE: Refreshing trainer data...');
+              final provider = _ensureProvider();
+              await provider.refreshData();
+              print('✅ TRAINER CREATE: Data refresh completed');
+            } catch (e) {
+              print('❌ TRAINER CREATE: Error refreshing data: $e');
+              print('❌ TRAINER CREATE: Attempting alternative refresh method...');
+              // Try to trigger a rebuild of the GetBuilder widget
+              try {
+                Get.find<TrainerDataProvider>().update();
+                print('✅ TRAINER CREATE: Alternative refresh method successful');
+              } catch (e2) {
+                print('❌ TRAINER CREATE: Alternative refresh also failed: $e2');
+              }
+            }
+            
+            // Close modal
+            Get.back();
+            
+            // Show success message
+            _showSuccessToast('Trainer created successfully');
+            print('✅ TRAINER CREATE: Success toast shown');
+          } else {
+            print('❌ TRAINER CREATE: API returned success=false');
+            print('❌ TRAINER CREATE: Error message: ${response.messageEn}');
+            throw Exception(response.messageEn);
+          }
+        } catch (e, stackTrace) {
+          print('❌ TRAINER CREATE: Exception caught during trainer creation');
+          print('❌ TRAINER CREATE: Error type: ${e.runtimeType}');
+          print('❌ TRAINER CREATE: Error message: $e');
+          print('❌ TRAINER CREATE: Stack trace: $stackTrace');
+          
+          // Show user-friendly error message
+          String errorMessage = 'Failed to create trainer';
+          if (e.toString().contains('Exception:')) {
+            errorMessage = e.toString().replaceFirst('Exception: ', '');
+          } else if (e.toString().isNotEmpty) {
+            errorMessage = e.toString();
+          }
+          
+          _showErrorToast(errorMessage);
+          print('❌ TRAINER CREATE: Error toast shown: $errorMessage');
+        }
+      } else {
+        print('❌ TRAINER CREATE: Form validation failed');
+      }
+    }
 
     ModalDialog.show(
       context: context,
@@ -1093,14 +1278,49 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                               ),
                               const SizedBox(height: 16),
                               
-                              // Bio Field
-                              OutBorderTextFormField(
-                                labelText: 'Bio',
-                                hintText: 'Enter trainer bio/description (optional)',
-                                controller: bioController,
-                                enabled: !isSubmitting,
-                                maxLines: 4,
-                              ),
+                                // Bio Field
+                                OutBorderTextFormField(
+                                  labelText: 'Bio',
+                                  hintText: 'Enter trainer bio/description (optional)',
+                                  controller: bioController,
+                                  enabled: !isSubmitting,
+                                  maxLines: 4,
+                                ),
+                                const SizedBox(height: 16),
+                                
+                                // Address Field
+                                OutBorderTextFormField(
+                                  labelText: 'Address',
+                                  hintText: 'Enter trainer address (optional)',
+                                  controller: addressController,
+                                  enabled: !isSubmitting,
+                                  maxLines: 2,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Country Dropdown
+                                _buildCountryDropdown(
+                                  selectedCountryId: selectedCountryId,
+                                  onChanged: (value) {
+                                    selectedCountryId = value;
+                                    // Reset city selection when country changes
+                                    selectedCityId = null;
+                                  },
+                                  enabled: !isSubmitting,
+                                  setModalState: setModalState,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // City Dropdown
+                                _buildCityDropdown(
+                                  selectedCityId: selectedCityId,
+                                  selectedCountryId: selectedCountryId,
+                                  onChanged: (value) {
+                                    selectedCityId = value;
+                                  },
+                                  enabled: !isSubmitting,
+                                  setModalState: setModalState,
+                                ),
                             ],
                           ),
                         ),
@@ -1108,175 +1328,12 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                     ),
                   ),
                 ),
-                
-                // Loading Overlay
-                if (isSubmitting)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black.withOpacity(0.3),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Creating Trainer...',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[800],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Please wait while we process your request',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           );
         },
       ),
-      onSaveTap: () async {
-        if (formKey.currentState!.validate()) {
-          if (selectedSpecializations.isEmpty) {
-            _showErrorToast('Please select at least one specialization');
-            return;
-          }
-          
-          // Set loading state
-          setState(() {
-            _isCreatingTrainer = true;
-          });
-          
-          print('🔄 TRAINER CREATE: Starting trainer creation process...');
-          
-          try {
-            // Log form data for debugging
-            print('📝 TRAINER CREATE: Form data validation passed');
-            print('📝 TRAINER CREATE: Name: ${nameController.text.trim()}');
-            print('📝 TRAINER CREATE: Email: ${emailController.text.trim()}');
-            print('📝 TRAINER CREATE: Phone: ${phoneController.text.trim()}');
-            print('📝 TRAINER CREATE: Specializations: $selectedSpecializations');
-            print('📝 TRAINER CREATE: Years Experience: ${yearsExperienceController.text.trim()}');
-            
-            final request = TrainerCreateRequest(
-              name: nameController.text.trim(),
-              email: emailController.text.trim(),
-              phone: phoneController.text.trim(),
-              bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
-              qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
-              yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
-              specializations: selectedSpecializations,
-              certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-            );
-            
-            print('📤 TRAINER CREATE: Sending request to API...');
-            final response = await TrainerService.createTrainer(request);
-            
-            print('📥 TRAINER CREATE: Received API response');
-            print('📥 TRAINER CREATE: Success: ${response.success}');
-            print('📥 TRAINER CREATE: Message EN: ${response.messageEn}');
-            print('📥 TRAINER CREATE: Message AR: ${response.messageAr}');
-            
-            if (response.success) {
-              print('✅ TRAINER CREATE: Trainer created successfully');
-              
-              // Refresh the data
-              try {
-                print('🔄 TRAINER CREATE: Refreshing trainer data...');
-                if (Get.isRegistered<TrainerDataProvider>()) {
-                  await Get.find<TrainerDataProvider>().refreshData();
-                  print('✅ TRAINER CREATE: Data refresh completed');
-                } else {
-                  print('⚠️ TRAINER CREATE: TrainerDataProvider not registered, attempting to register...');
-                  Get.put(TrainerDataProvider(), permanent: false);
-                  await Get.find<TrainerDataProvider>().refreshData();
-                  print('✅ TRAINER CREATE: Provider registered and data refresh completed');
-                }
-              } catch (e) {
-                print('❌ TRAINER CREATE: Error refreshing data: $e');
-                print('❌ TRAINER CREATE: Attempting alternative refresh method...');
-                // Try to trigger a rebuild of the GetBuilder widget
-                try {
-                  Get.find<TrainerDataProvider>().update();
-                  print('✅ TRAINER CREATE: Alternative refresh method successful');
-                } catch (e2) {
-                  print('❌ TRAINER CREATE: Alternative refresh also failed: $e2');
-                }
-              }
-              
-              // Close modal
-              Get.back();
-              
-              // Show success message
-              _showSuccessToast('Trainer created successfully');
-              print('✅ TRAINER CREATE: Success toast shown');
-              
-              // Force UI refresh
-              setState(() {});
-            } else {
-              print('❌ TRAINER CREATE: API returned success=false');
-              print('❌ TRAINER CREATE: Error message: ${response.messageEn}');
-              throw Exception(response.messageEn);
-            }
-          } catch (e, stackTrace) {
-            print('❌ TRAINER CREATE: Exception caught during trainer creation');
-            print('❌ TRAINER CREATE: Error type: ${e.runtimeType}');
-            print('❌ TRAINER CREATE: Error message: $e');
-            print('❌ TRAINER CREATE: Stack trace: $stackTrace');
-            
-            // Show user-friendly error message
-            String errorMessage = 'Failed to create trainer';
-            if (e.toString().contains('Exception:')) {
-              errorMessage = e.toString().replaceFirst('Exception: ', '');
-            } else if (e.toString().isNotEmpty) {
-              errorMessage = e.toString();
-            }
-            
-            _showErrorToast(errorMessage);
-            print('❌ TRAINER CREATE: Error toast shown: $errorMessage');
-          } finally {
-            // Reset loading state
-            setState(() {
-              _isCreatingTrainer = false;
-            });
-          }
-        } else {
-          print('❌ TRAINER CREATE: Form validation failed');
-        }
-      },
+      onSaveTap: onSaveTap,
     );
   }
 
@@ -1290,7 +1347,107 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
     final yearsExperienceController = TextEditingController(text: trainer.yearsExperience?.toString() ?? '');
 
     final certificationsController = TextEditingController(text: trainer.certifications?.join(', ') ?? '');
+    final addressController = TextEditingController(text: trainer.address ?? '');
     List<String> selectedSpecializations = List<String>.from(trainer.specializations);
+    int? selectedCountryId = trainer.countryId;
+    int? selectedCityId = trainer.cityId;
+
+    // Create the save callback outside StatefulBuilder but inside method scope
+    Future<void> onSaveTap() async {
+      if (formKey.currentState!.validate()) {
+        if (selectedSpecializations.isEmpty) {
+          _showErrorToast('Please select at least one specialization');
+          return;
+        }
+        
+        print('🔄 TRAINER EDIT: Starting trainer update process...');
+        print('🔄 TRAINER EDIT: Trainer ID: ${trainer.id}');
+        
+        try {
+          // Log form data for debugging
+          print('📝 TRAINER EDIT: Form data validation passed');
+          print('📝 TRAINER EDIT: Name: ${nameController.text.trim()}');
+          print('📝 TRAINER EDIT: Email: ${emailController.text.trim()}');
+          print('📝 TRAINER EDIT: Phone: ${phoneController.text.trim()}');
+          print('📝 TRAINER EDIT: Specializations: $selectedSpecializations');
+          print('📝 TRAINER EDIT: Years Experience: ${yearsExperienceController.text.trim()}');
+          
+          final request = TrainerUpdateRequest(
+            id: trainer.id!,
+            name: nameController.text.trim(),
+            email: emailController.text.trim(),
+            phone: phoneController.text.trim(),
+            bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
+            qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
+            yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
+            specializations: selectedSpecializations,
+            certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
+            address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+            countryId: selectedCountryId,
+            cityId: selectedCityId,
+          );
+          
+          print('📤 TRAINER EDIT: Sending request to API...');
+          final response = await TrainerService.updateTrainer(request);
+          
+          print('📥 TRAINER EDIT: Received API response');
+          print('📥 TRAINER EDIT: Success: ${response.success}');
+          print('📥 TRAINER EDIT: Message EN: ${response.messageEn}');
+          print('📥 TRAINER EDIT: Message AR: ${response.messageAr}');
+          
+          if (response.success) {
+            print('✅ TRAINER EDIT: Trainer updated successfully');
+            
+            // Refresh the data
+            try {
+              print('🔄 TRAINER EDIT: Refreshing trainer data...');
+              final provider = _ensureProvider();
+              await provider.refreshData();
+              print('✅ TRAINER EDIT: Data refresh completed');
+            } catch (e) {
+              print('❌ TRAINER EDIT: Error refreshing data: $e');
+              print('❌ TRAINER EDIT: Attempting alternative refresh method...');
+              // Try to trigger a rebuild of the GetBuilder widget
+              try {
+                Get.find<TrainerDataProvider>().update();
+                print('✅ TRAINER EDIT: Alternative refresh method successful');
+              } catch (e2) {
+                print('❌ TRAINER EDIT: Alternative refresh also failed: $e2');
+              }
+            }
+            
+            // Close modal
+            Get.back();
+            
+            // Show success message
+            _showSuccessToast('Trainer updated successfully');
+            print('✅ TRAINER EDIT: Success toast shown');
+          } else {
+            print('❌ TRAINER EDIT: API returned success=false');
+            print('❌ TRAINER EDIT: Error message: ${response.messageEn}');
+            throw Exception(response.messageEn);
+          }
+        } catch (e, stackTrace) {
+          print('❌ TRAINER EDIT: Exception caught during trainer update');
+          print('❌ TRAINER EDIT: Error type: ${e.runtimeType}');
+          print('❌ TRAINER EDIT: Error message: $e');
+          print('❌ TRAINER EDIT: Stack trace: $stackTrace');
+          
+          // Show user-friendly error message
+          String errorMessage = 'Failed to update trainer';
+          if (e.toString().contains('Exception:')) {
+            errorMessage = e.toString().replaceFirst('Exception: ', '');
+          } else if (e.toString().isNotEmpty) {
+            errorMessage = e.toString();
+          }
+          
+          _showErrorToast(errorMessage);
+          print('❌ TRAINER EDIT: Error toast shown: $errorMessage');
+        }
+      } else {
+        print('❌ TRAINER EDIT: Form validation failed');
+      }
+    }
 
     ModalDialog.show(
       context: context,
@@ -1300,7 +1457,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       child: StatefulBuilder(
         builder: (BuildContext context, StateSetter setModalState) {
           bool isSubmitting = false;
-          
+
           return Container(
             height: MediaQuery.of(context).size.height * 0.7,
             child: Stack(
@@ -1629,14 +1786,49 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                               ),
                               const SizedBox(height: 16),
                               
-                              // Bio Field
-                              OutBorderTextFormField(
-                                labelText: 'Bio',
-                                hintText: 'Enter trainer bio/description (optional)',
-                                controller: bioController,
-                                enabled: !isSubmitting,
-                                maxLines: 4,
-                              ),
+                                // Bio Field
+                                OutBorderTextFormField(
+                                  labelText: 'Bio',
+                                  hintText: 'Enter trainer bio/description (optional)',
+                                  controller: bioController,
+                                  enabled: !isSubmitting,
+                                  maxLines: 4,
+                                ),
+                                const SizedBox(height: 16),
+                                
+                                // Address Field
+                                OutBorderTextFormField(
+                                  labelText: 'Address',
+                                  hintText: 'Enter trainer address (optional)',
+                                  controller: addressController,
+                                  enabled: !isSubmitting,
+                                  maxLines: 2,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Country Dropdown
+                                _buildCountryDropdown(
+                                  selectedCountryId: selectedCountryId,
+                                  onChanged: (value) {
+                                    selectedCountryId = value;
+                                    // Reset city selection when country changes
+                                    selectedCityId = null;
+                                  },
+                                  enabled: !isSubmitting,
+                                  setModalState: setModalState,
+                                ),
+                                const SizedBox(height: 16),
+
+                                // City Dropdown
+                                _buildCityDropdown(
+                                  selectedCityId: selectedCityId,
+                                  selectedCountryId: selectedCountryId,
+                                  onChanged: (value) {
+                                    selectedCityId = value;
+                                  },
+                                  enabled: !isSubmitting,
+                                  setModalState: setModalState,
+                                ),
                             ],
                           ),
                         ),
@@ -1704,117 +1896,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
           );
         },
       ),
-      onSaveTap: () async {
-        if (formKey.currentState!.validate()) {
-          if (selectedSpecializations.isEmpty) {
-            _showErrorToast('Please select at least one specialization');
-            return;
-          }
-          
-          // Set loading state
-          setState(() {
-            _isEditingTrainer = true;
-          });
-          
-          print('🔄 TRAINER EDIT: Starting trainer update process...');
-          print('🔄 TRAINER EDIT: Trainer ID: ${trainer.id}');
-          
-          try {
-            // Log form data for debugging
-            print('📝 TRAINER EDIT: Form data validation passed');
-            print('📝 TRAINER EDIT: Name: ${nameController.text.trim()}');
-            print('📝 TRAINER EDIT: Email: ${emailController.text.trim()}');
-            print('📝 TRAINER EDIT: Phone: ${phoneController.text.trim()}');
-            print('📝 TRAINER EDIT: Specializations: $selectedSpecializations');
-            print('📝 TRAINER EDIT: Years Experience: ${yearsExperienceController.text.trim()}');
-            
-            final request = TrainerUpdateRequest(
-              id: trainer.id!,
-              name: nameController.text.trim(),
-              email: emailController.text.trim(),
-              phone: phoneController.text.trim(),
-              bio: bioController.text.trim().isEmpty ? null : bioController.text.trim(),
-              qualifications: qualificationsController.text.trim().isEmpty ? null : qualificationsController.text.trim(),
-              yearsExperience: yearsExperienceController.text.trim().isNotEmpty ? int.tryParse(yearsExperienceController.text.trim()) : null,
-              specializations: selectedSpecializations,
-              certifications: certificationsController.text.trim().isEmpty ? null : certificationsController.text.trim().split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList(),
-            );
-            
-            print('📤 TRAINER EDIT: Sending request to API...');
-            final response = await TrainerService.updateTrainer(request);
-            
-            print('📥 TRAINER EDIT: Received API response');
-            print('📥 TRAINER EDIT: Success: ${response.success}');
-            print('📥 TRAINER EDIT: Message EN: ${response.messageEn}');
-            print('📥 TRAINER EDIT: Message AR: ${response.messageAr}');
-            
-            if (response.success) {
-              print('✅ TRAINER EDIT: Trainer updated successfully');
-              
-              // Refresh the data
-              try {
-                print('🔄 TRAINER EDIT: Refreshing trainer data...');
-                if (Get.isRegistered<TrainerDataProvider>()) {
-                  await Get.find<TrainerDataProvider>().refreshData();
-                  print('✅ TRAINER EDIT: Data refresh completed');
-                } else {
-                  print('⚠️ TRAINER EDIT: TrainerDataProvider not registered, attempting to register...');
-                  Get.put(TrainerDataProvider(), permanent: false);
-                  await Get.find<TrainerDataProvider>().refreshData();
-                  print('✅ TRAINER EDIT: Provider registered and data refresh completed');
-                }
-              } catch (e) {
-                print('❌ TRAINER EDIT: Error refreshing data: $e');
-                print('❌ TRAINER EDIT: Attempting alternative refresh method...');
-                // Try to trigger a rebuild of the GetBuilder widget
-                try {
-                  Get.find<TrainerDataProvider>().update();
-                  print('✅ TRAINER EDIT: Alternative refresh method successful');
-                } catch (e2) {
-                  print('❌ TRAINER EDIT: Alternative refresh also failed: $e2');
-                }
-              }
-              
-              // Close modal
-              Get.back();
-              
-              // Show success message
-              _showSuccessToast('Trainer updated successfully');
-              print('✅ TRAINER EDIT: Success toast shown');
-              
-              // Force UI refresh
-              setState(() {});
-            } else {
-              print('❌ TRAINER EDIT: API returned success=false');
-              print('❌ TRAINER EDIT: Error message: ${response.messageEn}');
-              throw Exception(response.messageEn);
-            }
-          } catch (e, stackTrace) {
-            print('❌ TRAINER EDIT: Exception caught during trainer update');
-            print('❌ TRAINER EDIT: Error type: ${e.runtimeType}');
-            print('❌ TRAINER EDIT: Error message: $e');
-            print('❌ TRAINER EDIT: Stack trace: $stackTrace');
-            
-            // Show user-friendly error message
-            String errorMessage = 'Failed to update trainer';
-            if (e.toString().contains('Exception:')) {
-              errorMessage = e.toString().replaceFirst('Exception: ', '');
-            } else if (e.toString().isNotEmpty) {
-              errorMessage = e.toString();
-            }
-            
-            _showErrorToast(errorMessage);
-            print('❌ TRAINER EDIT: Error toast shown: $errorMessage');
-          } finally {
-            // Reset loading state
-            setState(() {
-              _isEditingTrainer = false;
-            });
-          }
-        } else {
-          print('❌ TRAINER EDIT: Form validation failed');
-        }
-      },
+      onSaveTap: onSaveTap,
     );
   }
 
@@ -2156,6 +2238,63 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
               ),
               const SizedBox(height: 16),
               
+              // Address and Location Information Section
+              if (trainer.address != null || trainer.countryId != null || trainer.cityId != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.purple.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            color: Colors.purple.shade600,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Address & Location',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.purple.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      if (trainer.address != null && trainer.address!.isNotEmpty)
+                        _buildDetailRow('Address', trainer.address!),
+                      
+                      // Country and City Information
+                      GetBuilder<CityDataProvider>(
+                        builder: (cityProvider) {
+                          String countryName = _getCountryNameSync(trainer, cityProvider);
+                          String cityName = _getCityNameSync(trainer, cityProvider);
+                          
+                          return Column(
+                            children: [
+                              if (countryName != 'No country')
+                                _buildDetailRow('Country', countryName),
+                              if (cityName != 'No city')
+                                _buildDetailRow('City', cityName),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              
               // Professional Information Section
               if (trainer.bio != null || trainer.qualifications != null || trainer.yearsExperience != null)
                 Container(
@@ -2387,6 +2526,257 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
 
   String _formatTrainerDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  /// Helper method to get country name for a trainer synchronously
+  String _getCountryNameSync(Trainer trainer, CityDataProvider cityProvider) {
+    try {
+      if (trainer.countryName != null && trainer.countryName!.isNotEmpty) {
+        return trainer.countryName!;
+      }
+      
+      if (trainer.countryId != null) {
+        final country = cityProvider.countries.firstWhereOrNull((c) => c.id == trainer.countryId);
+        if (country != null) {
+          return country.name;
+        }
+      }
+      
+      return 'No country';
+    } catch (e) {
+      print('❌ [Trainer] Error getting country name: $e');
+      return 'No country';
+    }
+  }
+
+  /// Helper method to get city name for a trainer synchronously
+  String _getCityNameSync(Trainer trainer, CityDataProvider cityProvider) {
+    try {
+      if (trainer.cityName != null && trainer.cityName!.isNotEmpty) {
+        return trainer.cityName!;
+      }
+      
+      if (trainer.cityId != null) {
+        final city = cityProvider.cities.firstWhereOrNull((c) => c.id == trainer.cityId);
+        if (city != null) {
+          return city.name;
+        }
+      }
+      
+      return 'No city';
+    } catch (e) {
+      print('❌ [Trainer] Error getting city name: $e');
+      return 'No city';
+    }
+  }
+
+  /// Builds country dropdown widget with data loading
+  Widget _buildCountryDropdown({
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        // Ensure data is loaded
+        if (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cityProvider.loadCountries();
+          });
+        }
+        
+        // Show loading indicator while data is being fetched
+        if (cityProvider.isLoadingCountries || (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoadingCountries 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading countries...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Country',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCountryId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: const Text('Select Country'),
+                items: cityProvider.countries.map<DropdownMenuItem<int>>((Country country) {
+                  return DropdownMenuItem<int>(
+                    value: country.id,
+                    child: Text(country.name),
+                  );
+                }).toList(),
+                onChanged: enabled ? (int? value) {
+                  setModalState(() {
+                    onChanged(value);
+                  });
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a country';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Builds city dropdown widget with data loading and filtering
+  Widget _buildCityDropdown({
+    required int? selectedCityId,
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        // Ensure cities are loaded
+        if (cityProvider.cities.isEmpty && !cityProvider.isLoading) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cityProvider.refreshData();
+          });
+        }
+        
+        final filteredCities = cityProvider.cities
+            .where((city) => city.countryId == selectedCountryId)
+            .toList();
+        
+        // Show loading indicator while cities are being fetched
+        if (cityProvider.isLoading || (cityProvider.cities.isEmpty && !cityProvider.isLoading)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'City',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoading 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading cities...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'City',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCityId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: Text(selectedCountryId == null ? 'Select Country First' : 'Select City'),
+                items: filteredCities.map<DropdownMenuItem<int>>((City city) {
+                  return DropdownMenuItem<int>(
+                    value: city.id,
+                    child: Text(city.name),
+                  );
+                }).toList(),
+                onChanged: enabled && selectedCountryId != null ? (int? value) {
+                  setModalState(() {
+                    onChanged(value);
+                  });
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a city';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

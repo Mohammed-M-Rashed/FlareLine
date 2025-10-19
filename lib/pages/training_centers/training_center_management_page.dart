@@ -9,11 +9,17 @@ import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/training_center_model.dart';
 import 'package:flareline/core/services/training_center_service.dart';
+import 'package:flareline/core/services/country_service.dart';
+import 'package:flareline/core/services/city_service.dart';
+import 'package:flareline/core/models/country_model.dart';
+import 'package:flareline/core/models/city_model.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
+import 'package:flareline/components/small_refresh_button.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
+import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
 
@@ -41,6 +47,22 @@ class TrainingCenterManagementWidget extends StatefulWidget {
 }
 
 class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagementWidget> {
+  late CityDataProvider _cityDataProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    print('🚀 [TrainingCenter] Initializing Training Center Management Widget');
+    // Initialize the data provider early to start loading data
+    _cityDataProvider = Get.put(CityDataProvider(), permanent: true);
+    print('✅ [TrainingCenter] CityDataProvider initialized successfully');
+  }
+
+  @override
+  void dispose() {
+    // Don't dispose the provider here as it might be used elsewhere
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,21 +116,17 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                     ),
                     Row(
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
-                            type: 'secondary',
-                            onTap: provider.isLoading ? null : () async {
-                              try {
-                                await provider.refreshData();
-                                _showSuccessToast('Training centers data refreshed successfully');
-                              } catch (e) {
-                                _showErrorToast('خطأ في تحديث بيانات مراكز التدريب: ${e.toString()}');
-                              }
-                            },
-                          )),
-                        ),
+                        Obx(() => SmallRefreshButton(
+                          isLoading: provider.isLoading,
+                          onTap: () async {
+                            try {
+                              await provider.refreshData();
+                              _showSuccessToast('Training centers data refreshed successfully');
+                            } catch (e) {
+                              _showErrorToast('خطأ في تحديث بيانات مراكز التدريب: ${e.toString()}');
+                            }
+                          },
+                        )),
                         const SizedBox(width: 16),
                         Builder(
                           builder: (context) {
@@ -493,7 +511,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Address',
+                                        'Country',
                                         textAlign: TextAlign.start,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -600,12 +618,17 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                             ),
                                             DataCell(
                                               Container(
-                                                child: Text(
-                                                  trainingCenter.address,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.black87,
-                                                  ),
+                                                child: GetBuilder<CityDataProvider>(
+                                                  builder: (cityProvider) {
+                                                    String countryName = _getCountryNameSync(trainingCenter, cityProvider);
+                                                    return Text(
+                                                      countryName,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
                                               ),
                                             ),
@@ -781,6 +804,8 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     final addressController = TextEditingController();
     final websiteController = TextEditingController();
     final descriptionController = TextEditingController();
+    int? selectedCountryId;
+    int? selectedCityId;
 
     ModalDialog.show(
       context: context,
@@ -920,6 +945,31 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Country Dropdown
+                              _buildCountryDropdown(
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCountryId = value;
+                                  // Reset city selection when country changes
+                                  selectedCityId = null;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
+                              ),
+                              const SizedBox(height: 16),
+
+                              // City Dropdown
+                              _buildCityDropdown(
+                                selectedCityId: selectedCityId,
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCityId = value;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
                               ),
                               const SizedBox(height: 16),
                                
@@ -1062,6 +1112,8 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               address: addressController.text.trim(),
               website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+              countryId: selectedCountryId,
+              cityId: selectedCityId,
             );
             
             print('📤 TRAINING CENTER CREATE: Sending request to API...');
@@ -1150,6 +1202,8 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     final addressController = TextEditingController(text: trainingCenter.address);
     final websiteController = TextEditingController(text: trainingCenter.website);
     final descriptionController = TextEditingController(text: trainingCenter.description);
+    int? selectedCountryId = trainingCenter.countryId;
+    int? selectedCityId = trainingCenter.cityId;
 
     ModalDialog.show(
       context: context,
@@ -1289,6 +1343,31 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Country Dropdown
+                              _buildCountryDropdown(
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCountryId = value;
+                                  // Reset city selection when country changes
+                                  selectedCityId = null;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
+                              ),
+                              const SizedBox(height: 16),
+
+                              // City Dropdown
+                              _buildCityDropdown(
+                                selectedCityId: selectedCityId,
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCityId = value;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
                               ),
                               const SizedBox(height: 16),
                                
@@ -1433,6 +1512,8 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
               address: addressController.text.trim(),
               website: websiteController.text.trim().isEmpty ? null : websiteController.text.trim(),
               description: descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
+              countryId: selectedCountryId,
+              cityId: selectedCityId,
             );
             
             print('📤 TRAINING CENTER EDIT: Sending request to API...');
@@ -1616,7 +1697,290 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
     );
   }
 
+  /// Helper method to get country name for a training center synchronously
+  String _getCountryNameSync(TrainingCenter trainingCenter, CityDataProvider cityProvider) {
+    print('🔍 [TrainingCenter] Getting country name for training center ID: ${trainingCenter.id}');
+    print('📋 [TrainingCenter] Training center country data: countryId=${trainingCenter.countryId}, countryName=${trainingCenter.countryName}');
+    print('📊 [TrainingCenter] Available countries in provider: ${cityProvider.countries.length}');
+    
+    // First check if country name is already available from API response
+    if (trainingCenter.countryName != null && trainingCenter.countryName!.isNotEmpty) {
+      print('✅ [TrainingCenter] Using country name from API: ${trainingCenter.countryName}');
+      return trainingCenter.countryName!;
+    }
+    
+    // If no country name but we have country ID, try to get it from the provider
+    if (trainingCenter.countryId != null && cityProvider.countries.isNotEmpty) {
+      final country = cityProvider.countries.firstWhereOrNull(
+        (c) => c.id == trainingCenter.countryId,
+      );
+      if (country != null) {
+        print('✅ [TrainingCenter] Found country in provider: ${country.name}');
+        return country.name;
+      } else {
+        print('⚠️ [TrainingCenter] Country ID ${trainingCenter.countryId} not found in provider');
+      }
+    }
+    
+    print('❌ [TrainingCenter] No country data available, returning default');
+    return 'No country';
+  }
 
+  /// Helper method to get city name for a training center synchronously
+  String _getCityNameSync(TrainingCenter trainingCenter, CityDataProvider cityProvider) {
+    print('🔍 [TrainingCenter] Getting city name for training center ID: ${trainingCenter.id}');
+    print('📋 [TrainingCenter] Training center city data: cityId=${trainingCenter.cityId}, cityName=${trainingCenter.cityName}');
+    print('📊 [TrainingCenter] Available cities in provider: ${cityProvider.cities.length}');
+    
+    // First check if city name is already available from API response
+    if (trainingCenter.cityName != null && trainingCenter.cityName!.isNotEmpty) {
+      print('✅ [TrainingCenter] Using city name from API: ${trainingCenter.cityName}');
+      return trainingCenter.cityName!;
+    }
+    
+    // If no city name but we have city ID, try to get it from the provider
+    if (trainingCenter.cityId != null && cityProvider.cities.isNotEmpty) {
+      final city = cityProvider.cities.firstWhereOrNull(
+        (c) => c.id == trainingCenter.cityId,
+      );
+      if (city != null) {
+        print('✅ [TrainingCenter] Found city in provider: ${city.name}');
+        return city.name;
+      } else {
+        print('⚠️ [TrainingCenter] City ID ${trainingCenter.cityId} not found in provider');
+      }
+    }
+    
+    print('❌ [TrainingCenter] No city data available, returning default');
+    return 'No city';
+  }
+
+  /// Builds country dropdown widget with data loading
+  Widget _buildCountryDropdown({
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    print('🏗️ [TrainingCenter] Building country dropdown with selectedCountryId: $selectedCountryId');
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        print('📊 [TrainingCenter] Country dropdown state: countries=${cityProvider.countries.length}, isLoadingCountries=${cityProvider.isLoadingCountries}');
+        
+        // Load data only once when form is opened (not on every rebuild)
+        if (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries) {
+          print('🔄 [TrainingCenter] Triggering country data loading (one-time load)...');
+          // Use addPostFrameCallback to ensure this only runs once per form opening
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries) {
+              cityProvider.loadCountries();
+            }
+          });
+        }
+        
+        // Show loading indicator while data is being fetched
+        if (cityProvider.isLoadingCountries || (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoadingCountries 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading countries...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Country',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCountryId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: const Text('Select Country'),
+                items: cityProvider.countries.map((Country country) {
+                  return DropdownMenuItem<int>(
+                    value: country.id,
+                    child: Text(country.name),
+                  );
+                }).toList(),
+                onChanged: enabled ? (int? value) {
+                  setModalState(() {
+                    print('🌍 [TrainingCenter] Country selection changed from $selectedCountryId to $value');
+                    onChanged(value);
+                  });
+                  // Removed cityProvider.setSelectedCountry(value) to prevent affecting other dropdowns
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a country';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Builds city dropdown widget with data loading and filtering
+  Widget _buildCityDropdown({
+    required int? selectedCityId,
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    print('🏗️ [TrainingCenter] Building city dropdown with selectedCityId: $selectedCityId, selectedCountryId: $selectedCountryId');
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        print('📊 [TrainingCenter] City dropdown state: cities=${cityProvider.cities.length}, isLoading=${cityProvider.isLoading}');
+        
+        // Load cities only once when form is opened (not on every rebuild)
+        if (cityProvider.cities.isEmpty && !cityProvider.isLoading) {
+          print('🔄 [TrainingCenter] Triggering city data loading (one-time load)...');
+          // Use addPostFrameCallback to ensure this only runs once per form opening
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (cityProvider.cities.isEmpty && !cityProvider.isLoading) {
+              cityProvider.refreshData();
+            }
+          });
+        }
+        
+        final filteredCities = cityProvider.cities
+            .where((city) => city.countryId == selectedCountryId)
+            .toList();
+        print('🔍 [TrainingCenter] Filtered cities for country $selectedCountryId: ${filteredCities.length}');
+        
+        // Show loading indicator while cities are being fetched
+        if (cityProvider.isLoading || (cityProvider.cities.isEmpty && !cityProvider.isLoading)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'City',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoading 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading cities...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'City',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCityId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: Text(selectedCountryId == null ? 'Select Country First' : 'Select City'),
+                items: filteredCities.map((City city) {
+                  return DropdownMenuItem<int>(
+                    value: city.id,
+                    child: Text(city.name),
+                  );
+                }).toList(),
+                onChanged: enabled && selectedCountryId != null ? (int? value) {
+                  setModalState(() {
+                    print('🏙️ [TrainingCenter] City selection changed from $selectedCityId to $value');
+                    onChanged(value);
+                  });
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a city';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   // Accept training center
   void _acceptTrainingCenter(TrainingCenter trainingCenter) {
@@ -1911,6 +2275,24 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                           _buildDetailRow('Description', trainingCenter.description!),
                         if (trainingCenter.address != null && trainingCenter.address!.isNotEmpty)
                           _buildDetailRow('Address', trainingCenter.address!),
+                        
+                        // Country and City Information
+                        GetBuilder<CityDataProvider>(
+                          builder: (cityProvider) {
+                            String countryName = _getCountryNameSync(trainingCenter, cityProvider);
+                            String cityName = _getCityNameSync(trainingCenter, cityProvider);
+                            
+                            return Column(
+                              children: [
+                                if (countryName != 'No country')
+                                  _buildDetailRow('Country', countryName),
+                                if (cityName != 'No city')
+                                  _buildDetailRow('City', cityName),
+                              ],
+                            );
+                          },
+                        ),
+                        
                         if (trainingCenter.phone != null && trainingCenter.phone!.isNotEmpty)
                           _buildDetailRow('Phone', trainingCenter.phone!),
                         if (trainingCenter.email != null && trainingCenter.email!.isNotEmpty)

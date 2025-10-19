@@ -11,6 +11,10 @@ class TrainingCenterBranch {
   final String phone;
   final double? lat;
   final double? long;
+  final int? countryId;
+  final int? cityId;
+  final String? countryName;
+  final String? cityName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +27,10 @@ class TrainingCenterBranch {
     required this.phone,
     this.lat,
     this.long,
+    this.countryId,
+    this.cityId,
+    this.countryName,
+    this.cityName,
     this.createdAt,
     this.updatedAt,
   });
@@ -37,6 +45,10 @@ class TrainingCenterBranch {
       phone: json['phone'] ?? '',
       lat: json['lat'] != null ? double.tryParse(json['lat'].toString()) : null,
       long: json['long'] != null ? double.tryParse(json['long'].toString()) : null,
+      countryId: json['country_id'],
+      cityId: json['city_id'],
+      countryName: json['country']?['name'],
+      cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -57,6 +69,8 @@ class TrainingCenterBranch {
     if (id != null) data['id'] = id;
     if (lat != null) data['lat'] = lat;
     if (long != null) data['long'] = long;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     if (createdAt != null) data['created_at'] = createdAt!.toIso8601String();
     if (updatedAt != null) data['updated_at'] = updatedAt!.toIso8601String();
     
@@ -72,6 +86,10 @@ class TrainingCenterBranch {
     String? phone,
     double? lat,
     double? long,
+    int? countryId,
+    int? cityId,
+    String? countryName,
+    String? cityName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -84,6 +102,10 @@ class TrainingCenterBranch {
       phone: phone ?? this.phone,
       lat: lat ?? this.lat,
       long: long ?? this.long,
+      countryId: countryId ?? this.countryId,
+      cityId: cityId ?? this.cityId,
+      countryName: countryName ?? this.countryName,
+      cityName: cityName ?? this.cityName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -140,6 +162,8 @@ class TrainingCenterBranchCreateRequest {
   final String phone;
   final double? lat;
   final double? long;
+  final int? countryId;
+  final int? cityId;
 
   TrainingCenterBranchCreateRequest({
     required this.name,
@@ -148,6 +172,8 @@ class TrainingCenterBranchCreateRequest {
     required this.phone,
     this.lat,
     this.long,
+    this.countryId,
+    this.cityId,
   });
 
   Map<String, dynamic> toJson() {
@@ -160,6 +186,8 @@ class TrainingCenterBranchCreateRequest {
     
     if (lat != null) data['lat'] = lat;
     if (long != null) data['long'] = long;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     
     return data;
   }
@@ -174,6 +202,8 @@ class TrainingCenterBranchUpdateRequest {
   final String? phone;
   final double? lat;
   final double? long;
+  final int? countryId;
+  final int? cityId;
 
   TrainingCenterBranchUpdateRequest({
     required this.id,
@@ -183,6 +213,8 @@ class TrainingCenterBranchUpdateRequest {
     this.phone,
     this.lat,
     this.long,
+    this.countryId,
+    this.cityId,
   });
 
   Map<String, dynamic> toJson() {
@@ -194,6 +226,8 @@ class TrainingCenterBranchUpdateRequest {
     if (phone != null) data['phone'] = phone;
     if (lat != null) data['lat'] = lat;
     if (long != null) data['long'] = long;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     
     return data;
   }
@@ -264,6 +298,15 @@ class TrainingCenterBranchResponse {
       mEn: json['m_en'],
       statusCode: json['status_code'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'data': data?.toJson(),
+      'm_ar': mAr,
+      'm_en': mEn,
+      'status_code': statusCode,
+    };
   }
 
   bool get success => statusCode == 200 || statusCode == 201;

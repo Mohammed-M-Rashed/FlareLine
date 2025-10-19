@@ -10,10 +10,148 @@ import 'package:flareline/core/models/training_center_branch_model.dart';
 import 'package:flareline/core/models/training_center_model.dart';
 import 'package:flareline/core/services/training_center_branch_service.dart';
 import 'package:flareline/core/services/training_center_service.dart';
+import 'package:flareline/core/services/country_service.dart';
+import 'package:flareline/core/services/city_service.dart';
+import 'package:flareline/core/models/country_model.dart';
+import 'package:flareline/core/models/city_model.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:toastification/toastification.dart';
 import 'package:get/get.dart';
+import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:async';
+import 'package:flutter/foundation.dart'; // Added for kIsWeb and defaultTargetPlatform
+
+/// Comprehensive error tracking class for Training Center Branches Management
+class TrainingCenterBranchErrorTracker {
+  static final List<Map<String, dynamic>> _errors = [];
+  static final List<Map<String, dynamic>> _responses = [];
+  
+  /// Get platform information in a web-safe way
+  static String _getPlatformInfo() {
+    if (kIsWeb) {
+      return 'web';
+    } else {
+      // For mobile/desktop, we can use defaultTargetPlatform
+      switch (defaultTargetPlatform) {
+        case TargetPlatform.android:
+          return 'android';
+        case TargetPlatform.iOS:
+          return 'ios';
+        case TargetPlatform.windows:
+          return 'windows';
+        case TargetPlatform.macOS:
+          return 'macos';
+        case TargetPlatform.linux:
+          return 'linux';
+        case TargetPlatform.fuchsia:
+          return 'fuchsia';
+        default:
+          return 'unknown';
+      }
+    }
+  }
+  
+  /// Log an error with detailed context
+  static void logError({
+    required String operation,
+    required String error,
+    String? context,
+    Map<String, dynamic>? additionalData,
+    String severity = 'ERROR',
+  }) {
+    final errorData = {
+      'timestamp': DateTime.now().toIso8601String(),
+      'operation': operation,
+      'error': error,
+      'context': context ?? 'No context provided',
+      'severity': severity,
+      'platform': _getPlatformInfo(),
+      'additionalData': additionalData ?? {},
+    };
+    
+    _errors.add(errorData);
+    
+    // Print formatted error to terminal
+    print('🚨 [TrainingCenterBranch ERROR] ${errorData['timestamp']}');
+    print('   Operation: ${errorData['operation']}');
+    print('   Severity: ${errorData['severity']}');
+    print('   Error: ${errorData['error']}');
+    print('   Context: ${errorData['context']}');
+    print('   Platform: ${errorData['platform']}');
+    if (additionalData != null && additionalData.isNotEmpty) {
+      print('   Additional Data: $additionalData');
+    }
+    print('   ─────────────────────────────────────────');
+  }
+  
+  /// Log server response with detailed information
+  static void logResponse({
+    required String operation,
+    required Map<String, dynamic> response,
+    String? requestBody,
+    int? statusCode,
+  }) {
+    final responseData = {
+      'timestamp': DateTime.now().toIso8601String(),
+      'operation': operation,
+      'response': response,
+      'requestBody': requestBody,
+      'statusCode': statusCode,
+      'platform': _getPlatformInfo(),
+    };
+    
+    _responses.add(responseData);
+    
+    // Print formatted response to terminal
+    print('📥 [TrainingCenterBranch RESPONSE] ${responseData['timestamp']}');
+    print('   Operation: ${responseData['operation']}');
+    print('   Status Code: ${responseData['statusCode'] ?? 'Unknown'}');
+    print('   Response Data:');
+    print('   ${response.toString()}');
+    if (requestBody != null) {
+      print('   Request Body: $requestBody');
+    }
+    print('   ─────────────────────────────────────────');
+  }
+  
+  /// Get error summary
+  static Map<String, dynamic> getErrorSummary() {
+    final errorCount = _errors.length;
+    final responseCount = _responses.length;
+    final errorsByOperation = <String, int>{};
+    final errorsBySeverity = <String, int>{};
+    
+    for (final error in _errors) {
+      final operation = error['operation'] as String;
+      final severity = error['severity'] as String;
+      
+      errorsByOperation[operation] = (errorsByOperation[operation] ?? 0) + 1;
+      errorsBySeverity[severity] = (errorsBySeverity[severity] ?? 0) + 1;
+    }
+    
+    return {
+      'totalErrors': errorCount,
+      'totalResponses': responseCount,
+      'errorsByOperation': errorsByOperation,
+      'errorsBySeverity': errorsBySeverity,
+      'lastError': errorCount > 0 ? _errors.last : null,
+      'lastResponse': responseCount > 0 ? _responses.last : null,
+    };
+  }
+  
+  /// Clear all errors and responses
+  static void clearAll() {
+    _errors.clear();
+    _responses.clear();
+    print('🧹 [TrainingCenterBranch] All errors and responses cleared');
+  }
+  
+  /// Get all errors
+  static List<Map<String, dynamic>> getAllErrors() => List.from(_errors);
+  
+  /// Get all responses
+  static List<Map<String, dynamic>> getAllResponses() => List.from(_responses);
+}
 
 class TrainingCenterBranchManagementPage extends LayoutWidget {
   const TrainingCenterBranchManagementPage({super.key});
@@ -38,6 +176,36 @@ class TrainingCenterBranchManagementWidget extends StatefulWidget {
 }
 
 class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBranchManagementWidget> {
+  late CityDataProvider _cityDataProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    print('🚀 [TrainingCenterBranch] Initializing Training Center Branch Management Widget');
+    // Initialize the data provider early to start loading data
+    _cityDataProvider = Get.put(CityDataProvider(), permanent: true);
+    print('✅ [TrainingCenterBranch] CityDataProvider initialized successfully');
+    
+    // Log startup error summary
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final summary = TrainingCenterBranchErrorTracker.getErrorSummary();
+      if (summary['totalErrors'] > 0) {
+        print('⚠️ [TrainingCenterBranch] Startup Error Summary:');
+        print('   Total Errors: ${summary['totalErrors']}');
+        print('   Errors by Operation: ${summary['errorsByOperation']}');
+        print('   Errors by Severity: ${summary['errorsBySeverity']}');
+      } else {
+        print('✅ [TrainingCenterBranch] No errors found on startup');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Don't dispose the provider here as it might be used elsewhere
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return CommonCard(
@@ -99,13 +267,58 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                               try {
                                 await provider.refreshData();
                                 _showSuccessToast('Branches data refreshed successfully');
+                                print('✅ [TrainingCenterBranch] Data refreshed successfully');
                               } catch (e) {
+                                TrainingCenterBranchErrorTracker.logError(
+                                  operation: 'Refresh Data',
+                                  error: e.toString(),
+                                  context: 'Failed to refresh branches data',
+                                  additionalData: {'providerState': provider.isLoading ? 'loading' : 'idle'},
+                                );
                                 _showErrorToast('خطأ في تحديث بيانات الفروع: ${e.toString()}');
                               }
                             },
                           )),
                         ),
                         const SizedBox(width: 16),
+                        // Debug buttons for error tracking
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: 120,
+                              child: ButtonWidget(
+                                btnText: 'Error Summary',
+                                type: 'secondary',
+                                onTap: () {
+                                  final summary = TrainingCenterBranchErrorTracker.getErrorSummary();
+                                  print('📊 [TrainingCenterBranch] Error Summary:');
+                                  print('   Total Errors: ${summary['totalErrors']}');
+                                  print('   Total Responses: ${summary['totalResponses']}');
+                                  print('   Errors by Operation: ${summary['errorsByOperation']}');
+                                  print('   Errors by Severity: ${summary['errorsBySeverity']}');
+                                  if (summary['lastError'] != null) {
+                                    print('   Last Error: ${summary['lastError']}');
+                                  }
+                                  if (summary['lastResponse'] != null) {
+                                    print('   Last Response: ${summary['lastResponse']}');
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 100,
+                              child: ButtonWidget(
+                                btnText: 'Clear Errors',
+                                type: 'secondary',
+                                onTap: () {
+                                  TrainingCenterBranchErrorTracker.clearAll();
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                          ],
+                        ),
                         Builder(
                           builder: (context) {
                             if (TrainingCenterBranchService.hasTrainingCenterBranchManagementPermission()) {
@@ -341,7 +554,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Address',
+                                        'Country',
                                         textAlign: TextAlign.start,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -451,13 +664,18 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                   minWidth: 150,
                                                   maxWidth: 200,
                                                 ),
-                                                child: Text(
-                                                  branch.address,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.black87,
-                                                  ),
-                                                  overflow: TextOverflow.ellipsis,
+                                                child: GetBuilder<CityDataProvider>(
+                                                  builder: (cityProvider) {
+                                                    String countryName = _getCountryNameSync(branch, cityProvider);
+                                                    return Text(
+                                                      countryName,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black87,
+                                                      ),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    );
+                                                  },
                                                 ),
                                               ),
                                             ),
@@ -679,6 +897,8 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
   }
 
   void _showAddBranchForm(BuildContext context) {
+    print('📝 [TrainingCenterBranch] Opening Add Branch Form');
+    
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController();
     final addressController = TextEditingController();
@@ -686,6 +906,8 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
     final latController = TextEditingController();
     final longController = TextEditingController();
     int selectedTrainingCenterId = 0;
+    int? selectedCountryId;
+    int? selectedCityId;
 
     ModalDialog.show(
       context: context,
@@ -820,6 +1042,31 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Country Dropdown
+                              _buildCountryDropdown(
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCountryId = value;
+                                  // Reset city selection when country changes
+                                  selectedCityId = null;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
+                              ),
+                              const SizedBox(height: 16),
+
+                              // City Dropdown
+                              _buildCityDropdown(
+                                selectedCityId: selectedCityId,
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCityId = value;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
                               ),
                               const SizedBox(height: 16),
                                
@@ -1056,9 +1303,30 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
               phone: phoneController.text.trim(),
               lat: latController.text.trim().isNotEmpty ? double.tryParse(latController.text.trim()) : null,
               long: longController.text.trim().isNotEmpty ? double.tryParse(longController.text.trim()) : null,
+              countryId: selectedCountryId,
+              cityId: selectedCityId,
             );
             
+            // Log request details
+            print('📤 [TrainingCenterBranch] Creating branch with request:');
+            print('   Name: ${request.name}');
+            print('   Training Center ID: ${request.trainingCenterId}');
+            print('   Address: ${request.address}');
+            print('   Phone: ${request.phone}');
+            print('   Country ID: ${request.countryId}');
+            print('   City ID: ${request.cityId}');
+            print('   Lat: ${request.lat}');
+            print('   Long: ${request.long}');
+            
             final response = await TrainingCenterBranchService.createTrainingCenterBranch(request);
+            
+            // Log response details
+            TrainingCenterBranchErrorTracker.logResponse(
+              operation: 'Create Branch',
+              response: response.toJson(),
+              requestBody: request.toJson().toString(),
+              statusCode: 200, // Assuming success if no exception
+            );
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -1072,12 +1340,25 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                
               // Show success message
               _showSuccessToast(response.messageEn);
+              print('✅ [TrainingCenterBranch] Branch created successfully: ${response.messageEn}');
             } else {
               throw Exception(response.messageEn);
             }
           } catch (e) {
             // Close loading dialog
             Navigator.of(context).pop();
+            
+            TrainingCenterBranchErrorTracker.logError(
+              operation: 'Create Branch',
+              error: e.toString(),
+              context: 'Failed to create training center branch',
+              additionalData: {
+                'branchName': nameController.text.trim(),
+                'trainingCenterId': selectedTrainingCenterId,
+                'countryId': selectedCountryId,
+                'cityId': selectedCityId,
+              },
+            );
             
             _showErrorToast(e.toString());
           }
@@ -1087,6 +1368,8 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
   }
 
   void _showEditBranchForm(BuildContext context, TrainingCenterBranch branch) {
+    print('📝 [TrainingCenterBranch] Opening Edit Branch Form for branch: ${branch.name} (ID: ${branch.id})');
+    
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: branch.name);
     final addressController = TextEditingController(text: branch.address);
@@ -1094,6 +1377,8 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
     final latController = TextEditingController(text: branch.lat?.toString() ?? '');
     final longController = TextEditingController(text: branch.long?.toString() ?? '');
     int selectedTrainingCenterId = branch.trainingCenterId;
+    int? selectedCountryId = branch.countryId;
+    int? selectedCityId = branch.cityId;
 
     ModalDialog.show(
       context: context,
@@ -1228,6 +1513,31 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Country Dropdown
+                              _buildCountryDropdown(
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCountryId = value;
+                                  // Reset city selection when country changes
+                                  selectedCityId = null;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
+                              ),
+                              const SizedBox(height: 16),
+
+                              // City Dropdown
+                              _buildCityDropdown(
+                                selectedCityId: selectedCityId,
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCityId = value;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
                               ),
                               const SizedBox(height: 16),
                                
@@ -1465,9 +1775,31 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
               phone: phoneController.text.trim(),
               lat: latController.text.trim().isNotEmpty ? double.tryParse(latController.text.trim()) : null,
               long: longController.text.trim().isNotEmpty ? double.tryParse(longController.text.trim()) : null,
+              countryId: selectedCountryId,
+              cityId: selectedCityId,
             );
             
+            // Log request details
+            print('📤 [TrainingCenterBranch] Updating branch with request:');
+            print('   ID: ${request.id}');
+            print('   Name: ${request.name}');
+            print('   Training Center ID: ${request.trainingCenterId}');
+            print('   Address: ${request.address}');
+            print('   Phone: ${request.phone}');
+            print('   Country ID: ${request.countryId}');
+            print('   City ID: ${request.cityId}');
+            print('   Lat: ${request.lat}');
+            print('   Long: ${request.long}');
+            
             final response = await TrainingCenterBranchService.updateTrainingCenterBranch(request);
+            
+            // Log response details
+            TrainingCenterBranchErrorTracker.logResponse(
+              operation: 'Update Branch',
+              response: response.toJson(),
+              requestBody: request.toJson().toString(),
+              statusCode: 200, // Assuming success if no exception
+            );
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -1481,12 +1813,26 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                
               // Show success message
               _showSuccessToast(response.messageEn);
+              print('✅ [TrainingCenterBranch] Branch updated successfully: ${response.messageEn}');
             } else {
               throw Exception(response.messageEn);
             }
           } catch (e) {
             // Close loading dialog
             Navigator.of(context).pop();
+            
+            TrainingCenterBranchErrorTracker.logError(
+              operation: 'Update Branch',
+              error: e.toString(),
+              context: 'Failed to update training center branch',
+              additionalData: {
+                'branchId': branch.id,
+                'branchName': nameController.text.trim(),
+                'trainingCenterId': selectedTrainingCenterId,
+                'countryId': selectedCountryId,
+                'cityId': selectedCityId,
+              },
+            );
             
             _showErrorToast(e.toString());
           }
@@ -1520,6 +1866,315 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
       style: ToastificationStyle.flatColored,
       backgroundColor: Colors.red,
       foregroundColor: Colors.white,
+    );
+  }
+
+  /// Helper method to get country name for a training center branch synchronously
+  String _getCountryNameSync(TrainingCenterBranch branch, CityDataProvider cityProvider) {
+    print('🔍 [TrainingCenterBranch] Getting country name for branch ID: ${branch.id}');
+    print('📋 [TrainingCenterBranch] Branch country data: countryId=${branch.countryId}, countryName=${branch.countryName}');
+    print('📊 [TrainingCenterBranch] Available countries in provider: ${cityProvider.countries.length}');
+    
+    try {
+      // First check if country name is already available from API response
+      if (branch.countryName != null && branch.countryName!.isNotEmpty) {
+        print('✅ [TrainingCenterBranch] Using country name from API: ${branch.countryName}');
+        return branch.countryName!;
+      }
+      
+      // If no country name but we have country ID, try to get it from the provider
+      if (branch.countryId != null && cityProvider.countries.isNotEmpty) {
+        final country = cityProvider.countries.firstWhereOrNull(
+          (c) => c.id == branch.countryId,
+        );
+        if (country != null) {
+          print('✅ [TrainingCenterBranch] Found country in provider: ${country.name}');
+          return country.name;
+        } else {
+          print('⚠️ [TrainingCenterBranch] Country ID ${branch.countryId} not found in provider');
+        }
+      }
+      
+      print('❌ [TrainingCenterBranch] No country data available, returning default');
+      return 'No country';
+    } catch (e) {
+      TrainingCenterBranchErrorTracker.logError(
+        operation: 'Get Country Name',
+        error: e.toString(),
+        context: 'Failed to get country name for branch',
+        additionalData: {
+          'branchId': branch.id,
+          'countryId': branch.countryId,
+          'countryName': branch.countryName,
+        },
+      );
+      return 'No country';
+    }
+  }
+
+  /// Helper method to get city name for a training center branch synchronously
+  String _getCityNameSync(TrainingCenterBranch branch, CityDataProvider cityProvider) {
+    print('🔍 [TrainingCenterBranch] Getting city name for branch ID: ${branch.id}');
+    print('📋 [TrainingCenterBranch] Branch city data: cityId=${branch.cityId}, cityName=${branch.cityName}');
+    print('📊 [TrainingCenterBranch] Available cities in provider: ${cityProvider.cities.length}');
+    
+    try {
+      // First check if city name is already available from API response
+      if (branch.cityName != null && branch.cityName!.isNotEmpty) {
+        print('✅ [TrainingCenterBranch] Using city name from API: ${branch.cityName}');
+        return branch.cityName!;
+      }
+      
+      // If no city name but we have city ID, try to get it from the provider
+      if (branch.cityId != null && cityProvider.cities.isNotEmpty) {
+        final city = cityProvider.cities.firstWhereOrNull(
+          (c) => c.id == branch.cityId,
+        );
+        if (city != null) {
+          print('✅ [TrainingCenterBranch] Found city in provider: ${city.name}');
+          return city.name;
+        } else {
+          print('⚠️ [TrainingCenterBranch] City ID ${branch.cityId} not found in provider');
+        }
+      }
+      
+      print('❌ [TrainingCenterBranch] No city data available, returning default');
+      return 'No city';
+    } catch (e) {
+      TrainingCenterBranchErrorTracker.logError(
+        operation: 'Get City Name',
+        error: e.toString(),
+        context: 'Failed to get city name for branch',
+        additionalData: {
+          'branchId': branch.id,
+          'cityId': branch.cityId,
+          'cityName': branch.cityName,
+        },
+      );
+      return 'No city';
+    }
+  }
+
+  /// Builds country dropdown widget with data loading
+  Widget _buildCountryDropdown({
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    print('🏗️ [TrainingCenterBranch] Building country dropdown with selectedCountryId: $selectedCountryId');
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        print('📊 [TrainingCenterBranch] Country dropdown state: countries=${cityProvider.countries.length}, isLoadingCountries=${cityProvider.isLoadingCountries}');
+        
+        // Ensure data is loaded
+        if (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries) {
+          print('🔄 [TrainingCenterBranch] Triggering country data loading...');
+          // Trigger loading if not already started
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cityProvider.loadCountries();
+          });
+        }
+        
+        // Show loading indicator while data is being fetched
+        if (cityProvider.isLoadingCountries || (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoadingCountries 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading countries...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Country',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCountryId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: const Text('Select Country'),
+                items: cityProvider.countries.map((Country country) {
+                  return DropdownMenuItem<int>(
+                    value: country.id,
+                    child: Text(country.name),
+                  );
+                }).toList(),
+                onChanged: enabled ? (int? value) {
+                  setModalState(() {
+                    print('🌍 [TrainingCenterBranch] Country selection changed from $selectedCountryId to $value');
+                    onChanged(value);
+                  });
+                  // Removed cityProvider.setSelectedCountry(value) to prevent affecting other dropdowns
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a country';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Builds city dropdown widget with data loading and filtering
+  Widget _buildCityDropdown({
+    required int? selectedCityId,
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    print('🏗️ [TrainingCenterBranch] Building city dropdown with selectedCityId: $selectedCityId, selectedCountryId: $selectedCountryId');
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        print('📊 [TrainingCenterBranch] City dropdown state: cities=${cityProvider.cities.length}, isLoading=${cityProvider.isLoading}');
+        
+        // Ensure cities are loaded
+        if (cityProvider.cities.isEmpty && !cityProvider.isLoading) {
+          print('🔄 [TrainingCenterBranch] Triggering city data loading...');
+          // Trigger loading if not already started
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cityProvider.refreshData();
+          });
+        }
+        
+        final filteredCities = cityProvider.cities
+            .where((city) => city.countryId == selectedCountryId)
+            .toList();
+        print('🔍 [TrainingCenterBranch] Filtered cities for country $selectedCountryId: ${filteredCities.length}');
+        
+        // Show loading indicator while cities are being fetched
+        if (cityProvider.isLoading || (cityProvider.cities.isEmpty && !cityProvider.isLoading)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'City',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoading 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading cities...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'City',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCityId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: Text(selectedCountryId == null ? 'Select Country First' : 'Select City'),
+                items: filteredCities.map((City city) {
+                  return DropdownMenuItem<int>(
+                    value: city.id,
+                    child: Text(city.name),
+                  );
+                }).toList(),
+                onChanged: enabled && selectedCountryId != null ? (int? value) {
+                  setModalState(() {
+                    print('🏙️ [TrainingCenterBranch] City selection changed from $selectedCityId to $value');
+                    onChanged(value);
+                  });
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a city';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1571,6 +2226,24 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                     _buildDetailRow('Branch Name', branch.name),
                     _buildDetailRow('Training Center', branch.trainingCenterName),
                     _buildDetailRow('Address', branch.address),
+                    
+                    // Country and City Information
+                    GetBuilder<CityDataProvider>(
+                      builder: (cityProvider) {
+                        String countryName = _getCountryNameSync(branch, cityProvider);
+                        String cityName = _getCityNameSync(branch, cityProvider);
+                        
+                        return Column(
+                          children: [
+                            if (countryName != 'No country')
+                              _buildDetailRow('Country', countryName),
+                            if (cityName != 'No city')
+                              _buildDetailRow('City', cityName),
+                          ],
+                        );
+                      },
+                    ),
+                    
                     _buildDetailRow('Phone Number', branch.phone),
                     if (branch.createdAt != null)
                       _buildDetailRow('Created At', _formatBranchDate(branch.createdAt!)),

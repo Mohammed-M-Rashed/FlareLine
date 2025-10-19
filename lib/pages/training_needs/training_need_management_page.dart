@@ -15,6 +15,7 @@ import 'package:flareline/core/models/specialization_model.dart' as specializati
 import 'package:flareline/core/services/specialization_service.dart';
 import 'package:flareline/core/models/course_model.dart' as course_model;
 import 'package:flareline/core/services/course_service.dart';
+import 'package:flareline/components/small_refresh_button.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline/core/services/auth_service.dart';
@@ -100,25 +101,21 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                     ),
                     Row(
                       children: [
-                        SizedBox(
-                          width: 120,
-                          child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
-                            type: 'secondary',
-                            onTap: provider.isLoading ? null : () async {
-                              try {
-                                await provider.refreshData();
-                                _showSuccessToast('Training needs data refreshed successfully');
-                              } catch (e) {
-                                _showErrorToast('خطأ في تحديث بيانات احتياجات التدريب: ${e.toString()}');
-                              }
-                            },
-                          )),
-                        ),
+                        Obx(() => SmallRefreshButton(
+                          isLoading: provider.isLoading,
+                          onTap: () async {
+                            try {
+                              await provider.refreshData();
+                              _showSuccessToast('Training needs data refreshed successfully');
+                            } catch (e) {
+                              _showErrorToast('خطأ في تحديث بيانات احتياجات التدريب: ${e.toString()}');
+                            }
+                          },
+                        )),
                         const SizedBox(width: 16),
                         Builder(
                           builder: (context) {
-                            if (TrainingNeedService.hasTrainingNeedManagementPermission()) {
+                            if (TrainingNeedService.canAddTrainingNeeds()) {
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
@@ -147,7 +144,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                       child: Padding(
                         padding: EdgeInsets.all(32.0),
                         child: Text(
-                          'You do not have permission to manage training needs. Only System Administrators, Administrators, and Company Accounts can access this functionality.',
+                          'You do not have permission to manage training needs. Only Administrators, Company Employees, and System Administrators can access this functionality.',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.red,
@@ -190,19 +187,24 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Get started by adding the first training need to the system.',
+                              TrainingNeedService.canAddTrainingNeeds() 
+                                ? 'Get started by adding the first training need to the system.'
+                                : 'There are no training needs to display at the moment.',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey[500],
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 24),
-                            ButtonWidget(
-                              btnText: 'Add First Training Need',
-                              type: 'primary',
-                              onTap: () => _showAddTrainingNeedForm(context),
-                            ),
+                            // Only show add button if user has permission to add training needs
+                            if (TrainingNeedService.canAddTrainingNeeds()) ...[
+                              const SizedBox(height: 24),
+                              ButtonWidget(
+                                btnText: 'Add First Training Need',
+                                type: 'primary',
+                                onTap: () => _showAddTrainingNeedForm(context),
+                              ),
+                            ],
                           ],
                         ),
                       );
@@ -398,12 +400,52 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               DataColumn(
                 label: Expanded(
                   child: Text(
-                    'Participants',
-                    textAlign: TextAlign.start,
+                    'Individual',
+                    textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                numeric: false,
+                numeric: true,
+              ),
+              DataColumn(
+                label: Expanded(
+                  child: Text(
+                    'Management',
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                numeric: true,
+              ),
+              DataColumn(
+                label: Expanded(
+                  child: Text(
+                    'Job',
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                numeric: true,
+              ),
+              DataColumn(
+                label: Expanded(
+                  child: Text(
+                    'Department',
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                numeric: true,
+              ),
+              DataColumn(
+                label: Expanded(
+                  child: Text(
+                    'Total',
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                numeric: true,
               ),
               DataColumn(
                 label: Expanded(
@@ -431,6 +473,10 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               cells: [
                 DataCell(_buildCompanyCell(item)),
                 DataCell(_buildCourseCell(item)),
+                DataCell(_buildIndividualNeedCell(item)),
+                DataCell(_buildManagementNeedCell(item)),
+                DataCell(_buildJobNeedCell(item)),
+                DataCell(_buildDepartmentNeedCell(item)),
                 DataCell(_buildParticipantsCell(item)),
                 DataCell(_buildStatusCell(item)),
                 DataCell(_buildActionsCell(context, item)),
@@ -515,6 +561,74 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildIndividualNeedCell(TrainingNeed item) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 60,
+        maxWidth: 80,
+      ),
+      child: Text(
+        '${item.individualNeed}',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildManagementNeedCell(TrainingNeed item) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 60,
+        maxWidth: 80,
+      ),
+      child: Text(
+        '${item.managementNeed}',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildJobNeedCell(TrainingNeed item) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 60,
+        maxWidth: 80,
+      ),
+      child: Text(
+        '${item.jobNeed}',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildDepartmentNeedCell(TrainingNeed item) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 60,
+        maxWidth: 80,
+      ),
+      child: Text(
+        '${item.departmentNeed}',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -622,8 +736,8 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
         if (item.isDraft && TrainingNeedService.canForwardTrainingNeeds())
           const SizedBox(width: 10,),
         
-        // Edit button (only for draft training needs)
-        if (item.isDraft)
+        // Edit button (only for draft training needs and users with update permission)
+        if (item.isDraft && TrainingNeedService.canUpdateTrainingNeeds())
           IconButton(
             icon: const Icon(
               Icons.edit,
@@ -899,7 +1013,11 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                           _buildDetailRow('Course Description', item.course!.description!),
                         if (item.course?.specialization?.name != null)
                           _buildDetailRow('Specialization', item.course!.specialization!.name),
-                        _buildDetailRow('Number of Participants', '${item.numberOfParticipants}'),
+                        _buildDetailRow('Individual Need', '${item.individualNeed}'),
+                        _buildDetailRow('Management Need', '${item.managementNeed}'),
+                        _buildDetailRow('Job Need', '${item.jobNeed}'),
+                        _buildDetailRow('Department Need', '${item.departmentNeed}'),
+                        _buildDetailRow('Total Number of Participants', '${item.numberOfParticipants}'),
                         _buildStatusDetailRow(item),
                         if (item.createdAt != null)
                           _buildDetailRow('Created At', _formatDateTime(item.createdAt!)),
@@ -1192,6 +1310,22 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     }
   }
 
+  void _calculateTotalParticipants(
+    TextEditingController individualController,
+    TextEditingController managementController,
+    TextEditingController jobController,
+    TextEditingController departmentController,
+    TextEditingController totalController,
+  ) {
+    final individual = int.tryParse(individualController.text) ?? 0;
+    final management = int.tryParse(managementController.text) ?? 0;
+    final job = int.tryParse(jobController.text) ?? 0;
+    final department = int.tryParse(departmentController.text) ?? 0;
+    
+    final total = individual + management + job + department;
+    totalController.text = total.toString();
+  }
+
   void _showAddTrainingNeedForm(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     
@@ -1206,6 +1340,10 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     
     int? selectedSpecializationId;
     int? selectedCourseId;
+    final individualNeedController = TextEditingController();
+    final managementNeedController = TextEditingController();
+    final jobNeedController = TextEditingController();
+    final departmentNeedController = TextEditingController();
     final numberOfParticipantsController = TextEditingController();
 
     // Data for dropdowns
@@ -1410,9 +1548,20 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                               ),
                                                              const SizedBox(height: 16),
                                 
-                               // Number of Participants field label
+                               // Training Need Fields Section
                                const Text(
-                                 'Number of Participants *',
+                                 'Training Need Details *',
+                                 style: TextStyle(
+                                   fontSize: 16,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Individual Need field
+                               const Text(
+                                 'Individual Need',
                                  style: TextStyle(
                                    fontSize: 14,
                                    fontWeight: FontWeight.w600,
@@ -1420,27 +1569,194 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                                  ),
                                ),
                                const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: individualNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter individual need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter individual need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
                                
-                               // Number of Participants Field
-                               OutBorderTextFormField(
-                                 hintText: 'Enter number (1-1000)',
-                                controller: numberOfParticipantsController,
-                                enabled: !isSubmitting,
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter number of participants';
-                                  }
-                                  final number = int.tryParse(value.trim());
-                                  if (number == null) {
-                                    return 'Please enter a valid number';
-                                  }
-                                  if (number < 1 || number > 1000) {
-                                    return 'Number must be between 1 and 1000';
-                                  }
-                                  return null;
-                                },
-                              ),
+                               // Management Need field
+                               const Text(
+                                 'Management Need',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: managementNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter management need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter management need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Job Need field
+                               const Text(
+                                 'Job Need',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: jobNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter job need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter job need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Department Need field
+                               const Text(
+                                 'Department Need',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: departmentNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter department need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter department need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Number of Participants (calculated) field
+                               const Text(
+                                 'Total Number of Participants (Calculated)',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: numberOfParticipantsController,
+                                 enabled: false, // Read-only
+                                 keyboardType: TextInputType.number,
+                                 decoration: InputDecoration(
+                                   hintText: 'Auto-calculated',
+                                   border: const OutlineInputBorder(),
+                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                   filled: true,
+                                   fillColor: Colors.grey.shade100,
+                                 ),
+                               ),
                             ],
                           ),
                         ),
@@ -1552,6 +1868,10 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               companyId: selectedCompanyId!,
               courseId: selectedCourseId!,
               specializationId: selectedSpecializationId!,
+              individualNeed: int.parse(individualNeedController.text.trim()),
+              managementNeed: int.parse(managementNeedController.text.trim()),
+              jobNeed: int.parse(jobNeedController.text.trim()),
+              departmentNeed: int.parse(departmentNeedController.text.trim()),
               numberOfParticipants: int.parse(numberOfParticipantsController.text.trim()),
             );
             
@@ -1562,6 +1882,10 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
             print('  • Company ID: ${request.companyId}');
             print('  • Course ID: ${request.courseId}');
             print('  • Specialization ID: ${request.specializationId}');
+            print('  • Individual Need: ${request.individualNeed}');
+            print('  • Management Need: ${request.managementNeed}');
+            print('  • Job Need: ${request.jobNeed}');
+            print('  • Department Need: ${request.departmentNeed}');
             print('  • Number of Participants: ${request.numberOfParticipants}');
             print('');
             print('👤 User Information:');
@@ -1651,6 +1975,10 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     int? selectedCompanyId = trainingNeed.companyId;
     int? selectedSpecializationId = trainingNeed.course?.specializationId;
     int? selectedCourseId = trainingNeed.courseId;
+    final individualNeedController = TextEditingController(text: trainingNeed.individualNeed.toString());
+    final managementNeedController = TextEditingController(text: trainingNeed.managementNeed.toString());
+    final jobNeedController = TextEditingController(text: trainingNeed.jobNeed.toString());
+    final departmentNeedController = TextEditingController(text: trainingNeed.departmentNeed.toString());
     final numberOfParticipantsController = TextEditingController(text: trainingNeed.numberOfParticipants.toString());
 
     // Data for dropdowns
@@ -1872,9 +2200,20 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                               ),
                                                              const SizedBox(height: 16),
                                 
-                               // Number of Participants field label
+                               // Training Need Fields Section
                                const Text(
-                                 'Number of Participants *',
+                                 'Training Need Details *',
+                                 style: TextStyle(
+                                   fontSize: 16,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Individual Need field
+                               const Text(
+                                 'Individual Need',
                                  style: TextStyle(
                                    fontSize: 14,
                                    fontWeight: FontWeight.w600,
@@ -1882,27 +2221,194 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                                  ),
                                ),
                                const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: individualNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter individual need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter individual need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
                                
-                               // Number of Participants Field
-                               OutBorderTextFormField(
-                                 hintText: 'Enter number (1-1000)',
-                                controller: numberOfParticipantsController,
-                                enabled: !isSubmitting,
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.toString().trim().isEmpty) {
-                                    return 'Please enter number of participants';
-                                  }
-                                  final number = int.tryParse(value.toString().trim());
-                                  if (number == null) {
-                                    return 'Please enter a valid number';
-                                  }
-                                  if (number < 1 || number > 1000) {
-                                    return 'Number must be between 1 and 1000';
-                                  }
-                                  return null;
-                                },
-                              ),
+                               // Management Need field
+                               const Text(
+                                 'Management Need',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: managementNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter management need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter management need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Job Need field
+                               const Text(
+                                 'Job Need',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: jobNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter job need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter job need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Department Need field
+                               const Text(
+                                 'Department Need',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: departmentNeedController,
+                                 enabled: !isSubmitting,
+                                 keyboardType: TextInputType.number,
+                                 decoration: const InputDecoration(
+                                   hintText: 'Enter department need count',
+                                   border: OutlineInputBorder(),
+                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                 ),
+                                 onChanged: (value) {
+                                   _calculateTotalParticipants(
+                                     individualNeedController,
+                                     managementNeedController,
+                                     jobNeedController,
+                                     departmentNeedController,
+                                     numberOfParticipantsController,
+                                   );
+                                 },
+                                 validator: (value) {
+                                   if (value == null || value.trim().isEmpty) {
+                                     return 'Please enter department need count';
+                                   }
+                                   final number = int.tryParse(value.trim());
+                                   if (number == null) {
+                                     return 'Please enter a valid number';
+                                   }
+                                   if (number < 0) {
+                                     return 'Number must be 0 or greater';
+                                   }
+                                   return null;
+                                 },
+                               ),
+                               const SizedBox(height: 16),
+                               
+                               // Number of Participants (calculated) field
+                               const Text(
+                                 'Total Number of Participants (Calculated)',
+                                 style: TextStyle(
+                                   fontSize: 14,
+                                   fontWeight: FontWeight.w600,
+                                   color: Colors.black87,
+                                 ),
+                               ),
+                               const SizedBox(height: 8),
+                               TextFormField(
+                                 controller: numberOfParticipantsController,
+                                 enabled: false, // Read-only
+                                 keyboardType: TextInputType.number,
+                                 decoration: InputDecoration(
+                                   hintText: 'Auto-calculated',
+                                   border: const OutlineInputBorder(),
+                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                   filled: true,
+                                   fillColor: Colors.grey.shade100,
+                                 ),
+                               ),
                             ],
                           ),
                         ),
@@ -2015,6 +2521,10 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
               companyId: selectedCompanyId,
               courseId: selectedCourseId,
               specializationId: selectedSpecializationId,
+              individualNeed: int.parse(individualNeedController.text.trim()),
+              managementNeed: int.parse(managementNeedController.text.trim()),
+              jobNeed: int.parse(jobNeedController.text.trim()),
+              departmentNeed: int.parse(departmentNeedController.text.trim()),
               numberOfParticipants: int.parse(numberOfParticipantsController.text.trim()),
             );
             
@@ -2312,13 +2822,15 @@ class TrainingNeedDataProvider extends GetxController {
       print('⚙️ Is admin: ${AuthService.hasRole('admin')}');
       
       TrainingNeedListResponse response;
-      if (AuthService.hasRole('company_account')) {
+      if (TrainingNeedService.canGetTrainingNeedsByCompany()) {
         print('🏢 Using company-specific endpoint: /training-need/get-by-company');
         response = await TrainingNeedService.getTrainingNeedsByCompany();
-      } else {
+      } else if (TrainingNeedService.canGetAllTrainingNeeds()) {
         print('🌐 Using all training needs endpoint: /training-need/get-all');
-        print('👥 This endpoint is for Admin and System Administrator roles');
+        print('👥 This endpoint is for Admin role only');
         response = await TrainingNeedService.getAllTrainingNeeds();
+      } else {
+        throw Exception('You do not have permission to view training needs');
       }
       
       print('📊 Training needs loaded: ${response.data.length} items');

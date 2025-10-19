@@ -6,6 +6,10 @@ class TrainingNeed {
   final int? id;
   final int companyId;
   final int courseId;
+  final int individualNeed;
+  final int managementNeed;
+  final int jobNeed;
+  final int departmentNeed;
   final int numberOfParticipants;
   final String status;
   final DateTime? createdAt;
@@ -19,6 +23,10 @@ class TrainingNeed {
     this.id,
     required this.companyId,
     required this.courseId,
+    required this.individualNeed,
+    required this.managementNeed,
+    required this.jobNeed,
+    required this.departmentNeed,
     required this.numberOfParticipants,
     required this.status,
     this.createdAt,
@@ -28,11 +36,20 @@ class TrainingNeed {
   });
 
   factory TrainingNeed.fromJson(Map<String, dynamic> json) {
+    final individualNeed = json['individual_need'] ?? 0;
+    final managementNeed = json['management_need'] ?? 0;
+    final jobNeed = json['job_need'] ?? 0;
+    final departmentNeed = json['department_need'] ?? 0;
+    
     return TrainingNeed(
       id: json['id'],
       companyId: json['company_id'] ?? 0,
       courseId: json['course_id'] ?? 0,
-      numberOfParticipants: json['number_of_participants'] ?? 0,
+      individualNeed: individualNeed,
+      managementNeed: managementNeed,
+      jobNeed: jobNeed,
+      departmentNeed: departmentNeed,
+      numberOfParticipants: json['number_of_participants'] ?? (individualNeed + managementNeed + jobNeed + departmentNeed),
       status: json['status'] ?? 'pending',
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
@@ -53,6 +70,10 @@ class TrainingNeed {
     final Map<String, dynamic> data = {
       'company_id': companyId,
       'course_id': courseId,
+      'individual_need': individualNeed,
+      'management_need': managementNeed,
+      'job_need': jobNeed,
+      'department_need': departmentNeed,
       'number_of_participants': numberOfParticipants,
       'status': status,
     };
@@ -68,6 +89,10 @@ class TrainingNeed {
     int? id,
     int? companyId,
     int? courseId,
+    int? individualNeed,
+    int? managementNeed,
+    int? jobNeed,
+    int? departmentNeed,
     int? numberOfParticipants,
     String? status,
     DateTime? createdAt,
@@ -79,6 +104,10 @@ class TrainingNeed {
       id: id ?? this.id,
       companyId: companyId ?? this.companyId,
       courseId: courseId ?? this.courseId,
+      individualNeed: individualNeed ?? this.individualNeed,
+      managementNeed: managementNeed ?? this.managementNeed,
+      jobNeed: jobNeed ?? this.jobNeed,
+      departmentNeed: departmentNeed ?? this.departmentNeed,
       numberOfParticipants: numberOfParticipants ?? this.numberOfParticipants,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
@@ -131,7 +160,7 @@ class TrainingNeed {
 
   @override
   String toString() {
-    return 'TrainingNeed(id: $id, companyId: $companyId, courseId: $courseId, numberOfParticipants: $numberOfParticipants, status: $status)';
+    return 'TrainingNeed(id: $id, companyId: $companyId, courseId: $courseId, individualNeed: $individualNeed, managementNeed: $managementNeed, jobNeed: $jobNeed, departmentNeed: $departmentNeed, numberOfParticipants: $numberOfParticipants, status: $status)';
   }
 
   @override
@@ -141,6 +170,10 @@ class TrainingNeed {
         other.id == id &&
         other.companyId == companyId &&
         other.courseId == courseId &&
+        other.individualNeed == individualNeed &&
+        other.managementNeed == managementNeed &&
+        other.jobNeed == jobNeed &&
+        other.departmentNeed == departmentNeed &&
         other.numberOfParticipants == numberOfParticipants &&
         other.status == status;
   }
@@ -150,6 +183,10 @@ class TrainingNeed {
     return id.hashCode ^ 
            companyId.hashCode ^ 
            courseId.hashCode ^ 
+           individualNeed.hashCode ^
+           managementNeed.hashCode ^
+           jobNeed.hashCode ^
+           departmentNeed.hashCode ^
            numberOfParticipants.hashCode ^ 
            status.hashCode;
   }
@@ -264,12 +301,20 @@ class TrainingNeedCreateRequest {
   final int companyId;
   final int courseId;
   final int specializationId;
+  final int individualNeed;
+  final int managementNeed;
+  final int jobNeed;
+  final int departmentNeed;
   final int numberOfParticipants;
 
   TrainingNeedCreateRequest({
     required this.companyId,
     required this.courseId,
     required this.specializationId,
+    required this.individualNeed,
+    required this.managementNeed,
+    required this.jobNeed,
+    required this.departmentNeed,
     required this.numberOfParticipants,
   });
 
@@ -278,6 +323,10 @@ class TrainingNeedCreateRequest {
       'company_id': companyId,
       'course_id': courseId,
       'specialization_id': specializationId,
+      'individual_need': individualNeed,
+      'management_need': managementNeed,
+      'job_need': jobNeed,
+      'department_need': departmentNeed,
       'number_of_participants': numberOfParticipants,
     };
   }
@@ -289,6 +338,10 @@ class TrainingNeedUpdateRequest {
   final int? companyId;
   final int? courseId;
   final int? specializationId;
+  final int? individualNeed;
+  final int? managementNeed;
+  final int? jobNeed;
+  final int? departmentNeed;
   final int? numberOfParticipants;
 
   TrainingNeedUpdateRequest({
@@ -296,6 +349,10 @@ class TrainingNeedUpdateRequest {
     this.companyId,
     this.courseId,
     this.specializationId,
+    this.individualNeed,
+    this.managementNeed,
+    this.jobNeed,
+    this.departmentNeed,
     this.numberOfParticipants,
   });
 
@@ -305,6 +362,10 @@ class TrainingNeedUpdateRequest {
     if (companyId != null) data['company_id'] = companyId;
     if (courseId != null) data['course_id'] = courseId;
     if (specializationId != null) data['specialization_id'] = specializationId;
+    if (individualNeed != null) data['individual_need'] = individualNeed;
+    if (managementNeed != null) data['management_need'] = managementNeed;
+    if (jobNeed != null) data['job_need'] = jobNeed;
+    if (departmentNeed != null) data['department_need'] = departmentNeed;
     if (numberOfParticipants != null) data['number_of_participants'] = numberOfParticipants;
     
     return data;

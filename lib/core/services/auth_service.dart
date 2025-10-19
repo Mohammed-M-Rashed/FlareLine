@@ -457,6 +457,14 @@ class AuthService {
       
       final hasRole = user.roles.any((role) => role.name == roleName);
       print('🔐 AUTH SERVICE: User has role "$roleName": $hasRole');
+      
+      // Special debug for admin role
+      if (roleName == 'admin') {
+        print('🔐 AUTH SERVICE: All user roles: ${user.roles.map((r) => r.name).toList()}');
+        print('🔐 AUTH SERVICE: Looking for role: $roleName');
+        print('🔐 AUTH SERVICE: Role names: ${user.roles.map((r) => r.name).toList()}');
+      }
+      
       return hasRole;
     } catch (e) {
       print('❌ AUTH SERVICE: Error checking user role: $e');

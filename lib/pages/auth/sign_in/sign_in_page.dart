@@ -50,6 +50,10 @@ class SignInWidget extends GetView<SignInProvider> {
                       const SizedBox(
                         height: 16,
                       ),
+                      Text(AppLocalizations.of(context)!.departmentName),
+                      const SizedBox(
+                        height: 16,
+                      ),
                       Text(AppLocalizations.of(context)!.slogan),
                       const SizedBox(
                         height: 16,
@@ -97,7 +101,7 @@ class SignInWidget extends GetView<SignInProvider> {
               height: 8,
             ),
             Text(
-              'Welcome back! Please sign in to your account.',
+              'مرحبًا بعودتك! يرجى تسجيل الدخول إلى حسابك.',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],

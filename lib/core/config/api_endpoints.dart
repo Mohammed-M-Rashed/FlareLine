@@ -20,6 +20,39 @@ class ApiEndpoints {
   static const String getAllCompanies = '/company/select';
   static const String updateCompany = '/company/update';
   
+  // Cooperative Company management
+  static const String createCooperativeCompany = '/cooperative-company/create';
+  static const String getAllCooperativeCompanies = '/cooperative-company/select';
+  static const String updateCooperativeCompany = '/cooperative-company/update';
+  
+  // Country management
+  static const String createCountry = '/country/create';
+  static const String getAllCountries = '/country/select';
+  static const String updateCountry = '/country/update';
+  static const String deleteCountry = '/country/delete';
+  
+  // City management
+  static const String createCity = '/city/create';
+  static const String getAllCities = '/city/select';
+  static const String updateCity = '/city/update';
+  static const String deleteCity = '/city/delete';
+  
+  // Education Level management
+  static const String createEducationLevel = '/education-level/add';
+  static const String getAllEducationLevels = '/education-level/get-all';
+  static const String updateEducationLevel = '/education-level/update';
+  
+  // Education Specialization management
+  static const String createEducationSpecialization = '/education-specialization/add';
+  static const String getAllEducationSpecializations = '/education-specialization/get-all';
+  static const String updateEducationSpecialization = '/education-specialization/update';
+  
+  // Language management
+  static const String createLanguage = '/language/add';
+  static const String getAllLanguages = '/language/get-all';
+  static const String updateLanguage = '/language/update';
+
+  
   // Admin API endpoints
   static const String adminGetAllCompanies = '/admin/companies';
   static const String adminGetCoursesBySpecialization = '/admin/courses-by-specialization';

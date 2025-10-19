@@ -14,6 +14,24 @@ class MenuPermissionService {
     // Company Management - System Administrator and Admin only
     '/companyManagement': ['system_administrator', 'admin'],
     
+    // Cooperative Company Management - Admin only
+    '/cooperativeCompanyManagement': ['admin'],
+    
+    // Country Management - Admin only
+    '/countryManagement': ['admin'],
+    
+    // City Management - Admin only
+    '/cityManagement': ['admin'],
+    
+    // Education Levels Management - System Administrator and Admin only
+    '/educationLevelsManagement': ['system_administrator', 'admin'],
+    
+    // Education Specializations Management - System Administrator and Admin only
+    '/educationSpecializationsManagement': ['system_administrator', 'admin'],
+    
+    // Languages Management - System Administrator and Admin only
+    '/languagesManagement': ['system_administrator', 'admin'],
+    
     // Specialization Management - System Administrator, Admin (read-only)
     '/specializationManagement': ['system_administrator', 'admin', ],
     
@@ -71,6 +89,15 @@ class MenuPermissionService {
       final hasPermission = requiredRoles.any((role) => userRoles.contains(role));
       
       print('🔍 MENU PERMISSION: Menu: $menuPath, Required: $requiredRoles, User: $userRoles, Has Access: $hasPermission');
+      
+      // Special debug for country and city management
+      if (menuPath == '/countryManagement' || menuPath == '/cityManagement') {
+        print('🔍 SPECIAL DEBUG: Checking $menuPath');
+        print('🔍 SPECIAL DEBUG: User roles: $userRoles');
+        print('🔍 SPECIAL DEBUG: Required roles: $requiredRoles');
+        print('🔍 SPECIAL DEBUG: User has admin role: ${userRoles.contains('admin')}');
+        print('🔍 SPECIAL DEBUG: User has system_administrator role: ${userRoles.contains('system_administrator')}');
+      }
       return hasPermission;
     } catch (e) {
       print('❌ MENU PERMISSION: Error checking menu permission: $e');

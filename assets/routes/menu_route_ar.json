@@ -1,6 +1,6 @@
 [
   {
-    "groupName": "الإدارة",
+    "groupName": "الرئيسية",
     "menuList": [
       {
         "icon": "assets/sidebar/dashboard.svg",
@@ -8,7 +8,12 @@
         "path": "/dashboard",
         "requiredRoles": ["system_administrator", "admin", "company_account", "training_general_manager", "board_chairman"],
         "description": "لوحة التحكم الرئيسية للنظام"
-      },
+      }
+    ]
+  },
+  {
+    "groupName": "إدارة المستخدمين والشركات",
+    "menuList": [
       {
         "icon": "assets/sidebar/user.svg",
         "menuName": "إدارة المستخدمين",
@@ -24,12 +29,64 @@
         "description": "إدارة بيانات الشركات"
       },
       {
+        "icon": "assets/sidebar/business.svg",
+        "menuName": "إدارة الشركات التعاونية",
+        "path": "/cooperativeCompanyManagement",
+        "requiredRoles": ["admin"],
+        "description": "إدارة الشركات التعاونية في النظام"
+      }
+    ]
+  },
+  {
+    "groupName": "إدارة البيانات الأساسية",
+    "menuList": [
+      {
+        "icon": "assets/sidebar/page.svg",
+        "menuName": "إدارة الدول",
+        "path": "/countryManagement",
+        "requiredRoles": ["admin"],
+        "description": "إدارة الدول في النظام"
+      },
+      {
+        "icon": "assets/sidebar/page.svg",
+        "menuName": "إدارة المدن",
+        "path": "/cityManagement",
+        "requiredRoles": ["admin"],
+        "description": "إدارة المدن والدول"
+      },
+      {
+        "icon": "assets/sidebar/school.svg",
+        "menuName": "إدارة مستويات التعليم",
+        "path": "/educationLevelsManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة مستويات التعليم في النظام"
+      },
+      {
+        "icon": "assets/sidebar/school.svg",
+        "menuName": "إدارة التخصصات التعليمية",
+        "path": "/educationSpecializationsManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة التخصصات التعليمية في النظام"
+      },
+      {
+        "icon": "assets/sidebar/language.svg",
+        "menuName": "إدارة اللغات",
+        "path": "/languagesManagement",
+        "requiredRoles": ["system_administrator", "admin"],
+        "description": "إدارة اللغات في النظام"
+      },
+      {
         "icon": "assets/sidebar/school.svg",
         "menuName": "إدارة التخصصات",
         "path": "/specializationManagement",
         "requiredRoles": ["system_administrator", "admin", "company_account"],
         "description": "إدارة التخصصات التدريبية"
-      },
+      }
+    ]
+  },
+  {
+    "groupName": "إدارة التدريب",
+    "menuList": [
       {
         "icon": "assets/sidebar/business.svg",
         "menuName": "إدارة مراكز التدريب",
@@ -57,7 +114,12 @@
         "path": "/trainerManagement",
         "requiredRoles": ["system_administrator", "admin"],
         "description": "إدارة المدربين المعتمدين"
-      },
+      }
+    ]
+  },
+  {
+    "groupName": "إدارة الخطط والترشيحات",
+    "menuList": [
       {
         "icon": "assets/sidebar/task.svg",
         "menuName": "إدارة احتياجات التدريب",

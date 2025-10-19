@@ -17,8 +17,9 @@ class ToolBarWidget extends StatelessWidget {
   bool? showMore;
   bool? showChangeTheme;
   final Widget? userInfoWidget;
+  final Widget? rightSideWidget;
 
-  ToolBarWidget({super.key, this.showMore, this.showChangeTheme,this.userInfoWidget});
+  ToolBarWidget({super.key, this.showMore, this.showChangeTheme, this.userInfoWidget, this.rightSideWidget});
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +31,7 @@ class ToolBarWidget extends StatelessWidget {
       color: Theme.of(context).appBarTheme.backgroundColor,
       padding: const EdgeInsets.all(10),
       child: Row(children: [
+        // Left side - Hamburger menu and custom text
         ResponsiveBuilder(builder: (context, sizingInformation) {
           // Check the sizing information here and return your UI
           if ((showMore ?? false) ||
@@ -54,17 +56,23 @@ class ToolBarWidget extends StatelessWidget {
 
           return const SizedBox();
         }),
+        
+        const SizedBox(width: 10),
+        
+        // Custom text widget on the left
+        if (rightSideWidget != null) rightSideWidget!,
 
+        // Spacer to push content to opposite sides
         const Spacer(),
+        
+        // Right side - Theme toggle and user info
         if (showChangeTheme ?? false) const ToggleWidget(),
-        const SizedBox(
-          width: 10,
-        ),
-        const SizedBox(
-          width: 20,
-        ),
+        if (showChangeTheme ?? false) const SizedBox(width: 10),
+        
+        // User info widget on the right
         if(userInfoWidget!=null)
           userInfoWidget!,
+          
         InkWell(
           child: Container(
             margin: const EdgeInsets.only(left: 6),
@@ -101,7 +109,7 @@ class ToolBarWidget extends StatelessWidget {
               ],
             );
           },
-        )
+        ),
       ]),
     );
   }

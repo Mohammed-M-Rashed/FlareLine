@@ -7,7 +7,7 @@ import 'package:flareline_uikit/core/theme/flareline_colors.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flareline_uikit/components/sidebar/side_menu.dart';
 
-class RoleAwareSidebar extends StatelessWidget {
+class RoleAwareSidebar extends StatefulWidget {
   final double? width;
   final String? appName;
   final String? sideBarAsset;
@@ -17,7 +17,6 @@ class RoleAwareSidebar extends StatelessWidget {
   final Color? lightBg;
   final Widget? footerWidget;
   final double? logoFontSize;
-  late final ValueNotifier<String> expandedMenuName;
 
   RoleAwareSidebar({
     super.key,
@@ -30,28 +29,63 @@ class RoleAwareSidebar extends StatelessWidget {
     this.footerWidget,
     this.logoFontSize = 20,
     this.isDark,
-  }) : expandedMenuName = ValueNotifier('');
+  });
+
+  @override
+  State<RoleAwareSidebar> createState() => _RoleAwareSidebarState();
+}
+
+class _RoleAwareSidebarState extends State<RoleAwareSidebar> {
+  late final ValueNotifier<String> expandedMenuName;
+  late final ValueNotifier<String> expandedGroupName;
+
+  @override
+  void initState() {
+    super.initState();
+    expandedMenuName = ValueNotifier('');
+    expandedGroupName = ValueNotifier('');
+    
+    // Auto-expand group for current page after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoExpandGroupForCurrentPage();
+    });
+  }
+
+  void _autoExpandGroupForCurrentPage() {
+    // Get current route
+    final String? currentRoute = ModalRoute.of(context)?.settings?.name;
+    if (currentRoute != null) {
+      _autoExpandGroupForPath(currentRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    expandedMenuName.dispose();
+    expandedGroupName.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    bool isDarkTheme = isDark ?? false;
+    bool isDarkTheme = widget.isDark ?? false;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      color: (isDarkTheme ? darkBg : Colors.white),
-      width: width ?? 280,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      color: (isDarkTheme ? widget.darkBg : Colors.white),
+      width: widget.width ?? 280,
       child: Column(children: [
         _logoWidget(context, isDarkTheme),
         const SizedBox(height: 30),
         Expanded(child: _sideListWidget(context, isDarkTheme)),
-        if (footerWidget != null) footerWidget!
+        if (widget.footerWidget != null) widget.footerWidget!
       ]),
     );
   }
 
   Widget _logoWidget(BuildContext context, bool isDarkTheme) {
-    if (logoWidget != null) {
-      return logoWidget!;
+    if (widget.logoWidget != null) {
+      return widget.logoWidget!;
     }
 
     return Row(
@@ -65,10 +99,10 @@ class RoleAwareSidebar extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: Text(
-            appName ?? 'Training System',
+            widget.appName ?? 'Training System',
             style: TextStyle(
               color: isDarkTheme ? Colors.white : FlarelineColors.darkBlackText,
-              fontSize: logoFontSize,
+              fontSize: widget.logoFontSize,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -85,7 +119,7 @@ class RoleAwareSidebar extends StatelessWidget {
         return ScrollConfiguration(
           behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
           child: FutureBuilder(
-            future: DefaultAssetBundle.of(context).loadString(sideBarAsset ?? 'assets/routes/menu_route_ar.json'),
+            future: DefaultAssetBundle.of(context).loadString(widget.sideBarAsset ?? 'assets/routes/menu_route_ar.json'),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -122,7 +156,7 @@ class RoleAwareSidebar extends StatelessWidget {
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.only(left: 20, right: 10),
+                padding: const EdgeInsets.only(left: 10, right: 10),
                 itemBuilder: (ctx, index) {
                   return _buildMenuItem(ctx, index, filteredListMenu, isDarkTheme, expandedMenuName);
                 },
@@ -145,15 +179,55 @@ class RoleAwareSidebar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (groupName.isNotEmpty)
-          Text(
-            groupName,
-            style: TextStyle(
-              fontSize: 20,
-              color: isDark ? Colors.white60 : FlarelineColors.darkBlackText,
+          InkWell(
+            onTap: () {
+              _setExpandedGroupName(groupName);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      groupName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
+                        color: isDark ? Colors.white60 : FlarelineColors.darkBlackText,
+                      ),
+                    ),
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: expandedGroupName,
+                    builder: (context, expandedGroup, child) {
+                      return Icon(
+                        expandedGroup == groupName
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        color: isDark ? Colors.white60 : FlarelineColors.darkBlackText,
+                        size: 20,
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-        if (groupName.isNotEmpty) const SizedBox(height: 10),
-        ...menuList.map((e) => _buildSimpleMenuItem(context, e, isDark, expandedMenuName)).toList(),
+        if (groupName.isNotEmpty) const SizedBox(height: 5),
+        ValueListenableBuilder<String>(
+          valueListenable: expandedGroupName,
+          builder: (context, expandedGroup, child) {
+            return Visibility(
+              visible: expandedGroup == groupName,
+              child: Column(
+                children: [
+                  ...menuList.map((e) => _buildSimpleMenuItem(context, e, isDark, expandedMenuName)).toList(),
+                  const SizedBox(height: 15),
+                ],
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -290,6 +364,14 @@ class RoleAwareSidebar extends StatelessWidget {
     }
   }
 
+  void _setExpandedGroupName(String groupName) {
+    if (expandedGroupName.value == groupName) {
+      expandedGroupName.value = '';
+    } else {
+      expandedGroupName.value = groupName;
+    }
+  }
+
   bool _isSelectedPath(BuildContext context, String path) {
     final String? routePath = ModalRoute.of(context)?.settings?.name;
     return routePath == path;
@@ -307,6 +389,9 @@ class RoleAwareSidebar extends StatelessWidget {
       return;
     }
 
+    // Auto-expand the group that contains this menu item
+    _autoExpandGroupForPath(path);
+
     // Check permission before navigation
     if (!MenuPermissionService.hasMenuPermission(path)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -319,5 +404,30 @@ class RoleAwareSidebar extends StatelessWidget {
     }
 
     Navigator.of(context).pushNamed(path);
+  }
+
+  void _autoExpandGroupForPath(String path) {
+    // Find which group contains this path and expand it
+    DefaultAssetBundle.of(context).loadString(widget.sideBarAsset ?? 'assets/routes/menu_route_ar.json')
+        .then((data) {
+      try {
+        List listMenu = json.decode(data);
+        for (var group in listMenu) {
+          String groupName = group['groupName'];
+          List menuList = group['menuList'];
+          
+          // Check if this group contains the path
+          for (var menuItem in menuList) {
+            if (menuItem['path'] == path) {
+              // Expand this group
+              expandedGroupName.value = groupName;
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        print('Error auto-expanding group: $e');
+      }
+    });
   }
 }

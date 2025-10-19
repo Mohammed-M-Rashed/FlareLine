@@ -12,6 +12,10 @@ class TrainingCenter {
   final String? description;
   final String status;
   final String? rejectionReason;
+  final int? countryId;
+  final int? cityId;
+  final String? countryName;
+  final String? cityName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -25,6 +29,10 @@ class TrainingCenter {
     this.description,
     required this.status,
     this.rejectionReason,
+    this.countryId,
+    this.cityId,
+    this.countryName,
+    this.cityName,
     this.createdAt,
     this.updatedAt,
   });
@@ -40,6 +48,10 @@ class TrainingCenter {
       description: json['description'],
       status: json['status'] ?? 'pending',
       rejectionReason: json['rejection_reason'],
+      countryId: json['country_id'],
+      cityId: json['city_id'],
+      countryName: json['country']?['name'],
+      cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -62,6 +74,8 @@ class TrainingCenter {
     if (website != null) data['website'] = website;
     if (description != null) data['description'] = description;
     if (rejectionReason != null) data['rejection_reason'] = rejectionReason;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     if (createdAt != null) data['created_at'] = createdAt!.toIso8601String();
     if (updatedAt != null) data['updated_at'] = updatedAt!.toIso8601String();
     
@@ -78,6 +92,10 @@ class TrainingCenter {
     String? description,
     String? status,
     String? rejectionReason,
+    int? countryId,
+    int? cityId,
+    String? countryName,
+    String? cityName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -91,6 +109,10 @@ class TrainingCenter {
       description: description ?? this.description,
       status: status ?? this.status,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      countryId: countryId ?? this.countryId,
+      cityId: cityId ?? this.cityId,
+      countryName: countryName ?? this.countryName,
+      cityName: cityName ?? this.cityName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -168,6 +190,8 @@ class TrainingCenterCreateRequest {
   final String? website;
   final String? description;
   final String? status; // Optional: approved or rejected
+  final int? countryId;
+  final int? cityId;
 
   TrainingCenterCreateRequest({
     required this.name,
@@ -177,6 +201,8 @@ class TrainingCenterCreateRequest {
     this.website,
     this.description,
     this.status,
+    this.countryId,
+    this.cityId,
   });
 
   Map<String, dynamic> toJson() {
@@ -189,6 +215,8 @@ class TrainingCenterCreateRequest {
     
     if (website != null) data['website'] = website;
     if (description != null) data['description'] = description;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     if (status != null) {
       // Validate status values according to API documentation
       if (status == 'pending' || status == 'approved' || status == 'rejected') {
@@ -213,6 +241,8 @@ class TrainingCenterUpdateRequest {
   final String? description;
   final String? status; // Only 'approved' or 'rejected' allowed
   final String? rejectionReason; // Required if status is 'rejected'
+  final int? countryId;
+  final int? cityId;
 
   TrainingCenterUpdateRequest({
     required this.id,
@@ -224,6 +254,8 @@ class TrainingCenterUpdateRequest {
     this.description,
     this.status,
     this.rejectionReason,
+    this.countryId,
+    this.cityId,
   });
 
   Map<String, dynamic> toJson() {
@@ -244,6 +276,8 @@ class TrainingCenterUpdateRequest {
       }
     }
     if (rejectionReason != null) data['rejection_reason'] = rejectionReason;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     
     return data;
   }

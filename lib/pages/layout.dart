@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 import 'package:flareline/core/auth/auth_provider.dart';
 import 'package:flareline/core/widgets/role_aware_sidebar.dart';
 
+import '../flutter_gen/app_localizations.dart';
+
 abstract class LayoutWidget extends FlarelineLayoutWidget {
   const LayoutWidget({super.key});
 
@@ -23,7 +25,14 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
       darkBg: sideBarDarkColor,
       lightBg: sideBarLightColor,
       width: 280,
-      appName: 'نظام التدريب',
+      appName: '',
+      logoWidget: Center(
+        child: Image.asset(
+          'assets/signin/logo.png',
+          height: 60,
+          fit: BoxFit.contain,
+        ),
+      ),
     );
   }
 
@@ -33,6 +42,7 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
       showMore: showDrawer,
       showChangeTheme: false,
       userInfoWidget: _userInfoWidget(context),
+      rightSideWidget: _rightSideWidget(context),
     );
   }
 
@@ -71,6 +81,17 @@ abstract class LayoutWidget extends FlarelineLayoutWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _rightSideWidget(BuildContext context) {
+    return  Text(
+      AppLocalizations.of(context)!.appName,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Colors.black87,
+      ),
     );
   }
 }

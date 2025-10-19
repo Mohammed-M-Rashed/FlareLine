@@ -19,11 +19,11 @@ class TrainingNeedService {
       final authController = Get.find<AuthController>();
       final user = authController.userData;
       if (user != null && user.roles.isNotEmpty) {
-        // System Administrator, Admin, and Company Account have access
+        // Admin, Company Employee, and System Admin have access
         return user.roles.any((role) => 
-          role.name == 'system_administrator' || 
           role.name == 'admin' ||
-          role.name == 'company_account'
+          role.name == 'company_account' || // Company Employee
+          role.name == 'system_administrator'
         );
       }
       return false;
@@ -32,12 +32,52 @@ class TrainingNeedService {
     }
   }
 
-  // Check if user can approve/reject training needs (System Administrator and Admin)
+  // Check if user can approve/reject training needs (Admin only)
   static bool canApproveRejectTrainingNeeds() {
     try {
-      return AuthService.hasRole('system_administrator') || AuthService.hasRole('admin');
+      return AuthService.hasRole('admin');
     } catch (e) {
       print('❌ Error checking canApproveRejectTrainingNeeds: $e');
+      return false;
+    }
+  }
+
+  // Check if user can add training needs (Company Employee only)
+  static bool canAddTrainingNeeds() {
+    try {
+      return AuthService.hasRole('company_account'); // Company Employee
+    } catch (e) {
+      print('❌ Error checking canAddTrainingNeeds: $e');
+      return false;
+    }
+  }
+
+  // Check if user can update training needs (Company Employee only)
+  static bool canUpdateTrainingNeeds() {
+    try {
+      return AuthService.hasRole('company_account'); // Company Employee
+    } catch (e) {
+      print('❌ Error checking canUpdateTrainingNeeds: $e');
+      return false;
+    }
+  }
+
+  // Check if user can get all training needs (Admin only)
+  static bool canGetAllTrainingNeeds() {
+    try {
+      return AuthService.hasRole('admin');
+    } catch (e) {
+      print('❌ Error checking canGetAllTrainingNeeds: $e');
+      return false;
+    }
+  }
+
+  // Check if user can get training needs by company (Company Employee only)
+  static bool canGetTrainingNeedsByCompany() {
+    try {
+      return AuthService.hasRole('company_account'); // Company Employee
+    } catch (e) {
+      print('❌ Error checking canGetTrainingNeedsByCompany: $e');
       return false;
     }
   }
@@ -111,14 +151,12 @@ class TrainingNeedService {
     }
   }
 
-  // Check if user can view all training needs (System Administrator and Admin only)
+  // Check if user can view all training needs (Admin only)
   static bool canViewAllTrainingNeeds() {
     try {
-      final hasSystemAdmin = AuthService.hasRole('system_administrator');
       final hasAdmin = AuthService.hasRole('admin');
-      final result = hasSystemAdmin || hasAdmin;
-      print('🔐 canViewAllTrainingNeeds: $result (SystemAdmin: $hasSystemAdmin, Admin: $hasAdmin)');
-      return result;
+      print('🔐 canViewAllTrainingNeeds: $hasAdmin (Admin: $hasAdmin)');
+      return hasAdmin;
     } catch (e) {
       print('❌ Error checking canViewAllTrainingNeeds: $e');
       return false;

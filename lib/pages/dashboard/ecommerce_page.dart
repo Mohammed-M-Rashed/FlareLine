@@ -9,11 +9,7 @@ import 'package:flareline/pages/layout.dart';
 class EcommercePage extends LayoutWidget {
   const EcommercePage({super.key});
 
-  @override
-  String breakTabTitle(BuildContext context) {
-    // TODO: implement breakTabTitle
-    return 'Ecommerce';
-  }
+
   @override
   Widget contentDesktopWidget(BuildContext context) {
     return const Column(children: [

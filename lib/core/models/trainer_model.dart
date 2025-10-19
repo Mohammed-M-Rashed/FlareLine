@@ -15,6 +15,11 @@ class Trainer {
   final List<String>? certifications;
   final String status;
   final String? rejectionReason;
+  final String? address;
+  final int? countryId;
+  final int? cityId;
+  final String? countryName;
+  final String? cityName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -30,6 +35,11 @@ class Trainer {
     this.certifications,
     required this.status,
     this.rejectionReason,
+    this.address,
+    this.countryId,
+    this.cityId,
+    this.countryName,
+    this.cityName,
     this.createdAt,
     this.updatedAt,
   });
@@ -52,6 +62,11 @@ class Trainer {
               .toList(),
       status: json['status'] ?? 'pending',
       rejectionReason: json['rejection_reason'],
+      address: json['address'],
+      countryId: json['country_id'],
+      cityId: json['city_id'],
+      countryName: json['country']?['name'],
+      cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -76,6 +91,9 @@ class Trainer {
     if (yearsExperience != null) data['years_experience'] = yearsExperience;
     if (certifications != null) data['certifications'] = certifications;
     if (rejectionReason != null) data['rejection_reason'] = rejectionReason;
+    if (address != null) data['address'] = address;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     if (createdAt != null) data['created_at'] = createdAt!.toIso8601String();
     if (updatedAt != null) data['updated_at'] = updatedAt!.toIso8601String();
     
@@ -94,6 +112,11 @@ class Trainer {
     List<String>? certifications,
     String? status,
     String? rejectionReason,
+    String? address,
+    int? countryId,
+    int? cityId,
+    String? countryName,
+    String? cityName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -109,6 +132,11 @@ class Trainer {
       certifications: certifications ?? this.certifications,
       status: status ?? this.status,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      address: address ?? this.address,
+      countryId: countryId ?? this.countryId,
+      cityId: cityId ?? this.cityId,
+      countryName: countryName ?? this.countryName,
+      cityName: cityName ?? this.cityName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -147,7 +175,7 @@ class Trainer {
 
   @override
   String toString() {
-    return 'Trainer(id: $id, name: $name, email: $email, phone: $phone, specializations: $specializations, status: $status, rejectionReason: $rejectionReason)';
+    return 'Trainer(id: $id, name: $name, email: $email, phone: $phone, specializations: $specializations, status: $status, rejectionReason: $rejectionReason, address: $address, countryId: $countryId, cityId: $cityId)';
   }
 
   @override
@@ -164,7 +192,12 @@ class Trainer {
         listEquals(other.specializations, specializations) &&
         listEquals(other.certifications, certifications) &&
         other.status == status &&
-        other.rejectionReason == rejectionReason;
+        other.rejectionReason == rejectionReason &&
+        other.address == address &&
+        other.countryId == countryId &&
+        other.cityId == cityId &&
+        other.countryName == countryName &&
+        other.cityName == cityName;
   }
 
   @override
@@ -179,7 +212,12 @@ class Trainer {
            specializations.hashCode ^
            (certifications?.hashCode ?? 0) ^
            status.hashCode ^
-           (rejectionReason?.hashCode ?? 0);
+           (rejectionReason?.hashCode ?? 0) ^
+           (address?.hashCode ?? 0) ^
+           (countryId?.hashCode ?? 0) ^
+           (cityId?.hashCode ?? 0) ^
+           (countryName?.hashCode ?? 0) ^
+           (cityName?.hashCode ?? 0);
   }
 }
 
@@ -244,6 +282,9 @@ class TrainerCreateRequest {
   final int? yearsExperience;
   final List<String> specializations;
   final List<String>? certifications;
+  final String? address;
+  final int? countryId;
+  final int? cityId;
 
   TrainerCreateRequest({
     required this.name,
@@ -254,6 +295,9 @@ class TrainerCreateRequest {
     this.yearsExperience,
     required this.specializations,
     this.certifications,
+    this.address,
+    this.countryId,
+    this.cityId,
   });
 
   Map<String, dynamic> toJson() {
@@ -268,6 +312,9 @@ class TrainerCreateRequest {
     if (qualifications != null) data['qualifications'] = qualifications;
     if (yearsExperience != null) data['years_experience'] = yearsExperience;
     if (certifications != null) data['certifications'] = certifications;
+    if (address != null) data['address'] = address;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     
     return data;
   }
@@ -284,6 +331,9 @@ class TrainerUpdateRequest {
   final int? yearsExperience;
   final List<String>? specializations;
   final List<String>? certifications;
+  final String? address;
+  final int? countryId;
+  final int? cityId;
 
   TrainerUpdateRequest({
     required this.id,
@@ -295,6 +345,9 @@ class TrainerUpdateRequest {
     this.yearsExperience,
     this.specializations,
     this.certifications,
+    this.address,
+    this.countryId,
+    this.cityId,
   });
 
   Map<String, dynamic> toJson() {
@@ -308,6 +361,9 @@ class TrainerUpdateRequest {
     if (yearsExperience != null) data['years_experience'] = yearsExperience;
     if (specializations != null) data['specializations'] = specializations;
     if (certifications != null) data['certifications'] = certifications;
+    if (address != null) data['address'] = address;
+    if (countryId != null) data['country_id'] = countryId;
+    if (cityId != null) data['city_id'] = cityId;
     
     return data;
   }

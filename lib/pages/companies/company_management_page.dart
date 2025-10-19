@@ -9,12 +9,17 @@ import 'package:flareline/core/theme/global_colors.dart';
 import 'package:flareline/pages/layout.dart';
 import 'package:flareline/core/models/company_model.dart';
 import 'package:flareline/core/services/company_service.dart';
+import 'package:flareline/core/services/country_service.dart';
+import 'package:flareline/core/services/city_service.dart';
+import 'package:flareline/core/models/country_model.dart';
+import 'package:flareline/core/models/city_model.dart';
 import 'package:flareline/core/widgets/company_image_picker.dart';
 import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
+import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
 
@@ -41,6 +46,21 @@ class CompanyManagementWidget extends StatefulWidget {
 }
 
 class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
+  late CityDataProvider _cityDataProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the data provider early to start loading data
+    _cityDataProvider = Get.put(CityDataProvider(), permanent: true);
+  }
+
+  @override
+  void dispose() {
+    // Don't dispose the provider here as it might be used elsewhere
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return CommonCard(
@@ -251,7 +271,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                   DataColumn(
                                     label: Expanded(
                                       child: Text(
-                                        'Address',
+                                        'Country',
                                         textAlign: TextAlign.start,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -322,14 +342,17 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                             ),
                                             DataCell(
                                               Container(
-
-                                                child: Text(
-                                                  company.address ?? 'No address',
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.black87,
-                                                  ),
-
+                                                child: GetBuilder<CityDataProvider>(
+                                                  builder: (cityProvider) {
+                                                    String countryName = _getCountryNameSync(company, cityProvider);
+                                                    return Text(
+                                                      countryName,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
                                               ),
                                             ),
@@ -488,6 +511,8 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
     final phoneController = TextEditingController();
     final apiUrlController = TextEditingController();
     String? selectedImageBase64; // Store selected image as BASE64
+    int? selectedCountryId;
+    int? selectedCityId;
 
     ModalDialog.show(
       context: context,
@@ -616,6 +641,30 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // Country Dropdown
+                              _buildCountryDropdown(
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCountryId = value;
+                                  selectedCityId = null; // Reset city when country changes
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // City Dropdown
+                              _buildCityDropdown(
+                                selectedCityId: selectedCityId,
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCityId = value;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
                               ),
                               const SizedBox(height: 16),
                                
@@ -780,6 +829,8 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
               phone: phoneController.text.trim(),
               apiUrl: apiUrlController.text.trim().isEmpty ? null : apiUrlController.text.trim(), // Include API URL if provided
               image: selectedImageBase64, // Include selected image
+              countryId: selectedCountryId,
+              cityId: selectedCityId,
             );
             
             final response = await CompanyService.createCompany(request);
@@ -817,6 +868,8 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
     final phoneController = TextEditingController(text: company.phone);
     final apiUrlController = TextEditingController(text: company.apiUrl); // Initialize with existing API URL
     String? selectedImageBase64 = company.image; // Initialize with existing image
+    int? selectedCountryId = company.countryId;
+    int? selectedCityId = company.cityId;
 
     ModalDialog.show(
       context: context,
@@ -946,6 +999,30 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // Country Dropdown
+                              _buildCountryDropdown(
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCountryId = value;
+                                  selectedCityId = null; // Reset city when country changes
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // City Dropdown
+                              _buildCityDropdown(
+                                selectedCityId: selectedCityId,
+                                selectedCountryId: selectedCountryId,
+                                onChanged: (value) {
+                                  selectedCityId = value;
+                                },
+                                enabled: !isSubmitting,
+                                setModalState: setModalState,
                               ),
                               const SizedBox(height: 16),
                                
@@ -1108,6 +1185,8 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
               phone: phoneController.text.trim(),
               apiUrl: apiUrlController.text.trim(), // Include API URL
               image: selectedImageBase64, // Include selected image
+              countryId: selectedCountryId,
+              cityId: selectedCityId,
             );
             
             final response = await CompanyService.updateCompany(request);
@@ -1341,6 +1420,258 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
     );
   }
 
+  /// Helper method to get country name for a company synchronously
+  String _getCountryNameSync(Company company, CityDataProvider cityProvider) {
+    // First check if country name is already available from API response
+    if (company.countryName != null && company.countryName!.isNotEmpty) {
+      return company.countryName!;
+    }
+    
+    // If no country name but we have country ID, try to get it from the provider
+    if (company.countryId != null && cityProvider.countries.isNotEmpty) {
+      final country = cityProvider.countries.firstWhereOrNull(
+        (c) => c.id == company.countryId,
+      );
+      if (country != null) {
+        return country.name;
+      }
+    }
+    
+    return 'No country';
+  }
+
+  /// Helper method to get city name for a company synchronously
+  String _getCityNameSync(Company company, CityDataProvider cityProvider) {
+    // First check if city name is already available from API response
+    if (company.cityName != null && company.cityName!.isNotEmpty) {
+      return company.cityName!;
+    }
+    
+    // If no city name but we have city ID, try to get it from the provider
+    if (company.cityId != null && cityProvider.cities.isNotEmpty) {
+      final city = cityProvider.cities.firstWhereOrNull(
+        (c) => c.id == company.cityId,
+      );
+      if (city != null) {
+        return city.name;
+      }
+    }
+    
+    return 'No city';
+  }
+
+  /// Builds country dropdown widget with data loading
+  Widget _buildCountryDropdown({
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        // Ensure data is loaded
+        if (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries) {
+          // Trigger loading if not already started
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cityProvider.loadCountries();
+          });
+        }
+        
+        // Show loading indicator while data is being fetched
+        if (cityProvider.isLoadingCountries || (cityProvider.countries.isEmpty && !cityProvider.isLoadingCountries)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Country',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoadingCountries 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading countries...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Country',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCountryId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: const Text('Select Country'),
+                items: cityProvider.countries.map((Country country) {
+                  return DropdownMenuItem<int>(
+                    value: country.id,
+                    child: Text(country.name),
+                  );
+                }).toList(),
+                onChanged: enabled ? (int? value) {
+                  setModalState(() {
+                    onChanged(value);
+                  });
+                  cityProvider.setSelectedCountry(value);
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a country';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Builds city dropdown widget with data loading and filtering
+  Widget _buildCityDropdown({
+    required int? selectedCityId,
+    required int? selectedCountryId,
+    required Function(int?) onChanged,
+    required bool enabled,
+    required StateSetter setModalState,
+  }) {
+    return GetBuilder<CityDataProvider>(
+      builder: (cityProvider) {
+        // Ensure cities are loaded
+        if (cityProvider.cities.isEmpty && !cityProvider.isLoading) {
+          // Trigger loading if not already started
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            cityProvider.refreshData();
+          });
+        }
+        
+        final filteredCities = cityProvider.cities
+            .where((city) => city.countryId == selectedCountryId)
+            .toList();
+        
+        // Show loading indicator while cities are being fetched
+        if (cityProvider.isLoading || (cityProvider.cities.isEmpty && !cityProvider.isLoading)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'City',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 50,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: cityProvider.isLoading 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Loading cities...',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                ),
+              ),
+            ],
+          );
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'City',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonFormField<int>(
+                value: selectedCityId,
+                decoration: const InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: InputBorder.none,
+                ),
+                hint: Text(selectedCountryId == null ? 'Select Country First' : 'Select City'),
+                items: filteredCities.map((City city) {
+                  return DropdownMenuItem<int>(
+                    value: city.id,
+                    child: Text(city.name),
+                  );
+                }).toList(),
+                onChanged: enabled && selectedCountryId != null ? (int? value) {
+                  setModalState(() {
+                    onChanged(value);
+                  });
+                } : null,
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a city';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showViewCompanyDialog(BuildContext context, Company company) {
     ModalDialog.show(
       context: context,
@@ -1410,6 +1741,24 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                         _buildDetailRow('Company Name', company.name),
                         if (company.address != null && company.address!.isNotEmpty)
                           _buildDetailRow('Address', company.address!),
+                        GetBuilder<CityDataProvider>(
+                          builder: (cityProvider) {
+                            final countryName = _getCountryNameSync(company, cityProvider);
+                            if (countryName != 'No country') {
+                              return _buildDetailRow('Country', countryName);
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        GetBuilder<CityDataProvider>(
+                          builder: (cityProvider) {
+                            final cityName = _getCityNameSync(company, cityProvider);
+                            if (cityName != 'No city') {
+                              return _buildDetailRow('City', cityName);
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
                         if (company.phone != null && company.phone!.isNotEmpty)
                           _buildDetailRow('Phone', company.phone!),
                         if (company.apiUrl != null && company.apiUrl!.isNotEmpty)
