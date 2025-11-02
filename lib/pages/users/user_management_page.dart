@@ -1366,8 +1366,8 @@ class UserManagementWidget extends StatelessWidget {
                              const SizedBox(width: 12), // Reduced spacing
                              Expanded(
                                child: Text(
-                                 'All fields marked with * are required. The password will be automatically generated and can be changed by the user after first login.',
-                                 style: TextStyle(
+                                 'All fields marked with * are required. The password will be automatically generated and can be changed by the user after first login.'
+                                 ,style: TextStyle(
                                    fontSize: 13, // Reduced font size
                                    color: Colors.grey.shade700,
                                  ),

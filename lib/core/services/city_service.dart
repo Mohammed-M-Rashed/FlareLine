@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import '../models/city_model.dart';
 import '../models/country_model.dart';
 import 'auth_service.dart';
@@ -213,12 +214,44 @@ class CityDataProvider extends GetxController {
     // Filter by search query (case-insensitive country name search)
     if (_searchQuery.value.isNotEmpty) {
       final query = _searchQuery.value.toLowerCase();
-      filtered = filtered.where((city) =>
-        city.country?.name.toLowerCase().contains(query) ?? false
-      ).toList();
+      filtered = filtered.where((city) {
+        // First try to get country name from city.country
+        String? countryName = city.country?.name;
+        
+        // If city.country is null, try to find country by countryId from loaded countries
+        if (countryName == null && city.countryId > 0) {
+          final country = _countries.firstWhereOrNull(
+            (c) => c.id == city.countryId,
+          );
+          countryName = country?.name;
+        }
+        
+        // Check if country name matches the query
+        return countryName != null && countryName.toLowerCase().contains(query);
+      }).toList();
     }
     
     return filtered;
+  }
+  
+  // Helper method to get country name for a city
+  String getCountryNameForCity(City city) {
+    // First try to get country name from city.country
+    if (city.country != null && city.country!.name.isNotEmpty) {
+      return city.country!.name;
+    }
+    
+    // If city.country is null, try to find country by countryId from loaded countries
+    if (city.countryId > 0 && _countries.isNotEmpty) {
+      final country = _countries.firstWhereOrNull(
+        (c) => c.id == city.countryId,
+      );
+      if (country != null && country.name.isNotEmpty) {
+        return country.name;
+      }
+    }
+    
+    return 'Unknown';
   }
 
   void setSearchQuery(String query) {

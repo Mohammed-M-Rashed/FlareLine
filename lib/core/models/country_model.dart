@@ -16,8 +16,14 @@ class Country {
   });
 
   factory Country.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return Country(
-      id: json['id'],
+      id: _toIntNullable(json['id']),
       name: json['name'] ?? '',
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
@@ -116,12 +122,18 @@ class CountryResponse {
   });
 
   factory CountryResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
     return CountryResponse(
       success: json['success'] ?? false,
       data: json['data'] != null ? Country.fromJson(json['data']) : null,
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: _toInt(json['status_code']),
     );
   }
 }
@@ -142,6 +154,12 @@ class CountriesResponse {
   });
 
   factory CountriesResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
     List<Country> countries = [];
     if (json['data'] != null && json['data'] is List) {
       countries = (json['data'] as List)
@@ -154,7 +172,7 @@ class CountriesResponse {
       data: countries,
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: _toInt(json['status_code']),
     );
   }
 }

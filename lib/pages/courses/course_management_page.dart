@@ -19,6 +19,7 @@ import 'package:get/get.dart';
 import 'package:toastification/toastification.dart';
 import 'dart:math';
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
 
 class CourseManagementPage extends LayoutWidget {
   const CourseManagementPage({super.key});
@@ -564,7 +565,8 @@ class CourseManagementWidget extends StatelessWidget {
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
     final specializationIdController = TextEditingController();
-    String? selectedFileBase64;
+    String? selectedFileBase64; // Store selected file as BASE64 (for display)
+    PlatformFile? selectedFileAttachment; // Store selected file (for upload)
     
     // Loading state for form submission
     bool isSubmitting = false;
@@ -634,14 +636,18 @@ class CourseManagementWidget extends StatelessWidget {
                             code: codeController.text.trim(),
                             title: titleController.text.trim(),
                             description: descriptionController.text.trim(),
-                            fileAttachment: selectedFileBase64,
+                            fileAttachment: null, // Don't send base64 in request when using multipart
                             createdBy: 'admin', // Set creator as System Administrator
                           );
                           
                           print('📚 Creating course: ${newCourse.title} with specialization ID: ${newCourse.specializationId}');
                           
                           // Create course via API
-                          final result = await CourseService.createCourse(context, newCourse);
+                          final result = await CourseService.createCourse(
+                            context, 
+                            newCourse,
+                            fileAttachment: selectedFileAttachment, // Pass file attachment for multipart upload
+                          );
                           if (result) {
                             print('✅ Course created successfully, refreshing data...');
                             
@@ -888,6 +894,9 @@ class CourseManagementWidget extends StatelessWidget {
                               onFileChanged: (String? base64File) {
                                 selectedFileBase64 = base64File;
                               },
+                              onFileAttachmentChanged: (PlatformFile? fileAttachment) {
+                                selectedFileAttachment = fileAttachment;
+                              },
                             ),
                           ),
                         ],
@@ -909,7 +918,8 @@ class CourseManagementWidget extends StatelessWidget {
     final titleController = TextEditingController(text: course.title);
     final descriptionController = TextEditingController(text: course.description);
     final specializationIdController = TextEditingController(text: course.specializationId.toString());
-    String? selectedFileBase64 = course.fileAttachment;
+    String? selectedFileBase64 = course.fileAttachment; // Initialize with existing file (for display)
+    PlatformFile? selectedFileAttachment; // Store new file attachment (for upload)
     
     // Loading state for form submission
     bool isSubmitting = false;
@@ -983,14 +993,18 @@ class CourseManagementWidget extends StatelessWidget {
                             code: codeController.text.trim(),
                             title: titleController.text.trim(),
                             description: descriptionController.text.trim(),
-                            fileAttachment: selectedFileBase64,
+                            fileAttachment: null, // Don't send base64 in request when using multipart
                             createdAt: course.createdAt,
                             updatedAt: DateTime.now().toIso8601String(),
                             specialization: course.specialization,
                           );
                           
                           // Update course via API
-                          final result = await CourseService.updateCourse(context, updatedCourse);
+                          final result = await CourseService.updateCourse(
+                            context, 
+                            updatedCourse,
+                            fileAttachment: selectedFileAttachment, // Pass file attachment for multipart upload
+                          );
                           if (result) {
                             // Close modal first for smooth UX
                             Get.back();
@@ -1223,6 +1237,9 @@ class CourseManagementWidget extends StatelessWidget {
                               initialFile: course.fileAttachment,
                               onFileChanged: (String? base64File) {
                                 selectedFileBase64 = base64File;
+                              },
+                              onFileAttachmentChanged: (PlatformFile? fileAttachment) {
+                                selectedFileAttachment = fileAttachment;
                               },
                             ),
                           ),

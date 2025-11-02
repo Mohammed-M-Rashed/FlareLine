@@ -1,8 +1,8 @@
 class ApiConfig {
   // Environment configuration
-  static const String devBaseUrl = 'http://127.0.0.1:8000/api';
+  static const String devBaseUrl = 'https://noc.justhost.ly/backend-api/public/api';
   static const String stagingBaseUrl = 'https://staging-api.yourcompany.com/api';
-  static const String productionBaseUrl = 'https://api.yourcompany.com/api';
+  static const String productionBaseUrl = 'https://noc.justhost.ly/backend-api/public/api';
   
   // Get base URL based on environment
   static String get baseUrl {

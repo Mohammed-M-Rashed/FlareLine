@@ -79,6 +79,22 @@ class UserApiData {
   });
 
   factory UserApiData.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert dynamic value to int
+    int _toInt(dynamic value, {int fallback = 0}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
+
+    // Helper function to safely convert dynamic value to int?
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     // Handle roles array
     List<Role> roles = [];
     if (json['roles'] != null && json['roles'] is List) {
@@ -88,11 +104,11 @@ class UserApiData {
     }
 
     return UserApiData(
-      id: json['id'],
+      id: _toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       emailVerifiedAt: json['email_verified_at'],
-      companyId: json['company_id'],
+      companyId: _toIntNullable(json['company_id']),
       status: json['status'] ?? 'active',
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],

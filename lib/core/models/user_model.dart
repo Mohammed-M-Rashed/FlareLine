@@ -25,6 +25,14 @@ class Role {
   });
 
   factory Role.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert dynamic value to int?
+    int? _toInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     // Handle permissions - can be array or null
     List<String>? permissions;
     if (json['permissions'] != null) {
@@ -36,7 +44,7 @@ class Role {
     }
 
     return Role(
-      id: json['id'],
+      id: _toInt(json['id']),
       name: json['name'] ?? '',
       displayName: json['display_name'] ?? json['name'] ?? '',
       description: json['description'],
@@ -92,6 +100,14 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Helper function to safely convert dynamic value to int?
+    int? _toInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+
     // Handle roles array
     List<Role> roles = [];
     if (json['roles'] != null && json['roles'] is List) {
@@ -107,7 +123,7 @@ class User {
     }
 
     return User(
-      id: json['id'],
+      id: _toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       role: legacyRole,
@@ -115,7 +131,7 @@ class User {
       emailVerifiedAt: json['email_verified_at'],
       createdAt: json['created_at'] ?? '',
       updatedAt: json['updated_at'] ?? '',
-      companyId: json['company_id'],
+      companyId: _toInt(json['company_id']),
       status: json['status'],
       company: json['company'] != null ? Company.fromJson(json['company']) : null,
     );

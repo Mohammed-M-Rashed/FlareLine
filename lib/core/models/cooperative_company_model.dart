@@ -28,15 +28,22 @@ class CooperativeCompany {
   });
 
   factory CooperativeCompany.fromJson(Map<String, dynamic> json) {
+    int? _toInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+    
     return CooperativeCompany(
-      id: json['id'],
+      id: _toInt(json['id']),
       name: json['name'] ?? '',
       address: json['address'] ?? '',
       phone: json['phone'] ?? '',
       image: json['image'],
       apiUrl: json['api_url'],
-      countryId: json['country_id'],
-      cityId: json['city_id'],
+      countryId: _toInt(json['country_id']),
+      cityId: _toInt(json['city_id']),
       countryName: json['country']?['name'],
       cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 

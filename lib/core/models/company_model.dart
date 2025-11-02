@@ -28,15 +28,21 @@ class Company {
   });
 
   factory Company.fromJson(Map<String, dynamic> json) {
+    int? _toInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return Company(
-      id: json['id'],
+      id: _toInt(json['id']),
       name: json['name'] ?? '',
       address: json['address'] ?? '',
       phone: json['phone'] ?? '',
       image: json['image'],
       apiUrl: json['api_url'],
-      countryId: json['country_id'],
-      cityId: json['city_id'],
+      countryId: _toInt(json['country_id']),
+      cityId: _toInt(json['city_id']),
       countryName: json['country']?['name'],
       cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
@@ -133,6 +139,12 @@ class CompanyListResponse {
   });
 
   factory CompanyListResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
     return CompanyListResponse(
       success: json['success'] ?? false,
       data: (json['data'] as List<dynamic>?)
@@ -141,7 +153,7 @@ class CompanyListResponse {
           [],
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: _toInt(json['status_code']),
     );
   }
 }
@@ -162,12 +174,18 @@ class CompanyResponse {
   });
 
   factory CompanyResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
     return CompanyResponse(
       success: json['success'] ?? false,
       data: json['data'] != null ? Company.fromJson(json['data']) : null,
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: _toInt(json['status_code']),
     );
   }
 }

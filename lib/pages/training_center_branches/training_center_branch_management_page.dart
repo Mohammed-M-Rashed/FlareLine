@@ -20,6 +20,7 @@ import 'package:get/get.dart';
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // Added for kIsWeb and defaultTargetPlatform
+import 'package:url_launcher/url_launcher.dart'; // Added for opening Google Maps
 
 /// Comprehensive error tracking class for Training Center Branches Management
 class TrainingCenterBranchErrorTracker {
@@ -682,40 +683,61 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                             DataCell(
                                               Tooltip(
                                                 message: branch.hasCoordinates 
-                                                    ? 'Coordinates: ${_formatCoordinates(branch.lat, branch.long)}'
+                                                    ? 'Coordinates: ${_formatCoordinates(branch.lat, branch.long)}\nClick to open in Google Maps'
                                                     : 'No coordinates set',
-                                                child: Container(
-                                                  constraints: const BoxConstraints(
-                                                    minWidth: 80,
-                                                    maxWidth: 200,
-                                                  ),
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: branch.hasCoordinates ? Colors.green.shade50 : Colors.grey.shade50,
-                                                      borderRadius: BorderRadius.circular(5),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.location_on,
-                                                          size: 14,
-                                                          color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
+                                                child: GestureDetector(
+                                                  onTap: branch.hasCoordinates 
+                                                      ? () => _openGoogleMaps(context, branch.lat!, branch.long!)
+                                                      : null,
+                                                  child: MouseRegion(
+                                                    cursor: branch.hasCoordinates 
+                                                        ? SystemMouseCursors.click 
+                                                        : SystemMouseCursors.basic,
+                                                    child: Container(
+                                                      constraints: const BoxConstraints(
+                                                        minWidth: 80,
+                                                        maxWidth: 200,
+                                                      ),
+                                                      child: Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
                                                         ),
-                                                        const SizedBox(width: 4),
-                                                        Text(
-                                                          branch.hasCoordinates ? 'Available' : 'Not Set',
-                                                          style: TextStyle(
-                                                            fontWeight: FontWeight.w500,
-                                                            fontSize: 11,
-                                                            color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
-                                                          ),
+                                                        decoration: BoxDecoration(
+                                                          color: branch.hasCoordinates ? Colors.green.shade50 : Colors.grey.shade50,
+                                                          borderRadius: BorderRadius.circular(5),
+                                                          border: branch.hasCoordinates 
+                                                              ? Border.all(color: Colors.green.shade200, width: 1)
+                                                              : null,
                                                         ),
-                                                      ],
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            Icon(
+                                                              Icons.location_on,
+                                                              size: 14,
+                                                              color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
+                                                            ),
+                                                            const SizedBox(width: 4),
+                                                            Text(
+                                                              branch.hasCoordinates ? 'Available' : 'Not Set',
+                                                              style: TextStyle(
+                                                                fontWeight: FontWeight.w500,
+                                                                fontSize: 11,
+                                                                color: branch.hasCoordinates ? Colors.green.shade700 : Colors.grey.shade600,
+                                                              ),
+                                                            ),
+                                                            if (branch.hasCoordinates) ...[
+                                                              const SizedBox(width: 4),
+                                                              Icon(
+                                                                Icons.open_in_new,
+                                                                size: 12,
+                                                                color: Colors.green.shade700,
+                                                              ),
+                                                            ],
+                                                          ],
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -848,6 +870,48 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
   String _formatCoordinates(double? lat, double? long) {
     if (lat == null || long == null) return 'Not set';
     return '${lat.toStringAsFixed(6)}, ${long.toStringAsFixed(6)}';
+  }
+
+  /// Opens Google Maps in a new tab with the given coordinates
+  Future<void> _openGoogleMaps(BuildContext context, double latitude, double longitude) async {
+    try {
+      // Create Google Maps URL with coordinates
+      final googleMapsUrl = 'https://www.google.com/maps?q=$latitude,$longitude';
+      final uri = Uri.parse(googleMapsUrl);
+      
+      // Launch URL in a new tab (web) or default browser (desktop)
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication, // Opens in new tab/browser
+        );
+        print('✅ Opened Google Maps: $googleMapsUrl');
+      } else {
+        print('❌ Could not launch Google Maps URL: $googleMapsUrl');
+        // Show error message to user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open Google Maps. Please check if a browser is available.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Error opening Google Maps: $e');
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening Google Maps: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   /// Validates phone number format according to business rules

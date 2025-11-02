@@ -14,8 +14,14 @@ class Specialization {
   });
 
   factory Specialization.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return Specialization(
-      id: json['id'],
+      id: _toIntNullable(json['id']),
       name: json['name'] ?? '',
       description: json['description'],
       createdAt: json['created_at'] ?? '',
@@ -88,6 +94,12 @@ class SpecializationListResponse {
   });
 
   factory SpecializationListResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value, {int fallback = 0}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
     return SpecializationListResponse(
       success: json['success'] ?? false,
       data: (json['data'] as List?)
@@ -96,7 +108,7 @@ class SpecializationListResponse {
           [],
       mAr: json['m_ar'] ?? '',
       mEn: json['m_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: _toInt(json['status_code'], fallback: 0),
     );
   }
 }
@@ -117,12 +129,18 @@ class SpecializationResponse {
   });
 
   factory SpecializationResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value, {int fallback = 0}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
     return SpecializationResponse(
       success: json['success'] ?? false,
       data: json['data'] != null ? Specialization.fromJson(json['data']) : null,
       mAr: json['m_ar'] ?? '',
       mEn: json['m_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: _toInt(json['status_code'], fallback: 0),
     );
   }
 }

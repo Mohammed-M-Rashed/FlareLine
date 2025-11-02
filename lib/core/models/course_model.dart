@@ -31,9 +31,21 @@ class Course {
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+    int _toInt(dynamic value, {int fallback = 0}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
     return Course(
-      id: json['id'],
-      specializationId: json['specialization_id'] ?? 0,
+      id: _toIntNullable(json['id']),
+      specializationId: _toInt(json['specialization_id'], fallback: 0),
       code: json['code'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
@@ -291,6 +303,12 @@ class CourseListResponse {
   });
 
   factory CourseListResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value, {int fallback = 200}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
     return CourseListResponse(
       data: (json['data'] as List?)
               ?.map((course) => Course.fromJson(course))
@@ -298,7 +316,7 @@ class CourseListResponse {
           [],
       messageAr: json['m_ar'],
       messageEn: json['m_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: _toInt(json['status_code'], fallback: 200),
     );
   }
 
@@ -328,11 +346,17 @@ class CourseResponse {
   });
 
   factory CourseResponse.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic value, {int fallback = 200}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
     return CourseResponse(
       data: json['data'] != null ? Course.fromJson(json['data']) : null,
       messageAr: json['m_ar'],
       messageEn: json['m_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: _toInt(json['status_code'], fallback: 200),
     );
   }
 
@@ -403,7 +427,10 @@ class CourseUpdateRequest {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {'id': id};
     
-    if (specializationId != null) data['specialization_id'] = specializationId;
+    // Always send specialization_id if provided (required by server for updates)
+    if (specializationId != null) {
+      data['specialization_id'] = specializationId;
+    }
     if (code != null) data['code'] = code;
     if (title != null) data['title'] = title;
     if (description != null) data['description'] = description;

@@ -22,6 +22,7 @@ import 'dart:convert'; // Added for base64Decode
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
+import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
 
 class CompanyManagementPage extends LayoutWidget {
   const CompanyManagementPage({super.key});
@@ -122,7 +123,16 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                               try {
                                 await provider.refreshData();
                                 _showSuccessToast('Companies data refreshed successfully');
-                              } catch (e) {
+                              } catch (e, stackTrace) {
+                                print('═══════════════════════════════════════');
+                                print('❌ [Company Management] Refresh Error');
+                                print('═══════════════════════════════════════');
+                                print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+                                print('🔴 Error Type: ${e.runtimeType}');
+                                print('📝 Error Message: ${e.toString()}');
+                                print('📍 Stack Trace:');
+                                print(stackTrace.toString());
+                                print('═══════════════════════════════════════');
                                 _showErrorToast('خطأ في تحديث بيانات الشركات: ${e.toString()}');
                               }
                             },
@@ -322,7 +332,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                                 child: Row(
                                                   children: [
                                                     // Company Logo or Placeholder
-                                                    company.image != null
+                                                    (company.image != null && company.image!.isNotEmpty)
                                                         ? _buildCompanyImage(company.image!)
                                                         : _buildCompanyPlaceholder(company.name),
                                                     const SizedBox(width: 8),
@@ -510,7 +520,8 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
     final addressController = TextEditingController();
     final phoneController = TextEditingController();
     final apiUrlController = TextEditingController();
-    String? selectedImageBase64; // Store selected image as BASE64
+    String? selectedImageBase64; // Store selected image as BASE64 (for display)
+    PlatformFile? selectedImageFile; // Store selected image file (for upload)
     int? selectedCountryId;
     int? selectedCityId;
 
@@ -571,6 +582,9 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                   height: 200,
                                   onImageChanged: (String? base64Image) {
                                     selectedImageBase64 = base64Image;
+                                  },
+                                  onImageFileChanged: (PlatformFile? imageFile) {
+                                    selectedImageFile = imageFile;
                                   },
                                 ),
                               ),
@@ -828,12 +842,15 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
               address: addressController.text.trim(),
               phone: phoneController.text.trim(),
               apiUrl: apiUrlController.text.trim().isEmpty ? null : apiUrlController.text.trim(), // Include API URL if provided
-              image: selectedImageBase64, // Include selected image
+              image: null, // Don't send base64 in request when using multipart
               countryId: selectedCountryId,
               cityId: selectedCityId,
             );
             
-            final response = await CompanyService.createCompany(request);
+            final response = await CompanyService.createCompany(
+              request,
+              imageFile: selectedImageFile, // Pass image file for multipart upload
+            );
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -848,11 +865,30 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
               // Show success message
               _showSuccessToast(response.messageEn);
             } else {
+              print('═══════════════════════════════════════');
+              print('❌ [Company Management] Create Company Failed');
+              print('═══════════════════════════════════════');
+              print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+              print('🔴 Success: ${response.success}');
+              print('📝 Message (EN): ${response.messageEn}');
+              print('📝 Message (AR): ${response.messageAr}');
+              print('🔢 Status Code: ${response.statusCode}');
+              print('═══════════════════════════════════════');
               throw Exception(response.messageEn);
             }
-          } catch (e) {
+          } catch (e, stackTrace) {
             // Close loading dialog
             Navigator.of(context).pop();
+            
+            print('═══════════════════════════════════════');
+            print('❌ [Company Management] Create Company Exception');
+            print('═══════════════════════════════════════');
+            print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+            print('🔴 Error Type: ${e.runtimeType}');
+            print('📝 Error Message: ${e.toString()}');
+            print('📍 Stack Trace:');
+            print(stackTrace.toString());
+            print('═══════════════════════════════════════');
             
             _showErrorToast(e.toString());
           }
@@ -867,7 +903,8 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
     final addressController = TextEditingController(text: company.address);
     final phoneController = TextEditingController(text: company.phone);
     final apiUrlController = TextEditingController(text: company.apiUrl); // Initialize with existing API URL
-    String? selectedImageBase64 = company.image; // Initialize with existing image
+    String? selectedImageBase64 = company.image; // Initialize with existing image (for display)
+    PlatformFile? selectedImageFile; // Store new image file (for upload)
     int? selectedCountryId = company.countryId;
     int? selectedCityId = company.cityId;
 
@@ -929,6 +966,9 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                                   initialImage: company.image, // Pass existing image
                                   onImageChanged: (String? base64Image) {
                                     selectedImageBase64 = base64Image;
+                                  },
+                                  onImageFileChanged: (PlatformFile? imageFile) {
+                                    selectedImageFile = imageFile;
                                   },
                                 ),
                               ),
@@ -1184,12 +1224,15 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
               address: addressController.text.trim(),
               phone: phoneController.text.trim(),
               apiUrl: apiUrlController.text.trim(), // Include API URL
-              image: selectedImageBase64, // Include selected image
+              image: null, // Don't send base64 in request when using multipart
               countryId: selectedCountryId,
               cityId: selectedCityId,
             );
             
-            final response = await CompanyService.updateCompany(request);
+            final response = await CompanyService.updateCompany(
+              request,
+              imageFile: selectedImageFile, // Pass image file for multipart upload
+            );
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -1204,11 +1247,32 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
               // Show success message
               _showSuccessToast(response.messageEn);
             } else {
+              print('═══════════════════════════════════════');
+              print('❌ [Company Management] Update Company Failed');
+              print('═══════════════════════════════════════');
+              print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+              print('🆔 Company ID: ${company.id}');
+              print('🔴 Success: ${response.success}');
+              print('📝 Message (EN): ${response.messageEn}');
+              print('📝 Message (AR): ${response.messageAr}');
+              print('🔢 Status Code: ${response.statusCode}');
+              print('═══════════════════════════════════════');
               throw Exception(response.messageEn);
             }
-          } catch (e) {
+          } catch (e, stackTrace) {
             // Close loading dialog
             Navigator.of(context).pop();
+            
+            print('═══════════════════════════════════════');
+            print('❌ [Company Management] Update Company Exception');
+            print('═══════════════════════════════════════');
+            print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+            print('🆔 Company ID: ${company.id}');
+            print('🔴 Error Type: ${e.runtimeType}');
+            print('📝 Error Message: ${e.toString()}');
+            print('📍 Stack Trace:');
+            print(stackTrace.toString());
+            print('═══════════════════════════════════════');
             
             _showErrorToast(e.toString());
           }
@@ -1301,7 +1365,21 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
   //   );
   // }
 
-  Widget _buildCompanyImage(String imageUrl) {
+  // Build full image URL from server
+  String _buildCompanyImageUrl(String imageFileName) {
+    const baseUrl = 'https://noc.justhost.ly/backend-api/storage/app/public/';
+    // Remove any leading slashes or spaces from imageFileName
+    final cleanFileName = imageFileName.trim().replaceFirst(RegExp(r'^/'), '');
+    return '$baseUrl$cleanFileName';
+  }
+
+  Widget _buildCompanyImage(String imageFileName) {
+    final imageUrl = _buildCompanyImageUrl(imageFileName);
+    
+    print('🖼️ [Company Image] Building image widget');
+    print('   📁 Image file name: $imageFileName');
+    print('   🔗 Full URL: $imageUrl');
+    
     return Container(
       width: 40,
       height: 40,
@@ -1311,12 +1389,33 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.asset(
-          'assets/signin/logo.png',
+        child: Image.network(
+          imageUrl,
           width: 40,
           height: 40,
           fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              print('✅ [Company Image] Image loaded successfully: $imageUrl');
+              return child;
+            }
+            return Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded / 
+                        loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
           errorBuilder: (context, error, stackTrace) {
+            print('❌ [Company Image] Error loading image: $imageUrl');
+            print('   Error: $error');
             return _buildCompanyPlaceholder('خطأ');
           },
         ),
@@ -1763,8 +1862,63 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                           _buildDetailRow('Phone', company.phone!),
                         if (company.apiUrl != null && company.apiUrl!.isNotEmpty)
                           _buildDetailRow('API URL', company.apiUrl!),
-                        if (company.image != null && company.image!.isNotEmpty)
-                          _buildDetailRow('Logo', 'Available'),
+                        if (company.image != null && company.image!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Company Logo',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                _buildCompanyImageUrl(company.image!),
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: SizedBox(
+                                      width: 40,
+                                      height: 40,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3,
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded / 
+                                              loadingProgress.expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.grey[200],
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey[400],
+                                        size: 40,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                         if (company.createdAt != null)
                           _buildDetailRow('Created At', _formatCompanyDate(company.createdAt)),
                         if (company.updatedAt != null)
@@ -1853,11 +2007,39 @@ class CompanyDataProvider extends GetxController {
       if (response.success) {
         _companies.value = response.data;
         _currentPage.value = 0; // reset page on new data
+        
+        // Debug: Print company images
+        print('═══════════════════════════════════════');
+        print('📊 [Company Management] Loaded ${response.data.length} companies');
+        print('═══════════════════════════════════════');
+        for (var company in response.data) {
+          print('   🏢 ${company.name}: image = ${company.image ?? "null"}');
+        }
+        print('═══════════════════════════════════════');
+        
         return response.data;
       } else {
+        print('═══════════════════════════════════════');
+        print('❌ [Company Management] Load Data Failed');
+        print('═══════════════════════════════════════');
+        print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+        print('🔴 Success: ${response.success}');
+        print('📝 Message (EN): ${response.messageEn}');
+        print('📝 Message (AR): ${response.messageAr}');
+        print('🔢 Status Code: ${response.statusCode}');
+        print('═══════════════════════════════════════');
         throw Exception(response.messageEn);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('═══════════════════════════════════════');
+      print('❌ [Company Management] Load Data Exception');
+      print('═══════════════════════════════════════');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('🔴 Error Type: ${e.runtimeType}');
+      print('📝 Error Message: ${e.toString()}');
+      print('📍 Stack Trace:');
+      print(stackTrace.toString());
+      print('═══════════════════════════════════════');
       _companies.clear();
       rethrow;
     } finally {
@@ -1869,7 +2051,16 @@ class CompanyDataProvider extends GetxController {
     try {
       await loadData();
       update();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('═══════════════════════════════════════');
+      print('❌ [Company Management] Refresh Data Exception');
+      print('═══════════════════════════════════════');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('🔴 Error Type: ${e.runtimeType}');
+      print('📝 Error Message: ${e.toString()}');
+      print('📍 Stack Trace:');
+      print(stackTrace.toString());
+      print('═══════════════════════════════════════');
       rethrow;
     }
   }

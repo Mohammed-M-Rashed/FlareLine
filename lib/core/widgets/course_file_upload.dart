@@ -6,8 +6,9 @@ import '../theme/global_theme.dart';
 import 'package:file_picker/file_picker.dart';
 
 class CourseFileUpload extends StatefulWidget {
-  final String? initialFile; // BASE64 string
-  final Function(String?) onFileChanged; // Callback when file changes
+  final String? initialFile; // BASE64 string or file URL
+  final Function(String?) onFileChanged; // Callback when file changes (BASE64)
+  final Function(PlatformFile?)? onFileAttachmentChanged; // Callback when file attachment changes
   final String? errorText; // Validation error text
   final bool isRequired; // Whether file is required
   final double width; // Widget width
@@ -17,6 +18,7 @@ class CourseFileUpload extends StatefulWidget {
     super.key,
     this.initialFile,
     required this.onFileChanged,
+    this.onFileAttachmentChanged,
     this.errorText,
     this.isRequired = false,
     this.width = 300,
@@ -29,6 +31,7 @@ class CourseFileUpload extends StatefulWidget {
 
 class _CourseFileUploadState extends State<CourseFileUpload> {
   String? _base64File;
+  PlatformFile? _selectedFile;
   String? _fileName;
   bool _isLoading = false;
 
@@ -259,8 +262,9 @@ class _CourseFileUploadState extends State<CourseFileUpload> {
           _base64File = base64;
         });
         
-        // Notify parent
+        // Notify parent with both base64 (for display) and file (for upload)
         widget.onFileChanged(base64);
+        widget.onFileAttachmentChanged?.call(_selectedFile);
       }
     } finally {
       if (mounted) {
@@ -275,10 +279,12 @@ class _CourseFileUploadState extends State<CourseFileUpload> {
     setState(() {
       _base64File = null;
       _fileName = null;
+      _selectedFile = null;
     });
     
     // Notify parent
     widget.onFileChanged(null);
+    widget.onFileAttachmentChanged?.call(null);
   }
 
   Future<String?> _showFilePickerDialog() async {
@@ -297,10 +303,11 @@ class _CourseFileUploadState extends State<CourseFileUpload> {
           throw Exception('حجم الملف يجب أن يكون أقل من 10 ميجابايت');
         }
         
-        // Store file name
+        // Store file name and file object
         _fileName = file.name;
+        _selectedFile = file;
         
-        // Convert to BASE64
+        // Convert to BASE64 for display/backward compatibility
         if (file.bytes != null) {
           return base64Encode(file.bytes!);
         }
@@ -330,4 +337,7 @@ class _CourseFileUploadState extends State<CourseFileUpload> {
   
   // Getter for the current file name
   String? get currentFileName => _fileName;
+  
+  // Getter for the current file attachment
+  PlatformFile? get currentFileAttachment => _selectedFile;
 }

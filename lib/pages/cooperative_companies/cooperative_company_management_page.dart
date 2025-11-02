@@ -22,6 +22,7 @@ import 'dart:convert'; // Added for base64Decode
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
+import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
 
 class CooperativeCompanyManagementPage extends LayoutWidget {
   const CooperativeCompanyManagementPage({super.key});
@@ -360,7 +361,21 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
     );
   }
 
-  Widget _buildCompanyImage(String imageUrl) {
+  // Build full image URL from server
+  String _buildCompanyImageUrl(String imageFileName) {
+    const baseUrl = 'https://noc.justhost.ly/backend-api/storage/app/public/';
+    // Remove any leading slashes or spaces from imageFileName
+    final cleanFileName = imageFileName.trim().replaceFirst(RegExp(r'^/'), '');
+    return '$baseUrl$cleanFileName';
+  }
+
+  Widget _buildCompanyImage(String imageFileName) {
+    final imageUrl = _buildCompanyImageUrl(imageFileName);
+    
+    print('🖼️ [Cooperative Company Image] Building image widget');
+    print('   📁 Image file name: $imageFileName');
+    print('   🔗 Full URL: $imageUrl');
+    
     return Container(
       width: 40,
       height: 40,
@@ -375,8 +390,29 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
           width: 40,
           height: 40,
           fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              print('✅ [Cooperative Company Image] Image loaded successfully: $imageUrl');
+              return child;
+            }
+            return Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded / 
+                        loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              ),
+            );
+          },
           errorBuilder: (context, error, stackTrace) {
-            return _buildCompanyPlaceholder('Error');
+            print('❌ [Cooperative Company Image] Error loading image: $imageUrl');
+            print('   Error: $error');
+            return _buildCompanyPlaceholder('خطأ');
           },
         ),
       ),
@@ -560,8 +596,8 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
     final addressController = TextEditingController();
     final phoneController = TextEditingController();
     final apiUrlController = TextEditingController();
-    Uint8List? selectedImageBytes;
-    String? selectedImageBase64;
+    String? selectedImageBase64; // Store selected image as BASE64 (for display)
+    PlatformFile? selectedImageFile; // Store selected image file (for upload)
     int? selectedCountryId;
     int? selectedCityId;
 
@@ -631,11 +667,11 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                                 onImageChanged: (String? base64Image) {
                                   setModalState(() {
                                     selectedImageBase64 = base64Image;
-                                    if (base64Image != null) {
-                                      selectedImageBytes = base64Decode(base64Image);
-                                    } else {
-                                      selectedImageBytes = null;
-                                    }
+                                  });
+                                },
+                                onImageFileChanged: (PlatformFile? imageFile) {
+                                  setModalState(() {
+                                    selectedImageFile = imageFile;
                                   });
                                 },
                                 initialImage: selectedImageBase64,
@@ -819,7 +855,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
               name: nameController.text.trim(),
               address: addressController.text.trim(),
               phone: phoneController.text.trim(),
-              image: selectedImageBase64,
+              image: null, // Don't send base64 in request when using multipart
               apiUrl: apiUrlController.text.trim().isNotEmpty ? apiUrlController.text.trim() : null,
               countryId: selectedCountryId,
               cityId: selectedCityId,
@@ -848,13 +884,16 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
             print('   • API URL: "${apiUrlController.text.trim().isNotEmpty ? apiUrlController.text.trim() : 'Not provided'}"');
             print('   • Country ID: $selectedCountryId');
             print('   • City ID: $selectedCityId');
-            print('   • Has Image: ${selectedImageBase64 != null}');
-            print('   • Image Size: ${selectedImageBase64?.length ?? 0} characters');
+            print('   • Has Image: ${selectedImageFile != null}');
+            print('   • Image File: ${selectedImageFile?.name ?? "None"} (${selectedImageFile?.size ?? 0} bytes)');
             print('═══════════════════════════════════════════════════════════');
             print('');
             
             print('🌐 [CooperativeCompany] Making API call to create cooperative company...');
-            final response = await CooperativeCompanyService.createCooperativeCompany(request);
+            final response = await CooperativeCompanyService.createCooperativeCompany(
+              request,
+              imageFile: selectedImageFile, // Pass image file for multipart upload
+            );
             
             // Print response from server
             print('');
@@ -935,8 +974,8 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
     final addressController = TextEditingController(text: company.address);
     final phoneController = TextEditingController(text: company.phone);
     final apiUrlController = TextEditingController(text: company.apiUrl ?? '');
-    Uint8List? selectedImageBytes;
-    String? selectedImageBase64;
+    String? selectedImageBase64 = company.image; // Initialize with existing image (for display)
+    PlatformFile? selectedImageFile; // Store new image file (for upload)
     int? selectedCountryId = company.countryId;
     int? selectedCityId = company.cityId;
 
@@ -1006,11 +1045,11 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                                 onImageChanged: (String? base64Image) {
                                   setModalState(() {
                                     selectedImageBase64 = base64Image;
-                                    if (base64Image != null) {
-                                      selectedImageBytes = base64Decode(base64Image);
-                                    } else {
-                                      selectedImageBytes = null;
-                                    }
+                                  });
+                                },
+                                onImageFileChanged: (PlatformFile? imageFile) {
+                                  setModalState(() {
+                                    selectedImageFile = imageFile;
                                   });
                                 },
                                 initialImage: selectedImageBase64,
@@ -1195,7 +1234,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
               name: nameController.text.trim(),
               address: addressController.text.trim(),
               phone: phoneController.text.trim(),
-              image: selectedImageBase64,
+              image: null, // Don't send base64 in request when using multipart
               apiUrl: apiUrlController.text.trim().isNotEmpty ? apiUrlController.text.trim() : null,
               countryId: selectedCountryId,
               cityId: selectedCityId,
@@ -1225,8 +1264,8 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
             print('   • Original API URL: "${company.apiUrl ?? 'Not set'}" → New: "${apiUrlController.text.trim().isNotEmpty ? apiUrlController.text.trim() : 'Not provided'}"');
             print('   • Original Country ID: ${company.countryId} → New: $selectedCountryId');
             print('   • Original City ID: ${company.cityId} → New: $selectedCityId');
-            print('   • Has New Image: ${selectedImageBase64 != null}');
-            print('   • Image Size: ${selectedImageBase64?.length ?? 0} characters');
+            print('   • Has New Image File: ${selectedImageFile != null}');
+            print('   • Image File: ${selectedImageFile?.name ?? "None"} (${selectedImageFile?.size ?? 0} bytes)');
             print('📈 Changes Detected:');
             print('   • Name Changed: ${company.name != nameController.text.trim()}');
             print('   • Address Changed: ${company.address != addressController.text.trim()}');
@@ -1234,12 +1273,15 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
             print('   • Country Changed: ${company.countryId != selectedCountryId}');
             print('   • City Changed: ${company.cityId != selectedCityId}');
             print('   • API URL Changed: ${company.apiUrl != (apiUrlController.text.trim().isNotEmpty ? apiUrlController.text.trim() : null)}');
-            print('   • Image Updated: ${selectedImageBase64 != null}');
+            print('   • Image Updated: ${selectedImageFile != null}');
             print('═══════════════════════════════════════════════════════════');
             print('');
             
             print('🌐 [CooperativeCompany] Making API call to update cooperative company...');
-            final response = await CooperativeCompanyService.updateCooperativeCompany(request);
+            final response = await CooperativeCompanyService.updateCooperativeCompany(
+              request,
+              imageFile: selectedImageFile, // Pass image file for multipart upload
+            );
             
             // Print response from server
             print('');
@@ -1383,8 +1425,61 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                           _buildDetailRow('Phone', company.phone!),
                         if (company.apiUrl != null && company.apiUrl!.isNotEmpty)
                           _buildDetailRow('API URL', company.apiUrl!),
-                        if (company.image != null && company.image!.isNotEmpty)
-                          _buildDetailRow('Logo', 'Available'),
+                        if (company.image != null && company.image!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Company Logo',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: Container(
+                              width: 120,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  _buildCompanyImageUrl(company.image!),
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: SizedBox(
+                                        width: 30,
+                                        height: 30,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Center(
+                                      child: Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red.shade300,
+                                        size: 40,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                         if (company.createdAt != null)
                           _buildDetailRow('Created At', _formatCompanyDate(company.createdAt)),
                         if (company.updatedAt != null)

@@ -36,17 +36,29 @@ class TrainingCenterBranch {
   });
 
   factory TrainingCenterBranch.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
+    int _toInt(dynamic value, {int fallback = 0}) {
+      if (value == null) return fallback;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? fallback;
+      return fallback;
+    }
     return TrainingCenterBranch(
-      id: json['id'],
+      id: _toIntNullable(json['id']),
       name: json['name'] ?? '',
-      trainingCenterId: json['training_center_id'] ?? 0,
+      trainingCenterId: _toInt(json['training_center_id'], fallback: 0),
       trainingCenterName: json['training_center']?['name'] ?? '',
       address: json['address'] ?? '',
       phone: json['phone'] ?? '',
       lat: json['lat'] != null ? double.tryParse(json['lat'].toString()) : null,
       long: json['long'] != null ? double.tryParse(json['long'].toString()) : null,
-      countryId: json['country_id'],
-      cityId: json['city_id'],
+      countryId: _toIntNullable(json['country_id']),
+      cityId: _toIntNullable(json['city_id']),
       countryName: json['country']?['name'],
       cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
@@ -261,6 +273,12 @@ class TrainingCenterBranchListResponse {
   });
 
   factory TrainingCenterBranchListResponse.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return TrainingCenterBranchListResponse(
       data: (json['data'] as List?)
               ?.map((item) => TrainingCenterBranch.fromJson(item))
@@ -268,7 +286,7 @@ class TrainingCenterBranchListResponse {
           [],
       mAr: json['m_ar'],
       mEn: json['m_en'],
-      statusCode: json['status_code'],
+      statusCode: _toIntNullable(json['status_code']),
     );
   }
 
@@ -292,11 +310,17 @@ class TrainingCenterBranchResponse {
   });
 
   factory TrainingCenterBranchResponse.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return TrainingCenterBranchResponse(
       data: json['data'] != null ? TrainingCenterBranch.fromJson(json['data']) : null,
       mAr: json['m_ar'],
       mEn: json['m_en'],
-      statusCode: json['status_code'],
+      statusCode: _toIntNullable(json['status_code']),
     );
   }
 

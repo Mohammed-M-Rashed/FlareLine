@@ -41,29 +41,40 @@ class TrainingCenterBranchService {
       }
 
       final request = GetTrainingCenterBranchesRequest(centerId: centerId);
+      final uri = Uri.parse('$_baseUrl${ApiEndpoints.getAllTrainingCenterBranches}');
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      final body = jsonEncode(request.toJson());
+      print('📡 TrainingCenterBranchService.getAllTrainingCenterBranches → POST ' + uri.toString());
+      print('📡 Headers: ' + headers.toString());
+      print('📡 Body: ' + body);
+
       final response = await http.post(
-        Uri.parse('$_baseUrl${ApiEndpoints.getAllTrainingCenterBranches}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(request.toJson()),
+        uri,
+        headers: headers,
+        body: body,
       );
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return TrainingCenterBranchListResponse.fromJson(jsonData);
       } else {
-        // Try to parse error response
         try {
+          print('❌ TrainingCenterBranchService.getAllTrainingCenterBranches ERROR ' + response.statusCode.toString());
+          print('❌ Response body: ' + response.body);
           final errorData = jsonDecode(response.body);
           throw Exception(errorData['m_ar'] ?? 'فشل في جلب فروع مراكز التدريب');
         } catch (e) {
+          print('❌ TrainingCenterBranchService.getAllTrainingCenterBranches Unparsed error. Status: ' + response.statusCode.toString());
+          print('❌ Raw body: ' + response.body);
           throw Exception('فشل في جلب فروع مراكز التدريب: ${response.statusCode}');
         }
       }
     } catch (e) {
+      print('❌ TrainingCenterBranchService.getAllTrainingCenterBranches Exception: ' + e.toString());
       rethrow;
     }
   }
@@ -75,32 +86,39 @@ class TrainingCenterBranchService {
       if (token.isEmpty) {
         throw Exception('رمز المصادقة غير موجود');
       }
-
+      final uri = Uri.parse('$_baseUrl${ApiEndpoints.adminGetTrainingCenterBranches}');
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      final body = jsonEncode({'training_center_id': trainingCenterId});
+      print('📡 TrainingCenterBranchService.adminGetTrainingCenterBranches → POST ' + uri.toString());
+      print('📡 Headers: ' + headers.toString());
+      print('📡 Body: ' + body);
       final response = await http.post(
-        Uri.parse('$_baseUrl${ApiEndpoints.adminGetTrainingCenterBranches}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'training_center_id': trainingCenterId,
-        }),
+        uri,
+        headers: headers,
+        body: body,
       );
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         return TrainingCenterBranchListResponse.fromJson(jsonData);
       } else {
-        // Try to parse error response
         try {
+          print('❌ TrainingCenterBranchService.adminGetTrainingCenterBranches ERROR ' + response.statusCode.toString());
+          print('❌ Response body: ' + response.body);
           final errorData = jsonDecode(response.body);
           throw Exception(errorData['m_ar'] ?? 'فشل في جلب فروع مراكز التدريب');
         } catch (e) {
+          print('❌ TrainingCenterBranchService.adminGetTrainingCenterBranches Unparsed error. Status: ' + response.statusCode.toString());
+          print('❌ Raw body: ' + response.body);
           throw Exception('فشل في جلب فروع مراكز التدريب: ${response.statusCode}');
         }
       }
     } catch (e) {
+      print('❌ TrainingCenterBranchService.adminGetTrainingCenterBranches Exception: ' + e.toString());
       rethrow;
     }
   }
@@ -248,9 +266,9 @@ class TrainingCenterBranchService {
         // Try to parse error response
         try {
           final errorData = jsonDecode(response.body);
-          throw Exception(errorData['m_ar'] ?? 'فشل في جلب فروع مركز التدريب');
+          throw Exception(errorData['m_ar'] ?? 'فشل في جلب فروع مراكز التدريب');
         } catch (e) {
-          throw Exception('فشل في جلب فروع مركز التدريب: ${response.statusCode}');
+          throw Exception('فشل في جلب فروع مراكز التدريب: ${response.statusCode}');
         }
       }
     } catch (e) {

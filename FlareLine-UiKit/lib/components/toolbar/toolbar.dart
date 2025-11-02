@@ -124,11 +124,71 @@ class ToolBarWidget extends StatelessWidget {
   }
 
   Future<void> onLogoutClick(BuildContext context) async {
-    // Sign out using AuthService
-    print('🚪 TOOLBAR: User clicked logout');
-    await AuthService.signOut(context);
-    print('🚪 TOOLBAR: Navigating to login page');
-    Get.offAllNamed('/');
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissing by tapping outside
+      builder: (BuildContext dialogContext) {
+        return WillPopScope(
+          onWillPop: () async => false, // Prevent dismissing by back button
+          child: AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'جاري تسجيل الخروج...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      // Sign out using AuthService
+      print('🚪 TOOLBAR: User clicked logout');
+      await AuthService.signOut(context);
+      print('🚪 TOOLBAR: Navigating to login page');
+      
+      // Close loading dialog if still open
+      if (context.mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      // Navigate to login page
+      Get.offAllNamed('/');
+    } catch (e) {
+      print('❌ TOOLBAR: Error during logout: $e');
+      
+      // Close loading dialog if still open
+      if (context.mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      // Show error message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('حدث خطأ أثناء تسجيل الخروج'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   // Remove language switcher widget as we only support Arabic

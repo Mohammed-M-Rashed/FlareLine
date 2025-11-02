@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../utils/image_utils.dart';
 import '../theme/global_theme.dart';
 
 class CompanyImagePicker extends StatefulWidget {
-  final String? initialImage; // BASE64 string
-  final Function(String?) onImageChanged; // Callback when image changes
+  final String? initialImage; // BASE64 string or image file path
+  final Function(String?) onImageChanged; // Callback when image changes (BASE64)
+  final Function(PlatformFile?)? onImageFileChanged; // Callback when image file changes
   final String? errorText; // Validation error text
   final bool isRequired; // Whether image is required
   final double width; // Widget width
@@ -16,6 +18,7 @@ class CompanyImagePicker extends StatefulWidget {
     super.key,
     this.initialImage,
     required this.onImageChanged,
+    this.onImageFileChanged,
     this.errorText,
     this.isRequired = false,
     this.width = 200,
@@ -28,12 +31,32 @@ class CompanyImagePicker extends StatefulWidget {
 
 class _CompanyImagePickerState extends State<CompanyImagePicker> {
   String? _base64Image;
+  String? _imageFilePath; // Store file path from server
+  PlatformFile? _selectedFile;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _base64Image = widget.initialImage;
+    // Check if initialImage is a file path or Base64
+    if (widget.initialImage != null && widget.initialImage!.isNotEmpty) {
+      if (_isBase64(widget.initialImage!)) {
+        _base64Image = widget.initialImage;
+      } else {
+        // It's a file path from server
+        _imageFilePath = widget.initialImage;
+      }
+    }
+  }
+  
+  // Helper to check if string is Base64
+  bool _isBase64(String str) {
+    try {
+      base64Decode(str);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -80,7 +103,7 @@ class _CompanyImagePickerState extends State<CompanyImagePicker> {
             child: Stack(
               children: [
                 // Image Display
-                if (_base64Image != null)
+                if (_base64Image != null || _imageFilePath != null)
                   Positioned.fill(
                     child: _buildImageDisplay(),
                   )
@@ -146,7 +169,7 @@ class _CompanyImagePickerState extends State<CompanyImagePicker> {
                       ),
                       const SizedBox(width: 4),
                       // Remove Image Button
-                      if (_base64Image != null)
+                      if (_base64Image != null || _imageFilePath != null)
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.9),
@@ -182,7 +205,7 @@ class _CompanyImagePickerState extends State<CompanyImagePicker> {
           ),
 
         // Add Image Button (when no image is selected)
-        if (_base64Image == null)
+        if (_base64Image == null && _imageFilePath == null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: SizedBox(
@@ -208,20 +231,58 @@ class _CompanyImagePickerState extends State<CompanyImagePicker> {
   }
 
   Widget _buildImageDisplay() {
-    try {
-      final Uint8List bytes = base64Decode(_base64Image!);
-      return Image.memory(
-        bytes,
+    // If we have a new Base64 image selected
+    if (_base64Image != null) {
+      try {
+        final Uint8List bytes = base64Decode(_base64Image!);
+        return Image.memory(
+          bytes,
+          width: widget.width,
+          height: widget.height,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildErrorPlaceholder();
+          },
+        );
+      } catch (e) {
+        return _buildErrorPlaceholder();
+      }
+    }
+    
+    // If we have an existing image file path from server
+    if (_imageFilePath != null) {
+      final imageUrl = _buildCompanyImageUrl(_imageFilePath!);
+      return Image.network(
+        imageUrl,
         width: widget.width,
         height: widget.height,
         fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / 
+                    loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          );
+        },
         errorBuilder: (context, error, stackTrace) {
           return _buildErrorPlaceholder();
         },
       );
-    } catch (e) {
-      return _buildErrorPlaceholder();
     }
+    
+    return _buildErrorPlaceholder();
+  }
+  
+  // Build full image URL from server
+  String _buildCompanyImageUrl(String imageFileName) {
+    const baseUrl = 'https://noc.justhost.ly/backend-api/storage/app/public/';
+    // Remove any leading slashes or spaces from imageFileName
+    final cleanFileName = imageFileName.trim().replaceFirst(RegExp(r'^/'), '');
+    return '$baseUrl$cleanFileName';
   }
 
   Widget _buildErrorPlaceholder() {
@@ -254,16 +315,27 @@ class _CompanyImagePickerState extends State<CompanyImagePicker> {
         _isLoading = true;
       });
 
-      final String? base64 = await ImageUtils.showImagePickerDialog(context);
+      // Pick image file
+      final file = await ImageUtils.pickImageFile();
       
-      if (base64 != null) {
+      if (file != null && file.bytes != null) {
+        // Convert to base64 for display
+        final base64 = await ImageUtils.fileToBase64(file);
+        
         setState(() {
+          _selectedFile = file;
           _base64Image = base64;
+          _imageFilePath = null; // Clear file path when new image is selected
         });
         
-        // Notify parent
-        widget.onImageChanged(base64);
+        // Notify parent with both base64 (for display) and file (for upload)
+        if (base64 != null) {
+          widget.onImageChanged(base64);
+        }
+        widget.onImageFileChanged?.call(file);
       }
+    } catch (e) {
+      // Error is already shown in ImageUtils.pickImageFile
     } finally {
       if (mounted) {
         setState(() {
@@ -276,12 +348,18 @@ class _CompanyImagePickerState extends State<CompanyImagePicker> {
   void _removeImage() {
     setState(() {
       _base64Image = null;
+      _imageFilePath = null;
+      _selectedFile = null;
     });
     
     // Notify parent
     widget.onImageChanged(null);
+    widget.onImageFileChanged?.call(null);
   }
 
   // Getter for the current BASE64 image
   String? get currentImage => _base64Image;
+  
+  // Getter for the current image file
+  PlatformFile? get currentImageFile => _selectedFile;
 }

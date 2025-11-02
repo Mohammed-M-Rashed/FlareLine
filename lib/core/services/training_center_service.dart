@@ -38,14 +38,23 @@ class TrainingCenterService {
         throw Exception('رمز المصادقة غير موجود');
       }
 
+      final uri = Uri.parse('$_baseUrl${ApiEndpoints.getAllTrainingCenters}');
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      final body = jsonEncode({}); // Empty body as per API spec
+
+      // Debug request
+      print('📡 TrainingCenterService.getAllTrainingCenters → POST ' + uri.toString());
+      print('📡 Headers: ' + headers.toString());
+      print('📡 Body: ' + body);
+
       final response = await http.post(
-        Uri.parse('$_baseUrl${ApiEndpoints.getAllTrainingCenters}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({}), // Empty body as per API spec
+        uri,
+        headers: headers,
+        body: body,
       );
 
       if (response.statusCode == 200) {
@@ -54,13 +63,18 @@ class TrainingCenterService {
       } else {
         // Try to parse error response
         try {
+          print('❌ TrainingCenterService.getAllTrainingCenters ERROR ' + response.statusCode.toString());
+          print('❌ Response body: ' + response.body);
           final errorData = jsonDecode(response.body);
           throw Exception(errorData['m_ar'] ?? 'فشل في جلب مراكز التدريب');
         } catch (e) {
-          throw Exception('فشل في جلب مراكز التدريب: ${response.statusCode}');
+          print('❌ TrainingCenterService.getAllTrainingCenters Unparsed error. Status: ' + response.statusCode.toString());
+          print('❌ Raw body: ' + response.body);
+          throw Exception('فشل في جلب مراكز التدريب: \\${response.statusCode}');
         }
       }
     } catch (e) {
+      print('❌ TrainingCenterService.getAllTrainingCenters Exception: ' + e.toString());
       rethrow;
     }
   }

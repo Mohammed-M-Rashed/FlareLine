@@ -12,20 +12,22 @@ class EcommercePage extends LayoutWidget {
 
   @override
   Widget contentDesktopWidget(BuildContext context) {
-    return const Column(children: [
-      GridCard(),
-      SizedBox(
-        height: 16,
-      ),
-      RevenueWidget(),
-      SizedBox(
-        height: 16,
-      ),
-      AnalyticsWidget(),
-      SizedBox(
-        height: 16,
-      ),
-      ChannelWidget()
+    return Column(children: [
+
+      Image.asset('assets/alert/opss.png',width: 500,height: 500, ),
+      // GridCard(),
+      // SizedBox(
+      //   height: 16,
+      // ),
+      // RevenueWidget(),
+      // SizedBox(
+      //   height: 16,
+      // ),
+      // AnalyticsWidget(),
+      // SizedBox(
+      //   height: 16,
+      // ),
+      // ChannelWidget()
     ]);
   }
 

@@ -102,12 +102,28 @@ class UserService {
                         .toList();
                   }
                   
+                  // Helper function to safely convert dynamic value to int
+                  int _toInt(dynamic value, {int fallback = 0}) {
+                    if (value == null) return fallback;
+                    if (value is int) return value;
+                    if (value is String) return int.tryParse(value) ?? fallback;
+                    return fallback;
+                  }
+
+                  // Helper function to safely convert dynamic value to int?
+                  int? _toIntNullable(dynamic value) {
+                    if (value == null) return null;
+                    if (value is int) return value;
+                    if (value is String) return int.tryParse(value);
+                    return null;
+                  }
+
                   final userData = UserApiData(
-                    id: userJson['id'] ?? 0,
+                    id: _toInt(userJson['id']),
                     name: userJson['name'] ?? '',
                     email: userJson['email'] ?? '',
                     emailVerifiedAt: userJson['email_verified_at'],
-                    companyId: userJson['company_id'],
+                    companyId: _toIntNullable(userJson['company_id']),
                     status: userJson['status'] ?? 'active',
                     createdAt: userJson['created_at'],
                     updatedAt: userJson['updated_at'],

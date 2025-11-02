@@ -5,6 +5,10 @@ import 'package:flareline/core/config/api_endpoints.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
+import 'package:flareline/core/config/api_config.dart';
 
 class CourseService {
   /// Shows a success toast notification for course operations in Arabic
@@ -105,7 +109,11 @@ class CourseService {
   }
 
   // Create new course
-  static Future<bool> createCourse(BuildContext context, Course course) async {
+  static Future<bool> createCourse(
+    BuildContext context, 
+    Course course, {
+    PlatformFile? fileAttachment,
+  }) async {
     print('📚 COURSE SERVICE: ===== CREATING NEW COURSE =====');
     print('🔍 COURSE SERVICE: Course details - Title: ${course.title}, Specialization: ${course.specializationId}');
     
@@ -118,6 +126,153 @@ class CourseService {
         return false;
       }
       
+      // Use Multipart if file attachment is provided, otherwise use JSON
+      if (fileAttachment != null && fileAttachment.bytes != null) {
+        return await _createCourseWithMultipart(context, course, fileAttachment);
+      } else {
+        return await _createCourseWithJson(context, course);
+      }
+    } catch (e) {
+      print('💥 COURSE SERVICE: Exception occurred while creating course: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return false;
+    }
+  }
+
+  // Create course with Multipart (when file attachment is provided)
+  static Future<bool> _createCourseWithMultipart(
+    BuildContext context,
+    Course course,
+    PlatformFile fileAttachment,
+  ) async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        _showErrorToast(context, 'رمز المصادقة غير موجود');
+        return false;
+      }
+
+      var requestMultipart = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.baseUrl}${ApiEndpoints.createCourse}'),
+      );
+
+      // Add headers
+      requestMultipart.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      // Add form fields
+      requestMultipart.fields['specialization_id'] = course.specializationId.toString();
+      requestMultipart.fields['code'] = course.code;
+      requestMultipart.fields['title'] = course.title;
+      requestMultipart.fields['description'] = course.description;
+      if (course.createdBy != null && course.createdBy!.isNotEmpty) {
+        requestMultipart.fields['created_by'] = course.createdBy!;
+      } else {
+        requestMultipart.fields['created_by'] = 'admin';
+      }
+
+      // Add file attachment as base64 string in form field (server expects base64, not file)
+      if (fileAttachment.bytes != null) {
+        final base64File = base64Encode(fileAttachment.bytes!);
+        requestMultipart.fields['file_attachment'] = base64File;
+      }
+
+      print('═══════════════════════════════════════');
+      print('📤 [CourseService] Creating course with Multipart');
+      print('═══════════════════════════════════════');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('📁 File Attachment: ${fileAttachment.name} (${fileAttachment.size} bytes)');
+      print('📦 File as Base64: ${fileAttachment.bytes != null ? base64Encode(fileAttachment.bytes!).substring(0, 50) + "..." : "null"}');
+      print('📋 Fields: ${requestMultipart.fields.keys.toList()}');
+      print('═══════════════════════════════════════');
+
+      final streamedResponse = await requestMultipart.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final courseResponse = CourseResponse.fromJson(responseData);
+        
+        if (courseResponse.success) {
+          print('✅ Course created successfully with Multipart');
+          _showSuccessToast(context, courseResponse.message);
+          return true;
+        } else {
+          _showErrorToast(context, courseResponse.message);
+          return false;
+        }
+      } else {
+        print('═══════════════════════════════════════');
+        print('❌ [CourseService] createCourse (Multipart) ERROR');
+        print('═══════════════════════════════════════');
+        print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+        print('🔢 Status Code: ${response.statusCode}');
+        print('📦 Response Body: ${response.body}');
+        print('═══════════════════════════════════════');
+        
+        // Handle 413 Payload Too Large
+        if (response.statusCode == 413) {
+          _showErrorToast(context, 'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
+          return false;
+        }
+        
+        // Handle HTML responses
+        if (response.body.trim().toLowerCase().startsWith('<!doctype') || 
+            response.body.trim().toLowerCase().startsWith('<html')) {
+          String errorMessage = 'خطأ في الخادم';
+          if (response.statusCode == 503) {
+            errorMessage = 'الخادم غير متاح مؤقتاً (503)';
+          } else if (response.statusCode >= 500) {
+            errorMessage = 'خطأ في الخادم (${response.statusCode})';
+          } else {
+            errorMessage = 'خطأ غير متوقع (${response.statusCode})';
+          }
+          _showErrorToast(context, errorMessage);
+          return false;
+        }
+        
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          if (response.statusCode == 422) {
+            final errors = errorData['errors'] as Map<String, dynamic>?;
+            if (errors != null) {
+              print('📋 Validation Errors:');
+              errors.forEach((key, value) {
+                print('  - $key: $value');
+              });
+              final errorMessages = errors.values
+                  .expand((e) => e as List<dynamic>)
+                  .map((e) => e.toString())
+                  .join(', ');
+              _showErrorToast(context, 'خطأ في التحقق: $errorMessages');
+              return false;
+            }
+          }
+          print('📝 Error Message (AR): ${errorData['m_ar']}');
+          print('📝 Error Message (EN): ${errorData['m_en']}');
+          final errorMessage = errorData['m_ar'] ?? errorData['m_en'] ?? 'فشل في إنشاء الدورة';
+          _showErrorToast(context, errorMessage);
+          return false;
+        } catch (e) {
+          print('❌ Failed to parse error response: $e');
+          _showErrorToast(context, 'فشل في إنشاء الدورة: ${response.statusCode}');
+          return false;
+        }
+      }
+    } catch (e) {
+      print('💥 Exception in _createCourseWithMultipart: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return false;
+    }
+  }
+
+  // Create course with JSON (when no file attachment)
+  static Future<bool> _createCourseWithJson(BuildContext context, Course course) async {
+    try {
       // Create CourseCreateRequest from Course model
       final createRequest = CourseCreateRequest(
         specializationId: course.specializationId,
@@ -175,7 +330,11 @@ class CourseService {
   }
 
   // Update existing course
-  static Future<bool> updateCourse(BuildContext context, Course course) async {
+  static Future<bool> updateCourse(
+    BuildContext context, 
+    Course course, {
+    PlatformFile? fileAttachment,
+  }) async {
     print('📚 COURSE SERVICE: ===== UPDATING EXISTING COURSE =====');
     print('🔍 COURSE SERVICE: Course details - ID: ${course.id}, Title: ${course.title}');
     
@@ -194,6 +353,169 @@ class CourseService {
         return false;
       }
       
+      // Use Multipart if file attachment is provided, otherwise use JSON
+      if (fileAttachment != null && fileAttachment.bytes != null) {
+        return await _updateCourseWithMultipart(context, course, fileAttachment);
+      } else {
+        return await _updateCourseWithJson(context, course);
+      }
+    } catch (e) {
+      print('💥 COURSE SERVICE: Exception occurred while updating course: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return false;
+    }
+  }
+
+  // Update course with Multipart (when file attachment is provided)
+  static Future<bool> _updateCourseWithMultipart(
+    BuildContext context,
+    Course course,
+    PlatformFile fileAttachment,
+  ) async {
+    try {
+      final token = AuthService.getAuthToken();
+      if (token.isEmpty) {
+        _showErrorToast(context, 'رمز المصادقة غير موجود');
+        return false;
+      }
+
+      var requestMultipart = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.baseUrl}${ApiEndpoints.updateCourse}'),
+      );
+
+      // Add headers
+      requestMultipart.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      // Add form fields
+      requestMultipart.fields['id'] = course.id!.toString();
+      // Always send specialization_id (required by server)
+      requestMultipart.fields['specialization_id'] = course.specializationId.toString();
+      if (course.code.isNotEmpty) {
+        requestMultipart.fields['code'] = course.code;
+      }
+      if (course.title.isNotEmpty) {
+        requestMultipart.fields['title'] = course.title;
+      }
+      if (course.description.isNotEmpty) {
+        requestMultipart.fields['description'] = course.description;
+      }
+      if (course.createdBy != null && course.createdBy!.isNotEmpty) {
+        requestMultipart.fields['created_by'] = course.createdBy!;
+      }
+
+      // Add file attachment as base64 string in form field (server expects base64, not file)
+      if (fileAttachment.bytes != null) {
+        final base64File = base64Encode(fileAttachment.bytes!);
+        requestMultipart.fields['file_attachment'] = base64File;
+      }
+
+      print('═══════════════════════════════════════');
+      print('📤 [CourseService] Updating course with Multipart');
+      print('═══════════════════════════════════════');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('🆔 Course ID: ${course.id}');
+      print('📚 Specialization ID: ${course.specializationId}');
+      print('📁 File Attachment: ${fileAttachment.name} (${fileAttachment.size} bytes)');
+      print('📦 File as Base64: ${fileAttachment.bytes != null ? base64Encode(fileAttachment.bytes!).substring(0, 50) + "..." : "null"}');
+      print('📋 Fields: ${requestMultipart.fields.keys.toList()}');
+      print('📋 All Fields with Values:');
+      requestMultipart.fields.forEach((key, value) {
+        if (key == 'file_attachment') {
+          print('   - $key: ${value.length > 100 ? value.substring(0, 100) + "..." : value} (${value.length} chars)');
+        } else {
+          print('   - $key: $value');
+        }
+      });
+      print('═══════════════════════════════════════');
+
+      final streamedResponse = await requestMultipart.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final courseResponse = CourseResponse.fromJson(responseData);
+        
+        if (courseResponse.success) {
+          print('✅ Course updated successfully with Multipart');
+          _showSuccessToast(context, courseResponse.message);
+          return true;
+        } else {
+          _showErrorToast(context, courseResponse.message);
+          return false;
+        }
+      } else {
+        print('═══════════════════════════════════════');
+        print('❌ [CourseService] updateCourse (Multipart) ERROR');
+        print('═══════════════════════════════════════');
+        print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+        print('🔢 Status Code: ${response.statusCode}');
+        print('📦 Response Body: ${response.body}');
+        print('═══════════════════════════════════════');
+        
+        // Handle 413 Payload Too Large
+        if (response.statusCode == 413) {
+          _showErrorToast(context, 'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
+          return false;
+        }
+        
+        // Handle HTML responses
+        if (response.body.trim().toLowerCase().startsWith('<!doctype') || 
+            response.body.trim().toLowerCase().startsWith('<html')) {
+          String errorMessage = 'خطأ في الخادم';
+          if (response.statusCode == 503) {
+            errorMessage = 'الخادم غير متاح مؤقتاً (503)';
+          } else if (response.statusCode >= 500) {
+            errorMessage = 'خطأ في الخادم (${response.statusCode})';
+          } else {
+            errorMessage = 'خطأ غير متوقع (${response.statusCode})';
+          }
+          _showErrorToast(context, errorMessage);
+          return false;
+        }
+        
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          if (response.statusCode == 422) {
+            final errors = errorData['errors'] as Map<String, dynamic>?;
+            if (errors != null) {
+              print('📋 Validation Errors:');
+              errors.forEach((key, value) {
+                print('  - $key: $value');
+              });
+              final errorMessages = errors.values
+                  .expand((e) => e as List<dynamic>)
+                  .map((e) => e.toString())
+                  .join(', ');
+              _showErrorToast(context, 'خطأ في التحقق: $errorMessages');
+              return false;
+            }
+          }
+          print('📝 Error Message (AR): ${errorData['m_ar']}');
+          print('📝 Error Message (EN): ${errorData['m_en']}');
+          final errorMessage = errorData['m_ar'] ?? errorData['m_en'] ?? 'فشل في تحديث الدورة';
+          _showErrorToast(context, errorMessage);
+          return false;
+        } catch (e) {
+          print('❌ Failed to parse error response: $e');
+          _showErrorToast(context, 'فشل في تحديث الدورة: ${response.statusCode}');
+          return false;
+        }
+      }
+    } catch (e) {
+      print('💥 Exception in _updateCourseWithMultipart: $e');
+      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      return false;
+    }
+  }
+
+  // Update course with JSON (when no file attachment)
+  static Future<bool> _updateCourseWithJson(BuildContext context, Course course) async {
+    try {
       // Create CourseUpdateRequest from Course model
       final updateRequest = CourseUpdateRequest(
         id: course.id!,
@@ -204,7 +526,9 @@ class CourseService {
         fileAttachment: course.fileAttachment,
       );
       print('✅ COURSE SERVICE: CourseUpdateRequest created successfully');
+      print('📤 COURSE SERVICE: Course details - ID: ${course.id}, Specialization ID: ${course.specializationId}');
       print('📤 COURSE SERVICE: Request payload: ${updateRequest.toJson()}');
+      print('🔍 COURSE SERVICE: specialization_id in payload: ${updateRequest.toJson()['specialization_id']}');
       
       print('🌐 COURSE SERVICE: Calling API endpoint: ${ApiEndpoints.updateCourse}');
       final response = await ApiService.post(ApiEndpoints.updateCourse, body: updateRequest.toJson());

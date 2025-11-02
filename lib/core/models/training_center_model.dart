@@ -38,8 +38,14 @@ class TrainingCenter {
   });
 
   factory TrainingCenter.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return TrainingCenter(
-      id: json['id'],
+      id: _toIntNullable(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
@@ -48,8 +54,8 @@ class TrainingCenter {
       description: json['description'],
       status: json['status'] ?? 'pending',
       rejectionReason: json['rejection_reason'],
-      countryId: json['country_id'],
-      cityId: json['city_id'],
+      countryId: _toIntNullable(json['country_id']),
+      cityId: _toIntNullable(json['city_id']),
       countryName: json['country']?['name'],
       cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
@@ -338,6 +344,12 @@ class TrainingCenterListResponse {
   });
 
   factory TrainingCenterListResponse.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return TrainingCenterListResponse(
       data: (json['data'] as List?)
               ?.map((item) => TrainingCenter.fromJson(item))
@@ -345,7 +357,7 @@ class TrainingCenterListResponse {
           [],
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'],
+      statusCode: _toIntNullable(json['status_code']),
     );
   }
 
@@ -369,11 +381,17 @@ class TrainingCenterResponse {
   });
 
   factory TrainingCenterResponse.fromJson(Map<String, dynamic> json) {
+    int? _toIntNullable(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      return null;
+    }
     return TrainingCenterResponse(
       data: json['data'] != null ? TrainingCenter.fromJson(json['data']) : null,
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'],
+      statusCode: _toIntNullable(json['status_code']),
     );
   }
 

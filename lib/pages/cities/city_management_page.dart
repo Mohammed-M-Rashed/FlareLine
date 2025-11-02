@@ -509,7 +509,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
               ),
               const SizedBox(height: 2),
               Text(
-                city.country?.name ?? 'Unknown',
+                provider.getCountryNameForCity(city),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -571,7 +571,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Text(
-              city.country?.name ?? 'Unknown',
+              provider.getCountryNameForCity(city),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
