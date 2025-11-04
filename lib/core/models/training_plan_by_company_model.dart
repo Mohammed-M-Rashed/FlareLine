@@ -23,14 +23,26 @@ class TrainingPlanByCompany {
     required this.updatedAt,
   });
 
+  // Helper function to safely convert dynamic to int
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory TrainingPlanByCompany.fromJson(Map<String, dynamic> json) {
     return TrainingPlanByCompany(
-      id: json['id'] ?? 0,
-      year: json['year'] ?? 0,
+      id: _toInt(json['id']),
+      year: _toInt(json['year']),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       status: json['status'] ?? '',
-      createdBy: json['created_by'] ?? 0,
+      createdBy: _toInt(json['created_by']),
       creator: Creator.fromJson(json['creator'] ?? {}),
       planCourseAssignments: (json['plan_course_assignments'] as List<dynamic>?)
           ?.map((assignment) => PlanCourseAssignment.fromJson(assignment))
@@ -69,7 +81,7 @@ class Creator {
 
   factory Creator.fromJson(Map<String, dynamic> json) {
     return Creator(
-      id: json['id'] ?? 0,
+      id: TrainingPlanByCompany._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
     );
@@ -113,14 +125,14 @@ class PlanCourseAssignment {
 
   factory PlanCourseAssignment.fromJson(Map<String, dynamic> json) {
     return PlanCourseAssignment(
-      id: json['id'] ?? 0,
-      trainingPlanId: json['training_plan_id'] ?? 0,
-      companyId: json['company_id'] ?? 0,
-      courseId: json['course_id'] ?? 0,
-      trainingCenterBranchId: json['training_center_branch_id'] ?? 0,
+      id: TrainingPlanByCompany._toInt(json['id']),
+      trainingPlanId: TrainingPlanByCompany._toInt(json['training_plan_id']),
+      companyId: TrainingPlanByCompany._toInt(json['company_id']),
+      courseId: TrainingPlanByCompany._toInt(json['course_id']),
+      trainingCenterBranchId: TrainingPlanByCompany._toInt(json['training_center_branch_id']),
       startDate: json['start_date'] ?? '',
       endDate: json['end_date'] ?? '',
-      seats: json['seats'] ?? 0,
+      seats: TrainingPlanByCompany._toInt(json['seats']),
       company: Company.fromJson(json['company'] ?? {}),
       course: Course.fromJson(json['course'] ?? {}),
       trainingCenterBranch: TrainingCenterBranch.fromJson(json['training_center_branch'] ?? {}),
@@ -157,7 +169,7 @@ class Company {
 
   factory Company.fromJson(Map<String, dynamic> json) {
     return Company(
-      id: json['id'] ?? 0,
+      id: TrainingPlanByCompany._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
     );
@@ -189,7 +201,7 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] ?? 0,
+      id: TrainingPlanByCompany._toInt(json['id']),
       code: json['code'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
@@ -219,7 +231,7 @@ class Specialization {
 
   factory Specialization.fromJson(Map<String, dynamic> json) {
     return Specialization(
-      id: json['id'] ?? 0,
+      id: TrainingPlanByCompany._toInt(json['id']),
       name: json['name'] ?? '',
     );
   }
@@ -245,7 +257,7 @@ class TrainingCenterBranch {
 
   factory TrainingCenterBranch.fromJson(Map<String, dynamic> json) {
     return TrainingCenterBranch(
-      id: json['id'] ?? 0,
+      id: TrainingPlanByCompany._toInt(json['id']),
       name: json['name'] ?? '',
       address: json['address'] ?? '',
     );
@@ -283,7 +295,7 @@ class TrainingPlanByCompanyListResponse {
           .toList() ?? [],
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: json['status_code'] ?? 0,
+      statusCode: TrainingPlanByCompany._toInt(json['status_code']),
     );
   }
 

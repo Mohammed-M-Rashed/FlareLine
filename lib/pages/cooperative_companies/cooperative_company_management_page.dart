@@ -23,6 +23,7 @@ import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
 import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class CooperativeCompanyManagementPage extends LayoutWidget {
   const CooperativeCompanyManagementPage({super.key});
@@ -116,7 +117,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                         SizedBox(
                           width: 120,
                           child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                            btnText: provider.isLoading ? StringsAr.loading : StringsAr.refresh,
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () async {
                               try {
@@ -137,7 +138,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                               return SizedBox(
                                 width: 180,
                                 child: ButtonWidget(
-                                  btnText: 'Add Cooperative Company',
+                                  btnText: 'إضافة شركة تعاونية',
                                   type: 'primary',
                                   onTap: () {
                                     _showAddCooperativeCompanyForm(context);
@@ -214,7 +215,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                             ),
                             const SizedBox(height: 24),
                             ButtonWidget(
-                              btnText: 'Add First Cooperative Company',
+                              btnText: 'إضافة شركة تعاونية',
                               type: 'primary',
                               onTap: () => _showAddCooperativeCompanyForm(context),
                             ),
@@ -511,7 +512,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
           onPressed: () {
             _showEditCooperativeCompanyForm(context, company);
           },
-          tooltip: 'Edit Cooperative Company',
+          tooltip: 'تعديل الشركة التعاونية',
           style: IconButton.styleFrom(
             backgroundColor: Colors.blue.shade50,
             foregroundColor: Colors.blue.shade700,
@@ -603,7 +604,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Cooperative Company',
+      title: 'إضافة شركة تعاونية جديدة',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -981,7 +982,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Cooperative Company',
+      title: 'تعديل الشركة التعاونية',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1337,7 +1338,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
   void _showCompanyDetails(BuildContext context, CooperativeCompany company) {
     ModalDialog.show(
       context: context,
-      title: 'Company Details',
+      title: StringsAr.companyDetails,
       showTitle: true,
       modalType: ModalType.large,
       showCancel: false, // Disable default buttons
@@ -1349,7 +1350,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
             SizedBox(
               width: 120,
               child: ButtonWidget(
-                btnText: 'Cancel',
+                btnText: StringsAr.cancel,
                 textColor: FlarelineColors.darkBlackText,
                 onTap: () {
                   Navigator.of(context).pop();
@@ -1691,7 +1692,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text(
-                        'Loading countries...',
+                        'جاري تحميل الدول...',
                         style: TextStyle(color: Colors.grey),
                       ),
                 ),
@@ -1805,7 +1806,7 @@ class _CooperativeCompanyManagementWidgetState extends State<CooperativeCompanyM
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text(
-                        'Loading cities...',
+                        'جاري تحميل المدن...',
                         style: TextStyle(color: Colors.grey),
                       ),
                 ),

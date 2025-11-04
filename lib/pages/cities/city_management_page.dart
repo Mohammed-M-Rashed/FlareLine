@@ -14,6 +14,7 @@ import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline/core/utils/country_code_helper.dart';
 import 'package:toastification/toastification.dart';
 import 'package:get/get.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class CityManagementPage extends LayoutWidget {
   const CityManagementPage({super.key});
@@ -69,7 +70,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'City Management',
+                            StringsAr.cityManagement,
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -92,7 +93,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                         SizedBox(
                           width: 120,
                           child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                            btnText: provider.isLoading ? StringsAr.loading : StringsAr.refresh,
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () async {
                               try {
@@ -111,7 +112,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add City',
+                                  btnText: StringsAr.addCity,
                                   type: 'primary',
                                   onTap: () {
                                     _showAddCityForm(context, provider);
@@ -199,7 +200,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                                 ),
                                 const SizedBox(height: 16),
                                 ButtonWidget(
-                                  btnText: 'Add First City',
+                                  btnText: StringsAr.addCity,
                                   type: 'primary',
                                   onTap: () {
                                     _showAddCityForm(context, provider);
@@ -213,7 +214,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                           CountSummaryWidgetEn(
                             itemName: (provider.selectedCountryId != null || provider.searchQuery.isNotEmpty)
                                 ? 'Filtered City'
-                                : 'City',
+                                : StringsAr.city,
                             itemNamePlural: (provider.selectedCountryId != null || provider.searchQuery.isNotEmpty)
                                 ? 'Filtered Cities'
                                 : 'Cities',
@@ -285,7 +286,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
           Expanded(
             child: Obx(() {
               if (provider.isLoadingCountries) {
-                return const Text('Loading countries...');
+                return const Text('جاري تحميل الدول...');
               }
               
               return DropdownButtonFormField<int?>(
@@ -380,7 +381,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
         Expanded(
           flex: 3,
           child: Text(
-            'City',
+            StringsAr.city,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -450,7 +451,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
         Expanded(
           flex: 3,
           child: Text(
-            'City Name',
+            StringsAr.cityName,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -542,7 +543,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
               onPressed: () {
                 _showEditCityForm(context, provider, city);
               },
-              tooltip: 'Edit City',
+              tooltip: StringsAr.editCity,
             ),
           ),
         ),
@@ -600,7 +601,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                 onPressed: () {
                   _showEditCityForm(context, provider, city);
                 },
-                tooltip: 'Edit City',
+                tooltip: StringsAr.editCity,
               ),
             ],
           ),
@@ -655,7 +656,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
 
     ModalDialog.show(
       context: context,
-      title: 'Add New City',
+      title: StringsAr.addCity,
       showTitle: true,
       modalType: ModalType.medium,
       child: StatefulBuilder(
@@ -703,7 +704,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                       ),
                       const SizedBox(height: 16),
                       OutBorderTextFormField(
-                        labelText: 'City Name',
+                        labelText: StringsAr.cityName,
                         hintText: 'Enter city name',
                         controller: nameController,
                         validator: (value) {
@@ -731,7 +732,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: isSubmitting ? 'Creating...' : 'Save',
+                    btnText: isSubmitting ? StringsAr.creating : StringsAr.save,
                     type: 'primary',
                     onTap: isSubmitting ? null : () async {
                       if (formKey.currentState!.validate()) {
@@ -775,7 +776,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
 
     ModalDialog.show(
       context: context,
-      title: 'Edit City',
+      title: StringsAr.editCity,
       showTitle: true,
       modalType: ModalType.medium,
       child: StatefulBuilder(
@@ -823,7 +824,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                       ),
                       const SizedBox(height: 16),
                       OutBorderTextFormField(
-                        labelText: 'City Name',
+                        labelText: StringsAr.cityName,
                         hintText: 'Enter city name',
                         controller: nameController,
                         validator: (value) {
@@ -851,7 +852,7 @@ class _CityManagementWidgetState extends State<CityManagementWidget> {
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: isSubmitting ? 'Updating...' : 'Save',
+                    btnText: isSubmitting ? StringsAr.updating : StringsAr.save,
                     type: 'primary',
                     onTap: isSubmitting ? null : () async {
                       if (formKey.currentState!.validate()) {

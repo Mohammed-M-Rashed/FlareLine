@@ -44,15 +44,39 @@ class Trainer {
     this.updatedAt,
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory Trainer.fromJson(Map<String, dynamic> json) {
     return Trainer(
-      id: json['id'],
+      id: _toIntNullable(json['id']),
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
       bio: json['bio'],
       qualifications: json['qualifications'],
-      yearsExperience: json['years_experience'],
+      yearsExperience: _toIntNullable(json['years_experience']),
       specializations: (json['specializations'] as List?)
               ?.map((item) => item.toString())
               .toList() ??
@@ -63,8 +87,8 @@ class Trainer {
       status: json['status'] ?? 'pending',
       rejectionReason: json['rejection_reason'],
       address: json['address'],
-      countryId: json['country_id'],
-      cityId: json['city_id'],
+      countryId: _toIntNullable(json['country_id']),
+      cityId: _toIntNullable(json['city_id']),
       countryName: json['country']?['name'],
       cityName: json['city']?['name'],
       createdAt: json['created_at'] != null 
@@ -227,6 +251,12 @@ class TrainerStatusRequest {
 
   TrainerStatusRequest({required this.id});
 
+  factory TrainerStatusRequest.fromJson(Map<String, dynamic> json) {
+    return TrainerStatusRequest(
+      id: Trainer._toInt(json['id']),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {'id': id};
   }
@@ -237,6 +267,12 @@ class AcceptTrainerRequest {
   final int id;
 
   AcceptTrainerRequest({required this.id});
+
+  factory AcceptTrainerRequest.fromJson(Map<String, dynamic> json) {
+    return AcceptTrainerRequest(
+      id: Trainer._toInt(json['id']),
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {'id': id};
@@ -252,6 +288,13 @@ class RejectTrainerRequest {
     required this.id,
     required this.rejectionReason,
   });
+
+  factory RejectTrainerRequest.fromJson(Map<String, dynamic> json) {
+    return RejectTrainerRequest(
+      id: Trainer._toInt(json['id']),
+      rejectionReason: json['rejection_reason'] ?? '',
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -391,7 +434,7 @@ class TrainerListResponse {
           [],
       mAr: json['m_ar'],
       mEn: json['m_en'],
-      statusCode: json['status_code'],
+      statusCode: Trainer._toIntNullable(json['status_code']),
     );
   }
 
@@ -419,7 +462,7 @@ class TrainerResponse {
       data: json['data'] != null ? Trainer.fromJson(json['data']) : null,
       mAr: json['m_ar'],
       mEn: json['m_en'],
-      statusCode: json['status_code'],
+      statusCode: Trainer._toIntNullable(json['status_code']),
     );
   }
 

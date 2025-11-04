@@ -22,6 +22,8 @@ import 'dart:convert'; // Added for base64Decode
 import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart';
 
 class TrainingCenterManagementPage extends LayoutWidget {
   const TrainingCenterManagementPage({super.key});
@@ -134,7 +136,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add Training Center',
+                                  btnText: 'إضافة مركز تدريب',
                                   type: 'primary',
                                   onTap: () {
                                     _showAddTrainingCenterForm(context);
@@ -690,7 +692,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
                                                       onPressed: () {
                                                         _showEditTrainingCenterForm(context, trainingCenter);
                                                       },
-                                                      tooltip: 'Edit Training Center',
+                                                      tooltip: 'تعديل مركز التدريب',
                                                       style: IconButton.styleFrom(
                                                         backgroundColor: Colors.blue.shade50,
                                                         foregroundColor: Colors.blue.shade700,
@@ -809,7 +811,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Training Center',
+      title: 'إضافة مركز تدريب جديد',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1207,7 +1209,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Training Center',
+      title: 'تعديل مركز التدريب',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1669,32 +1671,16 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
 
   /// Shows a success toast notification for training center operations in Arabic
   void _showSuccessToast(String message) {
-    toastification.show(
-      context: Get.context!,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    if (Get.context != null) {
+      NotificationService.showSuccess(Get.context!, message, operationId: 'training_center:success');
+    }
   }
 
   /// Shows an error toast notification for training center operations in Arabic
   void _showErrorToast(String message) {
-    toastification.show(
-      context: Get.context!,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    if (Get.context != null) {
+      NotificationService.showError(Get.context!, message, operationId: 'training_center:error');
+    }
   }
 
   /// Helper method to get country name for a training center synchronously
@@ -1988,7 +1974,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Accept Training Center'),
+          title: const Text('قبول مركز التدريب'),
           content: Text('Are you sure you want to accept "${trainingCenter.name}"?'),
           actions: [
             TextButton(
@@ -2021,7 +2007,7 @@ class _TrainingCenterManagementWidgetState extends State<TrainingCenterManagemen
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Reject Training Center'),
+          title: const Text('رفض مركز التدريب'),
           content: Form(
             key: formKey,
             child: Column(

@@ -23,6 +23,7 @@ import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
 import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class CompanyManagementPage extends LayoutWidget {
   const CompanyManagementPage({super.key});
@@ -117,7 +118,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                         SizedBox(
                           width: 120,
                           child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                            btnText: provider.isLoading ? StringsAr.loading : StringsAr.refresh,
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () async {
                               try {
@@ -145,7 +146,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add Company',
+                                  btnText: StringsAr.addCompany,
                                   type: 'primary',
                                   onTap: () {
                                     _showAddCompanyForm(context);
@@ -217,7 +218,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
                             ),
                             const SizedBox(height: 16),
                             ButtonWidget(
-                              btnText: 'Add First Company',
+                              btnText: StringsAr.addCompany,
                               type: 'primary',
                               onTap: () {
                                 _showAddCompanyForm(context);
@@ -527,7 +528,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Company',
+      title: StringsAr.addCompany,
       showTitle: true,
       modalType: ModalType.large, // Changed to large to accommodate image picker
       child: StatefulBuilder(
@@ -910,7 +911,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Company',
+      title: StringsAr.editCompany,
       showTitle: true,
       modalType: ModalType.large, // Changed to large to accommodate image picker
       child: StatefulBuilder(
@@ -1299,7 +1300,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ButtonWidget(
-                btnText: 'Cancel',
+                btnText: StringsAr.cancel,
                 type: 'secondary',
                 onTap: () {
                   Get.back();
@@ -1774,7 +1775,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
   void _showViewCompanyDialog(BuildContext context, Company company) {
     ModalDialog.show(
       context: context,
-      title: 'Company Details',
+      title: StringsAr.companyDetails,
       showTitle: true,
       modalType: ModalType.large,
       showCancel: false, // Disable default buttons
@@ -1786,7 +1787,7 @@ class _CompanyManagementWidgetState extends State<CompanyManagementWidget> {
             SizedBox(
               width: 120,
               child: ButtonWidget(
-                btnText: 'Cancel',
+                btnText: StringsAr.cancel,
                 textColor: FlarelineColors.darkBlackText,
                 onTap: () {
                   Navigator.of(context).pop();

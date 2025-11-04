@@ -20,6 +20,8 @@ import 'package:toastification/toastification.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:url_launcher/url_launcher.dart'; // Added for opening files in new tab
 
 class CourseManagementPage extends LayoutWidget {
   const CourseManagementPage({super.key});
@@ -446,37 +448,43 @@ class CourseManagementWidget extends StatelessWidget {
                                           maxWidth: 100, // Reduced from 120
                                         ),
                                         child: course.hasFileAttachment
-                                            ? Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8, // Reduced from 12
-                                                  vertical: 6, // Reduced from 8
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: course.fileAttachmentColor.withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(5), // Reduced from 20
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      course.fileAttachmentIcon,
-                                                      size: 14, // Reduced from 16
-                                                      color: course.fileAttachmentColor,
+                                            ? Tooltip(
+                                                message: 'انقر لفتح الملف في تبويب جديد',
+                                                child: InkWell(
+                                                  onTap: () => _openFileInNewTab(context, course.fileAttachment!),
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8, // Reduced from 12
+                                                      vertical: 6, // Reduced from 8
                                                     ),
-                                                    const SizedBox(width: 4),
-                                                    Expanded(
-                                                      child: Text(
-                                                        course.fileAttachmentExtension,
-                                                        style: TextStyle(
-                                                          fontWeight: FontWeight.w600,
-                                                          fontSize: 10, // Reduced from 12
+                                                    decoration: BoxDecoration(
+                                                      color: course.fileAttachmentColor.withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(5), // Reduced from 20
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          course.fileAttachmentIcon,
+                                                          size: 14, // Reduced from 16
                                                           color: course.fileAttachmentColor,
                                                         ),
-                                                        textAlign: TextAlign.center,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
+                                                        const SizedBox(width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            course.fileAttachmentExtension,
+                                                            style: TextStyle(
+                                                              fontWeight: FontWeight.w600,
+                                                              fontSize: 10, // Reduced from 12
+                                                              color: course.fileAttachmentColor,
+                                                            ),
+                                                            textAlign: TextAlign.center,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
+                                                  ),
                                                 ),
                                               )
                                             : Container(
@@ -1259,7 +1267,7 @@ class CourseManagementWidget extends StatelessWidget {
   void _showCourseDetails(BuildContext context, Course course) {
     ModalDialog.show(
       context: context,
-      title: 'Course Details',
+      title: StringsAr.courseDetails,
       showTitle: true,
       modalType: ModalType.large,
       showCancel: false, // Disable default buttons
@@ -1271,7 +1279,7 @@ class CourseManagementWidget extends StatelessWidget {
             SizedBox(
               width: 120,
               child: ButtonWidget(
-                btnText: 'Cancel',
+                btnText: StringsAr.cancel,
                 textColor: FlarelineColors.darkBlackText,
                 onTap: () {
                   Navigator.of(context).pop();
@@ -1328,9 +1336,55 @@ class CourseManagementWidget extends StatelessWidget {
                         _buildDetailRow('Specialization', course.specializationDisplayName),
                         _buildDetailRow('Specialization ID', course.specializationId.toString()),
                         _buildDetailRow('Creator', course.createdByText),
-                        _buildDetailRow('Attachments', course.hasFileAttachment 
-                            ? '${course.fileAttachmentExtension} - ${course.fileAttachmentName}'
-                            : 'No attachments'),
+                        course.hasFileAttachment
+                            ? InkWell(
+                                onTap: () => _openFileInNewTab(context, course.fileAttachment!),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Attachments',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: Colors.blue.shade200),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              course.fileAttachmentIcon,
+                                              color: Colors.blue.shade700,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '${course.fileAttachmentExtension} - انقر لفتح الملف',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.blue.shade700,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : _buildDetailRow('Attachments', 'No attachments'),
                         if (course.specialization != null) ...[
                           const SizedBox(height: 16),
                           const Divider(),
@@ -1392,6 +1446,56 @@ class CourseManagementWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Build full file URL from server file path
+  String _buildFileUrl(String filePath) {
+    const baseUrl = 'https://noc.justhost.ly/backend-api/storage/app/public/';
+    // Remove any leading slashes or spaces from filePath
+    final cleanFilePath = filePath.trim().replaceFirst(RegExp(r'^/'), '');
+    return '$baseUrl$cleanFilePath';
+  }
+
+  /// Opens file in a new tab with the given file path
+  Future<void> _openFileInNewTab(BuildContext context, String filePath) async {
+    try {
+      // Build full URL from file path
+      final fileUrl = _buildFileUrl(filePath);
+      final uri = Uri.parse(fileUrl);
+      
+      // Launch URL in a new tab (web) or default browser (desktop)
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication, // Opens in new tab/browser
+        );
+        print('✅ Opened file: $fileUrl');
+      } else {
+        print('❌ Could not launch file URL: $fileUrl');
+        // Show error message to user
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تعذر فتح الملف. يرجى التأكد من وجود متصفح متاح.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Error opening file: $e');
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطأ في فتح الملف: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }
 

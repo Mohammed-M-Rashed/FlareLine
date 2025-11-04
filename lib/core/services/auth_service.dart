@@ -4,56 +4,13 @@ import 'package:flareline/core/models/auth_model.dart';
 import 'package:flareline/core/services/api_service.dart';
 import 'package:flareline/core/auth/auth_provider.dart';
 import 'package:flareline/core/config/api_endpoints.dart';
-import 'package:toastification/toastification.dart';
+import 'package:flareline/core/ui/notification_service.dart';
+import 'package:flareline/core/utils/server_message_extractor.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 
 class AuthService {
-
-  /// Shows a success toast notification for auth operations in Arabic
-  static void _showSuccessToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
-  }
-
-  /// Shows an error toast notification for auth operations in Arabic
-  static void _showErrorToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
-  }
-
-  /// Shows an info toast notification for auth operations in Arabic
-  static void _showInfoToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.info,
-      title: Text('معلومات', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.info_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.blue,
-      foregroundColor: Colors.white,
-    );
-  }
 
   // Sign in user
   static Future<bool> signIn(BuildContext context, String email, String password) async {
@@ -110,14 +67,22 @@ class AuthService {
           print('💾 AUTH SERVICE: Authentication data stored successfully');
           
           print('🎉 AUTH SERVICE: Sign in process completed successfully');
-          _showSuccessToast(context, 'تم تسجيل الدخول بنجاح!');
+          NotificationService.showSuccess(
+            context,
+            StringsAr.loginSuccess,
+            operationId: 'auth:login:$email',
+          );
           return true;
         } catch (jsonError) {
           print('💥 AUTH SERVICE: JSON parsing error: $jsonError');
           print('💥 AUTH SERVICE: Raw response body: ${response.body}');
           print('💥 AUTH SERVICE: Response body type: ${response.body.runtimeType}');
           
-          _showErrorToast(context, 'خطأ في تحليل استجابة API: $jsonError');
+          NotificationService.showError(
+            context,
+            'خطأ في تحليل استجابة API',
+            operationId: 'auth:login:error:$email',
+          );
           return false;
         }
       } else {
@@ -137,10 +102,14 @@ class AuthService {
         
         if (ApiService.isValidationError(response)) {
           print('📝 AUTH SERVICE: Validation error detected');
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          final message = ServerMessageExtractor.extractMessage(response, 
+            defaultMessage: 'خطأ في التحقق من البيانات');
+          NotificationService.showError(context, message, 
+            operationId: 'auth:login:validation:$email');
         } else if (ApiService.isAuthError(response)) {
           print('🔐 AUTH SERVICE: Authentication error detected');
-          _showErrorToast(context, 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+          NotificationService.showError(context, 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+            operationId: 'auth:login:credentials:$email');
         } else if (response.statusCode == 422) {
           print('📝 AUTH SERVICE: Validation error (422) detected');
           try {
@@ -150,22 +119,30 @@ class AuthService {
               final errorMessages = errors.values
                   .map((e) => (e as List).join(', '))
                   .join('; ');
-              _showErrorToast(context, 'خطأ في التحقق: $errorMessages');
+              NotificationService.showError(context, 'خطأ في التحقق: $errorMessages',
+                operationId: 'auth:login:422:$email');
             } else {
-              _showErrorToast(context, errorData['message'] ?? 'خطأ في التحقق');
+              NotificationService.showError(context, errorData['message'] ?? 'خطأ في التحقق',
+                operationId: 'auth:login:422:$email');
             }
           } catch (e) {
-            _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+            NotificationService.showError(context, 'خطأ في التحقق',
+              operationId: 'auth:login:422:$email');
           }
         } else if (response.statusCode == 401) {
           print('🔐 AUTH SERVICE: Unauthorized error detected');
-          _showErrorToast(context, 'بيانات الاعتماد غير صحيحة');
+          NotificationService.showError(context, 'بيانات الاعتماد غير صحيحة',
+            operationId: 'auth:login:401:$email');
         } else if (response.statusCode == 403) {
           print('🔐 AUTH SERVICE: Forbidden error detected');
-          _showErrorToast(context, 'تم رفض الوصول');
+          NotificationService.showError(context, 'تم رفض الوصول',
+            operationId: 'auth:login:403:$email');
         } else {
           print('💥 AUTH SERVICE: General error detected');
-          _showErrorToast(context, '$errorType: $errorMessage');
+          final message = ServerMessageExtractor.extractMessage(response,
+            defaultMessage: StringsAr.loginError);
+          NotificationService.showError(context, message,
+            operationId: 'auth:login:error:$email');
         }
         return false;
       }
@@ -175,7 +152,8 @@ class AuthService {
       print('💥 AUTH SERVICE: Error message: $e');
       print('💥 AUTH SERVICE: Stack trace: $stackTrace');
       
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError,
+        operationId: 'auth:login:network:$email');
       return false;
     } finally {
       print('🔐 AUTH SERVICE: ===== SIGN IN PROCESS COMPLETED =====');
@@ -221,7 +199,8 @@ class AuthService {
       print('🧹 AUTH SERVICE: Authentication data cleared');
       
       print('✅ AUTH SERVICE: User signed out successfully');
-      _showSuccessToast(context, 'تم تسجيل الخروج بنجاح');
+      NotificationService.showSuccess(context, StringsAr.logoutSuccess,
+        operationId: 'auth:logout');
       return true;
     } catch (e, stackTrace) {
       print('💥 AUTH SERVICE: Error during sign out');
@@ -229,7 +208,8 @@ class AuthService {
       print('💥 AUTH SERVICE: Error message: $e');
       print('💥 AUTH SERVICE: Stack trace: $stackTrace');
       
-      _showErrorToast(context, 'خطأ أثناء تسجيل الخروج');
+      NotificationService.showError(context, StringsAr.logoutError,
+        operationId: 'auth:logout:error');
       return false;
     } finally {
       print('🚪 AUTH SERVICE: ===== SIGN OUT PROCESS COMPLETED =====');
@@ -430,16 +410,19 @@ class AuthService {
       }
       
       // Show message to user
-      _showInfoToast(context, 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+      NotificationService.showInfo(context, 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+        operationId: 'auth:session-expired');
       
       // TODO: Navigate to login page
       // Get.toNamed('/login');
     } else if (statusCode == 403) {
       print('🔐 AUTH SERVICE: Forbidden - insufficient permissions');
-      _showErrorToast(context, message ?? 'صلاحيات غير كافية');
+      NotificationService.showError(context, message ?? StringsAr.permissionError,
+        operationId: 'auth:forbidden');
     } else {
       print('🔐 AUTH SERVICE: Other auth error: $statusCode');
-      _showErrorToast(context, message ?? 'حدث خطأ في المصادقة');
+      NotificationService.showError(context, message ?? StringsAr.authError,
+        operationId: 'auth:error:$statusCode');
     }
   }
 

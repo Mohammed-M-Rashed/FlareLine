@@ -22,14 +22,38 @@ class AuthUserModel {
     this.roles = const [],
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory AuthUserModel.fromJson(Map<String, dynamic> json) {
     print('🔍 AUTH MODEL: Parsing AuthUserModel from JSON: $json');
     try {
       final user = AuthUserModel(
-        id: json['id'],
+        id: _toInt(json['id']),
         name: json['name'] ?? '',
         email: json['email'] ?? '',
-        companyId: json['company_id'],
+        companyId: _toIntNullable(json['company_id']),
         status: json['status'] ?? 'active',
         createdAt: json['created_at'],
         updatedAt: json['updated_at'],
@@ -83,7 +107,7 @@ class CompanyModel {
     print('🔍 AUTH MODEL: Parsing CompanyModel from JSON: $json');
     try {
       final company = CompanyModel(
-        id: json['id'],
+        id: AuthUserModel._toInt(json['id']),
         name: json['name'] ?? '',
         phone: json['phone'] ?? '',
         address: json['address'] ?? '',
@@ -132,7 +156,7 @@ class UserRole {
     print('🔍 AUTH MODEL: Parsing UserRole from JSON: $json');
     try {
       final role = UserRole(
-        id: json['id'],
+        id: AuthUserModel._toInt(json['id']),
         name: json['name'] ?? '',
         displayName: json['display_name'] ?? '',
         description: json['description'] ?? '',
@@ -181,7 +205,7 @@ class LoginResponse {
       final response = LoginResponse(
         accessToken: json['access_token'] ?? '',
         tokenType: json['token_type'] ?? 'bearer',
-        expiresIn: json['expires_in'] ?? 3600,
+        expiresIn: AuthUserModel._toInt(json['expires_in'], defaultValue: 3600),
         user: AuthUserModel.fromJson(json['user']),
       );
       print('✅ AUTH MODEL: Successfully parsed LoginResponse: tokenType=${response.tokenType}, expiresIn=${response.expiresIn}');

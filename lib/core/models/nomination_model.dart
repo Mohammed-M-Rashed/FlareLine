@@ -52,17 +52,41 @@ class Nomination {
     this.yearsOfExperience,
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory Nomination.fromJson(Map<String, dynamic> json) {
     return Nomination(
-      id: json['id'],
+      id: _toIntNullable(json['id']),
       employeeName: json['employee_name'] ?? '',
       employeeNumber: json['employee_number'] ?? json['job_number'] ?? '',
       phone: json['phone'] ?? json['phone_number'],
       email: json['email'],
       specialization: json['specialization'],
       department: json['department'],
-      experienceYears: json['experience_years'] ?? json['years_of_experience'],
-      planCourseAssignmentId: json['plan_course_assignment_id'],
+      experienceYears: _toIntNullable(json['experience_years'] ?? json['years_of_experience']),
+      planCourseAssignmentId: _toIntNullable(json['plan_course_assignment_id']),
       companyName: json['company_name'],
       trainingPlanName: json['training_plan_name'],
       courseName: json['course_name'],
@@ -74,10 +98,10 @@ class Nomination {
       jobNumber: json['job_number'],
       phoneNumber: json['phone_number'],
       englishName: json['english_name'],
-      companyId: json['company_id'],
-      trainingPlanId: json['training_plan_id'],
-      courseId: json['course_id'],
-      yearsOfExperience: json['years_of_experience'],
+      companyId: _toIntNullable(json['company_id']),
+      trainingPlanId: _toIntNullable(json['training_plan_id']),
+      courseId: _toIntNullable(json['course_id']),
+      yearsOfExperience: _toIntNullable(json['years_of_experience']),
     );
   }
 

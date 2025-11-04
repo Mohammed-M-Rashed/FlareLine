@@ -33,17 +33,41 @@ class SpecialCourseRequest {
     this.company,
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory SpecialCourseRequest.fromJson(Map<String, dynamic> json) {
     return SpecialCourseRequest(
-      id: json['id'],
-      companyId: json['company_id'] ?? 0,
-      specializationId: json['specialization_id'] ?? 0,
+      id: _toIntNullable(json['id']),
+      companyId: _toInt(json['company_id']),
+      specializationId: _toInt(json['specialization_id']),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       fileAttachment: json['file_attachment'],
       status: json['status'] ?? 'pending',
       rejectionReason: json['rejection_reason'],
-      createdBy: json['created_by'] is int ? json['created_by'] : int.tryParse(json['created_by']?.toString() ?? ''),
+      createdBy: _toIntNullable(json['created_by']),
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -163,7 +187,7 @@ class Company {
 
   factory Company.fromJson(Map<String, dynamic> json) {
     return Company(
-      id: json['id'] ?? 0,
+      id: SpecialCourseRequest._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'],
       phone: json['phone'],
@@ -303,7 +327,7 @@ class SpecialCourseRequestResponse {
       data: json['data'] != null ? SpecialCourseRequest.fromJson(json['data']) : null,
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: SpecialCourseRequest._toInt(json['status_code'], defaultValue: 200),
     );
   }
 
@@ -335,7 +359,7 @@ class SpecialCourseRequestListResponse {
       data: requests,
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: SpecialCourseRequest._toInt(json['status_code'], defaultValue: 200),
     );
   }
 

@@ -25,6 +25,8 @@ import 'package:get/get.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:async';
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart' as notification_svc;
 
 // Import the new model classes
 import 'package:flareline/core/models/training_plan_model.dart';
@@ -111,7 +113,7 @@ class NominationManagementPage extends LayoutWidget {
           ),
           const SizedBox(height: 24),
           ButtonWidget(
-            btnText: 'Go Back',
+            btnText: 'العودة',
             type: 'primary',
             onTap: () {
               Navigator.of(context).pop();
@@ -338,7 +340,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
           ),
           const SizedBox(height: 24),
           ButtonWidget(
-            btnText: 'Go Back',
+            btnText: 'العودة',
             type: 'primary',
             onTap: () {
               Navigator.of(context).pop();
@@ -417,7 +419,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
               SizedBox(
                 width: 120,
                 child: Obx(() => ButtonWidget(
-                  btnText: Get.find<NominationDataProvider>().isLoading ? 'Loading...' : 'Refresh',
+                  btnText: Get.find<NominationDataProvider>().isLoading ? 'جاري التحميل...' : 'تحديث',
                   type: 'secondary',
                   onTap: Get.find<NominationDataProvider>().isLoading ? null : () async {
                     try {
@@ -803,7 +805,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Add Nomination',
+                  'إضافة ترشيح',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -855,7 +857,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: 'Add Nomination',
+                    btnText: 'إضافة ترشيح',
                     type: 'primary',
                     onTap: _canAddNomination() ? _addNomination : null,
                   ),
@@ -2129,7 +2131,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
         children: [
           Expanded(
       child: ButtonWidget(
-        btnText: 'Save Nominations',
+        btnText: 'حفظ الترشيحات',
         type: 'primary',
         onTap: _nominations.isNotEmpty ? _saveNominations : null,
             ),
@@ -2137,13 +2139,13 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
           const SizedBox(width: 16),
           Expanded(
             child: ButtonWidget(
-              btnText: 'Clear Form',
+              btnText: 'مسح النموذج',
               type: 'secondary',
               onTap: _nominations.isNotEmpty ? () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Clear Form'),
+                    title: const Text('مسح النموذج'),
                     content: const Text('Are you sure you want to clear the form and reset seat tracking? This will remove all nominations from the table.'),
                     actions: [
                       TextButton(
@@ -2762,17 +2764,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
     // Log success to console
     print('✅ SUCCESS: $message');
     
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: const Text('Success', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    notification_svc.NotificationService.showSuccess(context, message, operationId: 'nomination:success');
   }
 
   void _showErrorToast(String message) {
@@ -2780,17 +2772,7 @@ class _NominationManagementWidgetState extends State<NominationManagementWidget>
     print('❌ ERROR: $message');
     print('📍 Stack trace: ${StackTrace.current}');
     
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: const Text('Error', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    notification_svc.NotificationService.showError(context, message, operationId: 'nomination:error');
   }
 
   void _showLoadingToast(String message) {

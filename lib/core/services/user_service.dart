@@ -4,55 +4,13 @@ import 'package:flareline/core/models/auth_model.dart';
 import 'package:flareline/core/models/company_model.dart';
 import 'package:flareline/core/services/api_service.dart';
 import 'package:flareline/core/config/api_endpoints.dart';
-import 'package:toastification/toastification.dart';
+import 'package:flareline/core/ui/notification_service.dart';
+import 'package:flareline/core/utils/server_message_extractor.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 
 class UserService {
-  /// Shows a success toast notification for user operations in Arabic
-  static void _showSuccessToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
-  }
-
-  /// Shows an error toast notification for user operations in Arabic
-  static void _showErrorToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
-  }
-
-  /// Shows an info toast notification for user operations in Arabic
-  static void _showInfoToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.info,
-      title: Text('معلومات', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.info_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.blue,
-      foregroundColor: Colors.white,
-    );
-  }
 
   // Get all users
   static Future<List<User>> getUsers(BuildContext context) async {
@@ -138,7 +96,7 @@ class UserService {
               print('✅ USER SERVICE: Successfully converted ${users.length} users using alternative parsing');
             } catch (altError) {
               print('💥 USER SERVICE: Alternative parsing also failed: $altError');
-              _showErrorToast(context, 'خطأ في معالجة بيانات المستخدم: ${e.toString()}');
+              NotificationService.showError(context, 'خطأ في معالجة بيانات المستخدم: ${e.toString()}');
               return [];
             }
           }
@@ -188,7 +146,7 @@ class UserService {
                     print('✅ USER SERVICE: Successfully converted ${users.length} users from UserApiResponse');
                   } else {
                     print('❌ USER SERVICE: API response indicates failure - Success: ${userApiResponse.success}, Message: ${userApiResponse.message.en}');
-                    _showErrorToast(context, userApiResponse.message.en);
+                    NotificationService.showError(context, userApiResponse.message.en);
                     return [];
                   }
                } catch (parseError) {
@@ -231,7 +189,7 @@ class UserService {
            } catch (e) {
              print('❌ USER SERVICE: Error parsing UserApiResponse: $e');
              print('🔍 USER SERVICE: Error details - Type: ${e.runtimeType}, Message: $e');
-             _showErrorToast(context, 'خطأ في تحليل ردة الاستجابة من الخادم: ${e.toString()}');
+             NotificationService.showError(context, 'خطأ في تحليل ردة الاستجابة من الخادم: ${e.toString()}');
              return [];
            }
         } else {
@@ -255,7 +213,7 @@ class UserService {
             }
           }
           
-          _showErrorToast(context, 'تنسيق غير متوقع من الخادم');
+          NotificationService.showError(context, 'تنسيق غير متوقع من الخادم');
           return [];
         }
         
@@ -268,10 +226,10 @@ class UserService {
         
         if (ApiService.isAuthError(response)) {
           print('🔐 USER SERVICE: Authentication error detected, user needs to log in again');
-          _showErrorToast(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
         } else {
           print('⚠️ USER SERVICE: Other error type: $errorType');
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return [];
       }
@@ -279,7 +237,7 @@ class UserService {
       print('💥 USER SERVICE: Exception occurred while getting users: $e');
       print('💥 USER SERVICE: Exception type: ${e.runtimeType}');
       print('💥 USER SERVICE: Stack trace: ${StackTrace.current}');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, 'خطأ في الشبكة: ${e.toString()}');
       return [];
     }
   }
@@ -302,7 +260,7 @@ class UserService {
       if (e is StateError) {
         print('🔍 USER SERVICE: User with ID $userId not found in the list');
       }
-      _showErrorToast(context, 'المستخدم غير موجود');
+      NotificationService.showError(context, 'المستخدم غير موجود');
       return null;
     }
   }
@@ -340,7 +298,7 @@ class UserService {
         );
         
         if (userApiResponse.success) {
-          _showSuccessToast(context, userApiResponse.message.ar);
+          NotificationService.showSuccess(context, userApiResponse.message.ar);
           // Convert UserApiData to User model
           if (userApiResponse.data != null) {
             final userApiData = userApiResponse.data!;
@@ -361,7 +319,7 @@ class UserService {
           }
           return null;
         } else {
-          _showErrorToast(context, userApiResponse.message.ar);
+          NotificationService.showError(context, userApiResponse.message.ar);
           return null;
         }
       } else {
@@ -372,13 +330,13 @@ class UserService {
         
         if (ApiService.isValidationError(response)) {
           print('⚠️ USER SERVICE: Validation error detected');
-          _showErrorToast(context, 'خطأ تحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ تحقق: $errorMessage');
         } else if (ApiService.isAuthError(response)) {
           print('🔐 USER SERVICE: Authentication error detected, user needs to log in again');
-          _showErrorToast(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
         } else {
           print('⚠️ USER SERVICE: Other error type: $errorType');
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return null;
       }
@@ -386,7 +344,7 @@ class UserService {
       print('💥 USER SERVICE: Exception occurred while creating user: $e');
       print('💥 USER SERVICE: Exception type: ${e.runtimeType}');
       print('💥 USER SERVICE: Stack trace: ${StackTrace.current}');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, 'خطأ في الشبكة: ${e.toString()}');
       return null;
     }
   }
@@ -400,7 +358,7 @@ class UserService {
     try {
       if (user.id == null) {
         print('❌ USER SERVICE: User ID is null, cannot update');
-        _showErrorToast(context, 'معرف المستخدم مطلوب للتحديث');
+        NotificationService.showError(context, 'معرف المستخدم مطلوب للتحديث');
         return false;
       }
 
@@ -431,10 +389,10 @@ class UserService {
         );
         
         if (userApiResponse.success) {
-          _showSuccessToast(context, userApiResponse.message.ar);
+          NotificationService.showSuccess(context, userApiResponse.message.ar);
           return true;
         } else {
-          _showErrorToast(context, userApiResponse.message.ar);
+          NotificationService.showError(context, userApiResponse.message.ar);
           return false;
         }
       } else {
@@ -445,16 +403,16 @@ class UserService {
         
         if (ApiService.isValidationError(response)) {
           print('⚠️ USER SERVICE: Validation error detected');
-          _showErrorToast(context, 'خطأ تحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ تحقق: $errorMessage');
         } else if (ApiService.isNotFoundError(response)) {
           print('🔍 USER SERVICE: User not found error detected');
-          _showErrorToast(context, 'المستخدم غير موجود');
+          NotificationService.showError(context, 'المستخدم غير موجود');
         } else if (ApiService.isAuthError(response)) {
           print('🔐 USER SERVICE: Authentication error detected, user needs to log in again');
-          _showErrorToast(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
         } else {
           print('⚠️ USER SERVICE: Other error type: $errorType');
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return false;
       }
@@ -462,7 +420,7 @@ class UserService {
       print('💥 USER SERVICE: Exception occurred while updating user: $e');
       print('💥 USER SERVICE: Exception type: ${e.runtimeType}');
       print('💥 USER SERVICE: Stack trace: ${StackTrace.current}');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, 'خطأ في الشبكة: ${e.toString()}');
       return false;
     }
   }
@@ -490,10 +448,10 @@ class UserService {
         );
         
         if (userApiResponse.success) {
-          _showSuccessToast(context, userApiResponse.message.ar);
+          NotificationService.showSuccess(context, userApiResponse.message.ar);
           return true;
         } else {
-          _showErrorToast(context, userApiResponse.message.ar);
+          NotificationService.showError(context, userApiResponse.message.ar);
           return false;
         }
       } else {
@@ -501,11 +459,11 @@ class UserService {
         final errorType = ApiService.getErrorType(response);
         
         if (ApiService.isNotFoundError(response)) {
-          _showErrorToast(context, 'المستخدم غير موجود');
+          NotificationService.showError(context, 'المستخدم غير موجود');
         } else if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return false;
       }
@@ -513,7 +471,7 @@ class UserService {
       print('💥 USER SERVICE: Exception occurred while activating user: $e');
       print('💥 USER SERVICE: Exception type: ${e.runtimeType}');
       print('💥 USER SERVICE: Stack trace: ${StackTrace.current}');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, 'خطأ في الشبكة: ${e.toString()}');
       return false;
     }
   }
@@ -546,11 +504,11 @@ class UserService {
         
         if (userApiResponse.success) {
           print('✅ USER SERVICE: User deactivated successfully on server');
-          _showSuccessToast(context, userApiResponse.message.ar);
+          NotificationService.showSuccess(context, userApiResponse.message.ar);
           return true;
         } else {
           print('❌ USER SERVICE: Server returned success=false - Message: ${userApiResponse.message.ar}');
-          _showErrorToast(context, userApiResponse.message.ar);
+          NotificationService.showError(context, userApiResponse.message.ar);
           return false;
         }
       } else {
@@ -561,13 +519,13 @@ class UserService {
         
         if (ApiService.isNotFoundError(response)) {
           print('🔍 USER SERVICE: User not found error detected');
-          _showErrorToast(context, 'المستخدم غير موجود');
+          NotificationService.showError(context, 'المستخدم غير موجود');
         } else if (ApiService.isAuthError(response)) {
           print('🔐 USER SERVICE: Authentication error detected, user needs to log in again');
-          _showErrorToast(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, 'خطأ تسجيل الدخول: يرجى تسجيل الدخول مرة أخرى');
         } else {
           print('⚠️ USER SERVICE: Other error type: $errorType');
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return false;
       }
@@ -575,7 +533,7 @@ class UserService {
       print('💥 USER SERVICE: Exception occurred while deactivating user: $e');
       print('💥 USER SERVICE: Exception type: ${e.runtimeType}');
       print('💥 USER SERVICE: Stack trace: ${StackTrace.current}');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, 'خطأ في الشبكة: ${e.toString()}');
       return false;
     }
   }

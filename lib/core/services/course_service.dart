@@ -2,7 +2,9 @@ import 'package:flareline/core/models/course_model.dart';
 import 'package:flareline/core/services/api_service.dart';
 import 'package:flareline/core/services/auth_service.dart';
 import 'package:flareline/core/config/api_endpoints.dart';
-import 'package:toastification/toastification.dart';
+import 'package:flareline/core/ui/notification_service.dart';
+import 'package:flareline/core/utils/server_message_extractor.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -11,50 +13,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flareline/core/config/api_config.dart';
 
 class CourseService {
-  /// Shows a success toast notification for course operations in Arabic
-  static void _showSuccessToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
-  }
-
-  /// Shows an error toast notification for course operations in Arabic
-  static void _showErrorToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
-  }
-
-  /// Shows an info toast notification for course operations in Arabic
-  static void _showInfoToast(BuildContext context, String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.info,
-      title: Text('معلومات', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.info_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.blue,
-      foregroundColor: Colors.white,
-    );
-  }
 
   // Get all courses
   static Future<List<Course>> getCourses(BuildContext context, {int? specializationId}) async {
@@ -79,11 +37,11 @@ class CourseService {
         if (courseListResponse.success) {
           print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
           print('🔍 COURSE SERVICE: First course data: ${courseListResponse.data.isNotEmpty ? courseListResponse.data.first.toJson() : 'No courses'}');
-          _showSuccessToast(context, courseListResponse.message);
+          // Success - list operations don't need toast notifications
           return courseListResponse.data;
         } else {
           print('❌ COURSE SERVICE: API response indicates failure');
-          _showErrorToast(context, courseListResponse.message);
+          NotificationService.showError(context, courseListResponse.message);
           return [];
         }
       } else {
@@ -93,17 +51,17 @@ class CourseService {
         print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
         
         if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, StringsAr.authError);
         } else if (ApiService.isValidationError(response)) {
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ في التحقق: $errorMessage');
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return [];
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while getting courses: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return [];
     }
   }
@@ -122,7 +80,7 @@ class CourseService {
       final validationError = _validateCourseData(course);
       if (validationError != null) {
         print('❌ COURSE SERVICE: Validation failed: $validationError');
-        _showErrorToast(context, validationError);
+        NotificationService.showError(context, validationError);
         return false;
       }
       
@@ -134,7 +92,7 @@ class CourseService {
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while creating course: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return false;
     }
   }
@@ -148,7 +106,7 @@ class CourseService {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
-        _showErrorToast(context, 'رمز المصادقة غير موجود');
+        NotificationService.showError(context, StringsAr.authError);
         return false;
       }
 
@@ -198,10 +156,10 @@ class CourseService {
         
         if (courseResponse.success) {
           print('✅ Course created successfully with Multipart');
-          _showSuccessToast(context, courseResponse.message);
+          NotificationService.showSuccess(context, courseResponse.message);
           return true;
         } else {
-          _showErrorToast(context, courseResponse.message);
+          NotificationService.showError(context, courseResponse.message);
           return false;
         }
       } else {
@@ -215,7 +173,7 @@ class CourseService {
         
         // Handle 413 Payload Too Large
         if (response.statusCode == 413) {
-          _showErrorToast(context, 'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
+          NotificationService.showError(context, 'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
           return false;
         }
         
@@ -230,7 +188,7 @@ class CourseService {
           } else {
             errorMessage = 'خطأ غير متوقع (${response.statusCode})';
           }
-          _showErrorToast(context, errorMessage);
+          NotificationService.showError(context, errorMessage);
           return false;
         }
         
@@ -248,24 +206,24 @@ class CourseService {
                   .expand((e) => e as List<dynamic>)
                   .map((e) => e.toString())
                   .join(', ');
-              _showErrorToast(context, 'خطأ في التحقق: $errorMessages');
+              // Validation errors - don't show toast, return false to let form handle
               return false;
             }
           }
           print('📝 Error Message (AR): ${errorData['m_ar']}');
           print('📝 Error Message (EN): ${errorData['m_en']}');
           final errorMessage = errorData['m_ar'] ?? errorData['m_en'] ?? 'فشل في إنشاء الدورة';
-          _showErrorToast(context, errorMessage);
+          NotificationService.showError(context, errorMessage);
           return false;
         } catch (e) {
           print('❌ Failed to parse error response: $e');
-          _showErrorToast(context, 'فشل في إنشاء الدورة: ${response.statusCode}');
+          NotificationService.showError(context, 'فشل في إنشاء الدورة');
           return false;
         }
       }
     } catch (e) {
       print('💥 Exception in _createCourseWithMultipart: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return false;
     }
   }
@@ -299,12 +257,12 @@ class CourseService {
           print('✅ COURSE SERVICE: Course created successfully on server');
           print('🔍 COURSE SERVICE: Response data: ${courseResponse.data?.toJson()}');
           print('🔍 COURSE SERVICE: Response message: ${courseResponse.message}');
-          _showSuccessToast(context, courseResponse.message);
+          NotificationService.showSuccess(context, courseResponse.message);
           return true;
         } else {
           print('❌ COURSE SERVICE: Server returned success=false');
           print('🔍 COURSE SERVICE: Response message: ${courseResponse.message}');
-          _showErrorToast(context, courseResponse.message);
+          NotificationService.showError(context, courseResponse.message);
           return false;
         }
       } else {
@@ -314,17 +272,17 @@ class CourseService {
         print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
         
         if (ApiService.isValidationError(response)) {
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ في التحقق: $errorMessage');
         } else if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, StringsAr.authError);
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return false;
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while creating course: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return false;
     }
   }
@@ -341,7 +299,7 @@ class CourseService {
     try {
       if (course.id == null) {
         print('❌ COURSE SERVICE: Course ID is null, cannot update');
-        _showErrorToast(context, 'معرف الدورة مطلوب للتحديث');
+        NotificationService.showError(context, 'معرف الدورة مطلوب للتحديث');
         return false;
       }
       
@@ -349,7 +307,7 @@ class CourseService {
       final validationError = _validateCourseData(course);
       if (validationError != null) {
         print('❌ COURSE SERVICE: Validation failed: $validationError');
-        _showErrorToast(context, validationError);
+        NotificationService.showError(context, validationError);
         return false;
       }
       
@@ -361,7 +319,7 @@ class CourseService {
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while updating course: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return false;
     }
   }
@@ -375,7 +333,7 @@ class CourseService {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
-        _showErrorToast(context, 'رمز المصادقة غير موجود');
+        NotificationService.showError(context, StringsAr.authError);
         return false;
       }
 
@@ -441,10 +399,10 @@ class CourseService {
         
         if (courseResponse.success) {
           print('✅ Course updated successfully with Multipart');
-          _showSuccessToast(context, courseResponse.message);
+          NotificationService.showSuccess(context, courseResponse.message);
           return true;
         } else {
-          _showErrorToast(context, courseResponse.message);
+          NotificationService.showError(context, courseResponse.message);
           return false;
         }
       } else {
@@ -458,7 +416,7 @@ class CourseService {
         
         // Handle 413 Payload Too Large
         if (response.statusCode == 413) {
-          _showErrorToast(context, 'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
+          NotificationService.showError(context, 'حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
           return false;
         }
         
@@ -473,7 +431,7 @@ class CourseService {
           } else {
             errorMessage = 'خطأ غير متوقع (${response.statusCode})';
           }
-          _showErrorToast(context, errorMessage);
+          NotificationService.showError(context, errorMessage);
           return false;
         }
         
@@ -491,24 +449,24 @@ class CourseService {
                   .expand((e) => e as List<dynamic>)
                   .map((e) => e.toString())
                   .join(', ');
-              _showErrorToast(context, 'خطأ في التحقق: $errorMessages');
+              // Validation errors - don't show toast, return false to let form handle
               return false;
             }
           }
           print('📝 Error Message (AR): ${errorData['m_ar']}');
           print('📝 Error Message (EN): ${errorData['m_en']}');
           final errorMessage = errorData['m_ar'] ?? errorData['m_en'] ?? 'فشل في تحديث الدورة';
-          _showErrorToast(context, errorMessage);
+          NotificationService.showError(context, errorMessage);
           return false;
         } catch (e) {
           print('❌ Failed to parse error response: $e');
-          _showErrorToast(context, 'فشل في تحديث الدورة: ${response.statusCode}');
+          NotificationService.showError(context, 'فشل في تحديث الدورة');
           return false;
         }
       }
     } catch (e) {
       print('💥 Exception in _updateCourseWithMultipart: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return false;
     }
   }
@@ -543,11 +501,11 @@ class CourseService {
         
         if (courseResponse.success) {
           print('✅ COURSE SERVICE: Course updated successfully on server');
-          _showSuccessToast(context, courseResponse.message);
+          NotificationService.showSuccess(context, courseResponse.message);
           return true;
         } else {
           print('❌ COURSE SERVICE: Server returned success=false');
-          _showErrorToast(context, courseResponse.message);
+          NotificationService.showError(context, courseResponse.message);
           return false;
         }
       } else {
@@ -557,19 +515,19 @@ class CourseService {
         print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
         
         if (ApiService.isValidationError(response)) {
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ في التحقق: $errorMessage');
         } else if (ApiService.isNotFoundError(response)) {
-          _showErrorToast(context, 'الدورة غير موجودة');
+          NotificationService.showError(context, StringsAr.notFoundError);
         } else if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, StringsAr.authError);
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return false;
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while updating course: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return false;
     }
   }
@@ -633,7 +591,7 @@ class CourseService {
     try {
       // Check if user is a company account
       if (!AuthService.hasRole('company_account')) {
-        _showErrorToast(context, 'غير مصرح لك بعرض الدورات');
+        NotificationService.showError(context, StringsAr.permissionError);
         return [];
       }
 
@@ -656,18 +614,18 @@ class CourseService {
           return courseListResponse.data;
         } else {
           print('❌ COURSE SERVICE: API returned success=false');
-          _showErrorToast(context, courseListResponse.message ?? 'فشل في جلب الدورات');
+          NotificationService.showError(context, courseListResponse.message ?? 'فشل في جلب الدورات');
           return [];
         }
       } else {
         print('❌ COURSE SERVICE: API call failed - Status: ${response.statusCode}');
         final errorMessage = ApiService.handleErrorResponse(response);
-        _showErrorToast(context, errorMessage);
+        NotificationService.showError(context, errorMessage);
         return [];
       }
     } catch (e) {
       print('❌ COURSE SERVICE: Exception occurred: $e');
-      _showErrorToast(context, 'خطأ في جلب الدورات: $e');
+      NotificationService.showError(context, 'خطأ في جلب الدورات');
       return [];
     }
   }
@@ -680,7 +638,7 @@ class CourseService {
     try {
       // Check if user is a company account
       if (!AuthService.hasRole('company_account')) {
-        _showErrorToast(context, 'غير مصرح لك بعرض الدورات');
+        NotificationService.showError(context, StringsAr.permissionError);
         return [];
       }
 
@@ -703,18 +661,18 @@ class CourseService {
           return courseListResponse.data;
         } else {
           print('❌ COURSE SERVICE: API returned success=false');
-          _showErrorToast(context, courseListResponse.message ?? 'فشل في جلب الدورات');
+          NotificationService.showError(context, courseListResponse.message ?? 'فشل في جلب الدورات');
           return [];
         }
       } else {
         print('❌ COURSE SERVICE: API call failed - Status: ${response.statusCode}');
         final errorMessage = ApiService.handleErrorResponse(response);
-        _showErrorToast(context, errorMessage);
+        NotificationService.showError(context, errorMessage);
         return [];
       }
     } catch (e) {
       print('❌ COURSE SERVICE: Exception occurred: $e');
-      _showErrorToast(context, 'خطأ في جلب الدورات: $e');
+      NotificationService.showError(context, 'خطأ في جلب الدورات');
       return [];
     }
   }
@@ -741,11 +699,11 @@ class CourseService {
         
         if (courseListResponse.success) {
           print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
-          _showSuccessToast(context, courseListResponse.message);
+          // Success - list operations don't need toast notifications
           return courseListResponse.data;
         } else {
           print('❌ COURSE SERVICE: API response indicates failure');
-          _showErrorToast(context, courseListResponse.message);
+          NotificationService.showError(context, courseListResponse.message);
           return [];
         }
       } else {
@@ -755,17 +713,17 @@ class CourseService {
         print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
         
         if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, StringsAr.authError);
         } else if (ApiService.isValidationError(response)) {
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ في التحقق: $errorMessage');
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return [];
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while searching courses: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return [];
     }
   }
@@ -792,11 +750,11 @@ class CourseService {
         
         if (courseResponse.success) {
           print('✅ COURSE SERVICE: Successfully retrieved course');
-          _showSuccessToast(context, courseResponse.message);
+          NotificationService.showSuccess(context, courseResponse.message);
           return courseResponse.data;
         } else {
           print('❌ COURSE SERVICE: API response indicates failure');
-          _showErrorToast(context, courseResponse.message);
+          NotificationService.showError(context, courseResponse.message);
           return null;
         }
       } else {
@@ -806,19 +764,19 @@ class CourseService {
         print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
         
         if (ApiService.isNotFoundError(response)) {
-          _showErrorToast(context, 'الدورة غير موجودة');
+          NotificationService.showError(context, StringsAr.notFoundError);
         } else if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, StringsAr.authError);
         } else if (ApiService.isValidationError(response)) {
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ في التحقق: $errorMessage');
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return null;
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while getting course by code: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return null;
     }
   }
@@ -845,11 +803,11 @@ class CourseService {
         
         if (courseListResponse.success) {
           print('✅ COURSE SERVICE: Successfully retrieved ${courseListResponse.data.length} courses');
-          _showSuccessToast(context, courseListResponse.message);
+          // Success - list operations don't need toast notifications
           return courseListResponse.data;
         } else {
           print('❌ COURSE SERVICE: API response indicates failure');
-          _showErrorToast(context, courseListResponse.message);
+          NotificationService.showError(context, courseListResponse.message);
           return [];
         }
       } else {
@@ -859,17 +817,17 @@ class CourseService {
         print('🔍 COURSE SERVICE: Error details - Type: $errorType, Message: $errorMessage');
         
         if (ApiService.isAuthError(response)) {
-          _showErrorToast(context, 'خطأ في المصادقة: يرجى تسجيل الدخول مرة أخرى');
+          NotificationService.showError(context, StringsAr.authError);
         } else if (ApiService.isValidationError(response)) {
-          _showErrorToast(context, 'خطأ في التحقق: $errorMessage');
+          NotificationService.showError(context, 'خطأ في التحقق: $errorMessage');
         } else {
-          _showErrorToast(context, '$errorType: $errorMessage');
+          NotificationService.showError(context, '$errorType: $errorMessage');
         }
         return [];
       }
     } catch (e) {
       print('💥 COURSE SERVICE: Exception occurred while getting courses by status: $e');
-      _showErrorToast(context, 'خطأ في الشبكة: ${e.toString()}');
+      NotificationService.showError(context, StringsAr.networkError);
       return [];
     }
   }

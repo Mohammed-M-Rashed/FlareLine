@@ -16,6 +16,8 @@ import 'package:collection/collection.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:async';
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart';
 
 import '../../core/services/city_service.dart';
 import '../../core/models/country_model.dart';
@@ -173,7 +175,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                         SizedBox(
                           width: 120,
                           child: ButtonWidget(
-                            btnText: 'Add Trainer',
+                            btnText: 'إضافة مدرب',
                             type: 'primary',
                             onTap: () => _showAddTrainerForm(context),
                           ),
@@ -811,7 +813,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
                                           IconButton(
                                             icon: const Icon(Icons.edit, size: 18),
                                             onPressed: () => _showEditTrainerForm(context, trainer),
-                                            tooltip: 'Edit Trainer',
+                                            tooltip: 'تعديل المدرب',
                                             style: IconButton.styleFrom(
                                               backgroundColor: Colors.blue.shade50,
                                               foregroundColor: Colors.blue.shade700,
@@ -1013,7 +1015,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Trainer',
+      title: 'إضافة مدرب جديد',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1451,7 +1453,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Trainer',
+      title: 'تعديل المدرب',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1910,12 +1912,12 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Accept Trainer'),
+          title: const Text('قبول المدرب'),
           content: Text('Are you sure you want to accept "${trainer.name}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(StringsAr.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1943,7 +1945,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Reject Trainer'),
+          title: const Text('رفض المدرب'),
           content: Form(
             key: formKey,
             child: Column(
@@ -1987,7 +1989,7 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(StringsAr.cancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -2148,38 +2150,22 @@ class _TrainerManagementWidgetState extends State<TrainerManagementWidget> with 
 
   /// Shows a success toast notification for trainer operations in Arabic
   void _showSuccessToast(String message) {
-    toastification.show(
-      context: Get.context!,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    if (Get.context != null) {
+      NotificationService.showSuccess(Get.context!, message, operationId: 'trainer:success');
+    }
   }
 
   /// Shows an error toast notification for trainer operations in Arabic
   void _showErrorToast(String message) {
-    toastification.show(
-      context: Get.context!,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    if (Get.context != null) {
+      NotificationService.showError(Get.context!, message, operationId: 'trainer:error');
+    }
   }
 
   void _showViewTrainerDialog(BuildContext context, Trainer trainer) {
     ModalDialog.show(
       context: context,
-      title: 'Trainer Details',
+      title: 'تفاصيل المدرب',
       showTitle: true,
       modalType: ModalType.large,
       child: Container(

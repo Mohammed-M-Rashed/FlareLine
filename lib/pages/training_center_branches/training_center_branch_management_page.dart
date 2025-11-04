@@ -21,6 +21,8 @@ import 'package:collection/collection.dart'; // Added for firstWhereOrNull
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // Added for kIsWeb and defaultTargetPlatform
 import 'package:url_launcher/url_launcher.dart'; // Added for opening Google Maps
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart';
 
 /// Comprehensive error tracking class for Training Center Branches Management
 class TrainingCenterBranchErrorTracker {
@@ -262,7 +264,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                         SizedBox(
                           width: 120,
                           child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                            btnText: provider.isLoading ? 'جاري التحميل...' : 'تحديث',
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () async {
                               try {
@@ -288,7 +290,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                             SizedBox(
                               width: 120,
                               child: ButtonWidget(
-                                btnText: 'Error Summary',
+                                btnText: 'ملخص الأخطاء',
                                 type: 'secondary',
                                 onTap: () {
                                   final summary = TrainingCenterBranchErrorTracker.getErrorSummary();
@@ -310,7 +312,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                             SizedBox(
                               width: 100,
                               child: ButtonWidget(
-                                btnText: 'Clear Errors',
+                                btnText: 'مسح الأخطاء',
                                 type: 'secondary',
                                 onTap: () {
                                   TrainingCenterBranchErrorTracker.clearAll();
@@ -326,7 +328,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add Branch',
+                                  btnText: 'إضافة فرع',
                                   type: 'primary',
                                   onTap: () {
                                     _showAddBranchForm(context);
@@ -788,7 +790,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
                                                     onPressed: () {
                                                       _showEditBranchForm(context, branch);
                                                     },
-                                                    tooltip: 'Edit Branch',
+                                                    tooltip: 'تعديل الفرع',
                                                     style: IconButton.styleFrom(
                                                       backgroundColor: Colors.blue.shade50,
                                                       foregroundColor: Colors.blue.shade700,
@@ -975,7 +977,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Branch',
+      title: 'إضافة فرع جديد',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1446,7 +1448,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Branch',
+      title: 'تعديل الفرع',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1906,31 +1908,15 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
   }
 
   void _showSuccessToast(String message) {
-    toastification.show(
-      context: Get.context!,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    if (Get.context != null) {
+      NotificationService.showSuccess(Get.context!, message, operationId: 'branch:success');
+    }
   }
 
   void _showErrorToast(String message) {
-    toastification.show(
-      context: Get.context!,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    if (Get.context != null) {
+      NotificationService.showError(Get.context!, message, operationId: 'branch:error');
+    }
   }
 
   /// Helper method to get country name for a training center branch synchronously
@@ -2245,7 +2231,7 @@ class _TrainingCenterBranchManagementWidgetState extends State<TrainingCenterBra
   void _showViewBranchDialog(BuildContext context, TrainingCenterBranch branch) {
     ModalDialog.show(
       context: context,
-      title: 'Branch Details',
+      title: 'تفاصيل الفرع',
       showTitle: true,
       modalType: ModalType.large,
       child: Container(

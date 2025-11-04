@@ -13,6 +13,7 @@ import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:flareline/core/utils/country_code_helper.dart';
 import 'package:toastification/toastification.dart';
 import 'package:get/get.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class CountryManagementPage extends LayoutWidget {
   const CountryManagementPage({super.key});
@@ -68,7 +69,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Country Management',
+                            'إدارة الدول',
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -91,7 +92,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                         SizedBox(
                           width: 120,
                           child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                            btnText: provider.isLoading ? StringsAr.loading : StringsAr.refresh,
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () async {
                               try {
@@ -110,7 +111,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add Country',
+                                  btnText: 'إضافة دولة',
                                   type: 'primary',
                                   onTap: () {
                                     _showAddCountryForm(context, provider);
@@ -183,7 +184,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                             ),
                             const SizedBox(height: 16),
                             ButtonWidget(
-                              btnText: 'Add First Country',
+                              btnText: 'إضافة دولة',
                               type: 'primary',
                               onTap: () {
                                 _showAddCountryForm(context, provider);
@@ -199,7 +200,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                       children: [
                         // Summary Cards
                         CountSummaryWidgetEn(
-                          itemName: 'Country',
+                          itemName: StringsAr.country,
                           itemNamePlural: 'Countries',
                           count: filteredCountries.length,
                           icon: Icons.public_outlined,
@@ -306,7 +307,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
         Expanded(
           flex: 2,
           child: Text(
-            'Country',
+            StringsAr.country,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -366,7 +367,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
         Expanded(
           flex: 4,
           child: Text(
-            'Country Name',
+            StringsAr.countryName,
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -486,7 +487,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
               onPressed: () {
                 _showEditCountryForm(context, provider, country);
               },
-              tooltip: 'Edit Country',
+              tooltip: 'تعديل الدولة',
             ),
           ),
         ),
@@ -529,7 +530,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                 onPressed: () {
                   _showEditCountryForm(context, provider, country);
                 },
-                tooltip: 'Edit Country',
+                tooltip: 'تعديل الدولة',
               ),
             ],
           ),
@@ -583,7 +584,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Country',
+      title: 'إضافة دولة جديدة',
       showTitle: true,
       modalType: ModalType.medium,
       child: Form(
@@ -594,7 +595,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: OutBorderTextFormField(
-                labelText: 'Country Name',
+                labelText: StringsAr.countryName,
                 hintText: 'Enter country name',
                 controller: nameController,
                 validator: (value) {
@@ -618,7 +619,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: isSubmitting ? 'Creating...' : 'Save',
+                    btnText: isSubmitting ? StringsAr.creating : StringsAr.save,
                     type: 'primary',
                     onTap: isSubmitting ? null : () async {
                       if (formKey.currentState!.validate()) {
@@ -660,7 +661,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Country',
+      title: 'تعديل الدولة',
       showTitle: true,
       modalType: ModalType.medium,
       child: Form(
@@ -671,7 +672,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: OutBorderTextFormField(
-                labelText: 'Country Name',
+                labelText: StringsAr.countryName,
                 hintText: 'Enter country name',
                 controller: nameController,
                 validator: (value) {
@@ -695,7 +696,7 @@ class _CountryManagementWidgetState extends State<CountryManagementWidget> {
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: isSubmitting ? 'Updating...' : 'Save',
+                    btnText: isSubmitting ? StringsAr.updating : StringsAr.save,
                     type: 'primary',
                     onTap: isSubmitting ? null : () async {
                       if (formKey.currentState!.validate()) {

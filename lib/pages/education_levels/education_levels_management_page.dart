@@ -13,6 +13,7 @@ import 'package:flareline/core/widgets/count_summary_widget.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:get/get.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class EducationLevelsManagementPage extends LayoutWidget {
   const EducationLevelsManagementPage({super.key});

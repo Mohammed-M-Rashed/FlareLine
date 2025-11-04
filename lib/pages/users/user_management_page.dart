@@ -20,6 +20,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:flareline/core/services/auth_service.dart';
 import 'package:flareline/core/theme/global_theme.dart';
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class UserManagementPage extends LayoutWidget {
   const UserManagementPage({super.key});
@@ -540,7 +541,7 @@ class UserManagementWidget extends StatelessWidget {
                                                    onPressed: () {
                                                      _showEditUserForm(context, user, provider);
                                                    },
-                                                   tooltip: 'Edit User',
+                                                   tooltip: 'تعديل المستخدم',
                                                    style: IconButton.styleFrom(
                                                      backgroundColor: Colors.blue.shade50,
                                                      foregroundColor: Colors.blue.shade700,
@@ -818,8 +819,7 @@ class UserManagementWidget extends StatelessWidget {
                 loadCompaniesForModal(setModalState);
               }
               
-              return Flexible(
-                child: SingleChildScrollView(
+              return SingleChildScrollView(
                 padding: const EdgeInsets.all(24), // Reduced padding to prevent overflow
                 child: Form(
                   key: formKey,
@@ -1379,7 +1379,7 @@ class UserManagementWidget extends StatelessWidget {
                     ],
                   ),
                 ),
-              ));
+              );
             },
           ),
         ),
@@ -1482,7 +1482,7 @@ class UserManagementWidget extends StatelessWidget {
 
       ModalDialog.show(
           context: context,
-          title: 'Edit User',
+          title: StringsAr.editUser,
           showTitle: true,
           modalType: ModalType.large,
          footer: StatefulBuilder(
@@ -1495,7 +1495,7 @@ class UserManagementWidget extends StatelessWidget {
                    SizedBox(
                      width: 120,
                      child: ButtonWidget(
-                       btnText: isSubmitting ? 'Updating...' : 'Save',
+                       btnText: isSubmitting ? StringsAr.updating : StringsAr.save,
                        onTap: isSubmitting ? null : () async {
                          // Check if role requires company
                          bool requiresCompany = !isSystemLevelRole(selectedRole);
@@ -1648,7 +1648,7 @@ class UserManagementWidget extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Edit User Information',
+                                    'تعديل معلومات المستخدم',
                                     style: TextStyle(
                                       fontSize: 18, // Reduced font size
                                       fontWeight: FontWeight.w700,
@@ -1745,7 +1745,7 @@ class UserManagementWidget extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'User Role *',
+                                      'دور المستخدم *',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -2231,7 +2231,7 @@ class UserManagementWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Username: $username',
+                        'اسم المستخدم: $username',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -2392,7 +2392,7 @@ class UserManagementWidget extends StatelessWidget {
   void _showViewUserDialog(BuildContext context, User user) {
     ModalDialog.show(
       context: context,
-      title: 'User Details',
+      title: StringsAr.userDetails,
       showTitle: true,
       modalType: ModalType.large,
       showCancel: false, // Disable default buttons
@@ -2404,7 +2404,7 @@ class UserManagementWidget extends StatelessWidget {
             SizedBox(
               width: 120,
               child: ButtonWidget(
-                btnText: 'Cancel',
+                btnText: StringsAr.cancel,
                 textColor: FlarelineColors.darkBlackText,
                 onTap: () {
                   Navigator.of(context).pop();
@@ -2444,7 +2444,7 @@ class UserManagementWidget extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'User Details',
+                              StringsAr.userDetails,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

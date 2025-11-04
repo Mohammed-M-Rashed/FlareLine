@@ -37,19 +37,43 @@ class PlanCourseAssignment {
     this.trainingCenterBranch,
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory PlanCourseAssignment.fromJson(Map<String, dynamic> json) {
     return PlanCourseAssignment(
-      id: json['id'],
-      companyId: json['company_id'] ?? 0,
-      courseId: json['course_id'] ?? 0,
-      trainingCenterBranchId: json['training_center_branch_id'] ?? 0,
+      id: _toIntNullable(json['id']),
+      companyId: _toInt(json['company_id']),
+      courseId: _toInt(json['course_id']),
+      trainingCenterBranchId: _toInt(json['training_center_branch_id']),
       startDate: json['start_date'] != null 
           ? DateTime.parse(json['start_date']) 
           : DateTime.now(),
       endDate: json['end_date'] != null 
           ? DateTime.parse(json['end_date']) 
           : DateTime.now(),
-      seats: json['seats'] ?? 0,
+      seats: _toInt(json['seats']),
       status: json['status'] ?? 'pending',
       createdBy: json['created_by'],
       createdAt: json['created_at'] != null 
@@ -180,7 +204,7 @@ class Company {
 
   factory Company.fromJson(Map<String, dynamic> json) {
     return Company(
-      id: json['id'] ?? 0,
+      id: PlanCourseAssignment._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'],
       phone: json['phone'],
@@ -231,10 +255,10 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] ?? 0,
+      id: PlanCourseAssignment._toInt(json['id']),
       title: json['title'] ?? '',
       description: json['description'],
-      specializationId: json['specialization_id'],
+      specializationId: PlanCourseAssignment._toIntNullable(json['specialization_id']),
       specializationName: json['specialization_name'],
       specialization: json['specialization'] != null 
           ? Specialization.fromJson(json['specialization']) 
@@ -284,10 +308,10 @@ class Specialization {
 
   factory Specialization.fromJson(Map<String, dynamic> json) {
     return Specialization(
-      id: json['id'] ?? 0,
+      id: PlanCourseAssignment._toInt(json['id']),
       name: json['name'] ?? '',
       description: json['description'],
-      createdBy: json['created_by'],
+      createdBy: PlanCourseAssignment._toIntNullable(json['created_by']),
       status: json['status'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
@@ -333,10 +357,10 @@ class TrainingCenterBranch {
 
   factory TrainingCenterBranch.fromJson(Map<String, dynamic> json) {
     return TrainingCenterBranch(
-      id: json['id'] ?? 0,
+      id: PlanCourseAssignment._toInt(json['id']),
       name: json['name'] ?? '',
       address: json['address'],
-      trainingCenterId: json['training_center_id'],
+      trainingCenterId: PlanCourseAssignment._toIntNullable(json['training_center_id']),
       trainingCenterName: json['training_center_name'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
@@ -495,7 +519,7 @@ class PlanCourseAssignmentResponse {
       data: json['data'] != null ? PlanCourseAssignment.fromJson(json['data']) : null,
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: PlanCourseAssignment._toInt(json['status_code'], defaultValue: 200),
     );
   }
 
@@ -527,7 +551,7 @@ class PlanCourseAssignmentListResponse {
       data: assignments,
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: PlanCourseAssignment._toInt(json['status_code'], defaultValue: 200),
     );
   }
 

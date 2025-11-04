@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flareline/core/services/api_service.dart';
 import 'package:get/get.dart';
 import '../models/special_course_request_model.dart';
@@ -9,6 +10,10 @@ import '../config/api_endpoints.dart';
 import '../config/api_config.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
+import 'package:flareline/core/ui/notification_service.dart';
+import 'package:flareline/core/utils/server_message_extractor.dart';
 
 class SpecialCourseRequestService {
   static String get _baseUrl => ApiConfig.baseUrl;
@@ -128,7 +133,10 @@ class SpecialCourseRequestService {
   }
 
   // Create special course request (Company Account only)
-  static Future<SpecialCourseRequestResponse> createSpecialCourseRequest(SpecialCourseRequestCreateRequest request) async {
+  static Future<SpecialCourseRequestResponse> createSpecialCourseRequest(
+    SpecialCourseRequestCreateRequest request, {
+    PlatformFile? fileAttachment,
+  }) async {
     const String methodName = 'createSpecialCourseRequest';
     print('🔍 ERROR_TRACKING: Starting $methodName');
     print('🔍 ERROR_TRACKING: $methodName - Request data: ${request.toJson()}');
@@ -158,29 +166,12 @@ class SpecialCourseRequestService {
         throw Exception(validationError);
       }
 
-      print('🔍 ERROR_TRACKING: $methodName - Making API call to ${ApiEndpoints.createSpecialCourseRequest}');
-      final response = await ApiService.post(
-        ApiEndpoints.createSpecialCourseRequest,
-        body: request.toJson(),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      print('🔍 ERROR_TRACKING: $methodName - API response status: ${response.statusCode}');
-      print('🔍 ERROR_TRACKING: $methodName - API response body: ${response.body}');
-
-      final responseData = jsonDecode(response.body);
-      final result = SpecialCourseRequestResponse.fromJson(responseData);
-      
-      if (result.success) {
-        print('✅ ERROR_TRACKING: $methodName - Successfully created special course request with ID: ${result.data?.id}');
+      // Use Multipart if file attachment is provided, otherwise use JSON
+      if (fileAttachment != null && fileAttachment.bytes != null) {
+        return await _createSpecialCourseRequestWithMultipart(request, fileAttachment, token);
       } else {
-        print('❌ ERROR_TRACKING: $methodName - API returned error: ${result.messageEn}');
+        return await _createSpecialCourseRequestWithJson(request, token);
       }
-      
-      return result;
     } catch (e, stackTrace) {
       print('❌ ERROR_TRACKING: $methodName - Exception occurred: $e');
       print('❌ ERROR_TRACKING: $methodName - Stack trace: $stackTrace');
@@ -193,8 +184,136 @@ class SpecialCourseRequestService {
     }
   }
 
+  // Create special course request with Multipart (when file attachment is provided)
+  static Future<SpecialCourseRequestResponse> _createSpecialCourseRequestWithMultipart(
+    SpecialCourseRequestCreateRequest request,
+    PlatformFile fileAttachment,
+    String token,
+  ) async {
+    try {
+      var requestMultipart = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl${ApiEndpoints.createSpecialCourseRequest}'),
+      );
+
+      // Add headers
+      requestMultipart.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      // Add form fields
+      requestMultipart.fields['company_id'] = request.companyId.toString();
+      requestMultipart.fields['specialization_id'] = request.specializationId.toString();
+      requestMultipart.fields['title'] = request.title;
+      requestMultipart.fields['description'] = request.description;
+      if (request.status != null) {
+        requestMultipart.fields['status'] = request.status!;
+      }
+
+      // Add file attachment as base64 string in form field (server expects base64, not file)
+      if (fileAttachment.bytes != null) {
+        final base64File = base64Encode(fileAttachment.bytes!);
+        requestMultipart.fields['file_attachment'] = base64File;
+      }
+
+      print('═══════════════════════════════════════');
+      print('📤 [SpecialCourseRequestService] Creating special course request with Multipart');
+      print('═══════════════════════════════════════');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('📁 File Attachment: ${fileAttachment.name} (${fileAttachment.size} bytes)');
+      print('📦 File as Base64: ${fileAttachment.bytes != null ? base64Encode(fileAttachment.bytes!).substring(0, 50) + "..." : "null"}');
+      print('📋 Fields: ${requestMultipart.fields.keys.toList()}');
+      print('═══════════════════════════════════════');
+
+      final streamedResponse = await requestMultipart.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print('✅ Special course request created successfully with Multipart');
+        return SpecialCourseRequestResponse.fromJson(jsonData);
+      } else {
+        print('═══════════════════════════════════════');
+        print('❌ [SpecialCourseRequestService] createSpecialCourseRequest (Multipart) ERROR');
+        print('═══════════════════════════════════════');
+        print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+        print('🔢 Status Code: ${response.statusCode}');
+        print('📦 Response Body: ${response.body}');
+        print('═══════════════════════════════════════');
+        
+        // Handle 413 Payload Too Large
+        if (response.statusCode == 413) {
+          throw Exception('حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
+        }
+        
+        // Handle HTML responses (like 503 errors)
+        if (response.body.trim().toLowerCase().startsWith('<!doctype') || 
+            response.body.trim().toLowerCase().startsWith('<html')) {
+          String errorMessage = 'خطأ في الخادم';
+          if (response.statusCode == 503) {
+            errorMessage = 'الخادم غير متاح مؤقتاً (503)';
+          } else if (response.statusCode >= 500) {
+            errorMessage = 'خطأ في الخادم (${response.statusCode})';
+          } else {
+            errorMessage = 'خطأ غير متوقع (${response.statusCode})';
+          }
+          throw Exception(errorMessage);
+        }
+        
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = ServerMessageExtractor.extractMessage(response);
+          throw Exception(errorMessage);
+        } catch (e) {
+          throw Exception('فشل في إنشاء طلب الدورة الخاصة: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Create special course request with JSON (when no file attachment)
+  static Future<SpecialCourseRequestResponse> _createSpecialCourseRequestWithJson(
+    SpecialCourseRequestCreateRequest request,
+    String token,
+  ) async {
+    try {
+      print('🔍 ERROR_TRACKING: createSpecialCourseRequest - Making API call to ${ApiEndpoints.createSpecialCourseRequest}');
+      final response = await ApiService.post(
+        ApiEndpoints.createSpecialCourseRequest,
+        body: request.toJson(),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('🔍 ERROR_TRACKING: createSpecialCourseRequest - API response status: ${response.statusCode}');
+      print('🔍 ERROR_TRACKING: createSpecialCourseRequest - API response body: ${response.body}');
+
+      final responseData = jsonDecode(response.body);
+      final result = SpecialCourseRequestResponse.fromJson(responseData);
+      
+      if (result.success) {
+        print('✅ ERROR_TRACKING: createSpecialCourseRequest - Successfully created special course request with ID: ${result.data?.id}');
+      } else {
+        print('❌ ERROR_TRACKING: createSpecialCourseRequest - API returned error: ${result.messageEn}');
+      }
+      
+      return result;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Update special course request (Company Account only)
-  static Future<SpecialCourseRequestResponse> updateSpecialCourseRequest(SpecialCourseRequestUpdateRequest request) async {
+  static Future<SpecialCourseRequestResponse> updateSpecialCourseRequest(
+    SpecialCourseRequestUpdateRequest request, {
+    PlatformFile? fileAttachment,
+  }) async {
     try {
       final token = AuthService.getAuthToken();
       if (token.isEmpty) {
@@ -218,6 +337,127 @@ class SpecialCourseRequestService {
         throw Exception(validationError);
       }
 
+      // Use Multipart if file attachment is provided, otherwise use JSON
+      if (fileAttachment != null && fileAttachment.bytes != null) {
+        return await _updateSpecialCourseRequestWithMultipart(request, fileAttachment, token);
+      } else {
+        return await _updateSpecialCourseRequestWithJson(request, token);
+      }
+    } catch (e) {
+      return SpecialCourseRequestResponse(
+        messageEn: 'Failed to update special course request: ${e.toString()}',
+        messageAr: 'فشل في تحديث طلب الدورة الخاصة: ${e.toString()}',
+        statusCode: 500,
+      );
+    }
+  }
+
+  // Update special course request with Multipart (when file attachment is provided)
+  static Future<SpecialCourseRequestResponse> _updateSpecialCourseRequestWithMultipart(
+    SpecialCourseRequestUpdateRequest request,
+    PlatformFile fileAttachment,
+    String token,
+  ) async {
+    try {
+      var requestMultipart = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl${ApiEndpoints.updateSpecialCourseRequest}'),
+      );
+
+      // Add headers
+      requestMultipart.headers.addAll({
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      });
+
+      // Add form fields
+      requestMultipart.fields['id'] = request.id.toString();
+      if (request.companyId != null) {
+        requestMultipart.fields['company_id'] = request.companyId.toString();
+      }
+      if (request.specializationId != null) {
+        requestMultipart.fields['specialization_id'] = request.specializationId.toString();
+      }
+      if (request.title != null) {
+        requestMultipart.fields['title'] = request.title!;
+      }
+      if (request.description != null) {
+        requestMultipart.fields['description'] = request.description!;
+      }
+      if (request.status != null) {
+        requestMultipart.fields['status'] = request.status!;
+      }
+
+      // Add file attachment as base64 string in form field (server expects base64, not file)
+      if (fileAttachment.bytes != null) {
+        final base64File = base64Encode(fileAttachment.bytes!);
+        requestMultipart.fields['file_attachment'] = base64File;
+      }
+
+      print('═══════════════════════════════════════');
+      print('📤 [SpecialCourseRequestService] Updating special course request with Multipart');
+      print('═══════════════════════════════════════');
+      print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+      print('🆔 Request ID: ${request.id}');
+      print('📁 File Attachment: ${fileAttachment.name} (${fileAttachment.size} bytes)');
+      print('📦 File as Base64: ${fileAttachment.bytes != null ? base64Encode(fileAttachment.bytes!).substring(0, 50) + "..." : "null"}');
+      print('📋 Fields: ${requestMultipart.fields.keys.toList()}');
+      print('═══════════════════════════════════════');
+
+      final streamedResponse = await requestMultipart.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print('✅ Special course request updated successfully with Multipart');
+        return SpecialCourseRequestResponse.fromJson(jsonData);
+      } else {
+        print('═══════════════════════════════════════');
+        print('❌ [SpecialCourseRequestService] updateSpecialCourseRequest (Multipart) ERROR');
+        print('═══════════════════════════════════════');
+        print('⏰ Timestamp: ${DateTime.now().toIso8601String()}');
+        print('🔢 Status Code: ${response.statusCode}');
+        print('📦 Response Body: ${response.body}');
+        print('═══════════════════════════════════════');
+        
+        // Handle 413 Payload Too Large
+        if (response.statusCode == 413) {
+          throw Exception('حجم الملف كبير جداً. يرجى اختيار ملف أصغر.');
+        }
+        
+        // Handle HTML responses (like 503 errors)
+        if (response.body.trim().toLowerCase().startsWith('<!doctype') || 
+            response.body.trim().toLowerCase().startsWith('<html')) {
+          String errorMessage = 'خطأ في الخادم';
+          if (response.statusCode == 503) {
+            errorMessage = 'الخادم غير متاح مؤقتاً (503)';
+          } else if (response.statusCode >= 500) {
+            errorMessage = 'خطأ في الخادم (${response.statusCode})';
+          } else {
+            errorMessage = 'خطأ غير متوقع (${response.statusCode})';
+          }
+          throw Exception(errorMessage);
+        }
+        
+        // Try to parse error response
+        try {
+          final errorMessage = ServerMessageExtractor.extractMessage(response);
+          throw Exception(errorMessage);
+        } catch (e) {
+          throw Exception('فشل في تحديث طلب الدورة الخاصة: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update special course request with JSON (when no file attachment)
+  static Future<SpecialCourseRequestResponse> _updateSpecialCourseRequestWithJson(
+    SpecialCourseRequestUpdateRequest request,
+    String token,
+  ) async {
+    try {
       final response = await ApiService.post(
         ApiEndpoints.updateSpecialCourseRequest,
         body: request.toJson(),
@@ -230,11 +470,7 @@ class SpecialCourseRequestService {
       final responseData = jsonDecode(response.body);
       return SpecialCourseRequestResponse.fromJson(responseData);
     } catch (e) {
-      return SpecialCourseRequestResponse(
-        messageEn: 'Failed to update special course request: ${e.toString()}',
-        messageAr: 'فشل في تحديث طلب الدورة الخاصة: ${e.toString()}',
-        statusCode: 500,
-      );
+      rethrow;
     }
   }
 

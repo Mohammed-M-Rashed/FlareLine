@@ -33,13 +33,37 @@ class TrainingPlan {
     this.courses,
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory TrainingPlan.fromJson(Map<String, dynamic> json) {
     return TrainingPlan(
-      id: json['id'],
-      year: json['year'] ?? DateTime.now().year,
+      id: _toIntNullable(json['id']),
+      year: _toInt(json['year'], defaultValue: DateTime.now().year),
       title: json['title'] ?? '',
       description: json['description'],
-      createdBy: json['created_by'] ?? 0,
+      createdBy: _toInt(json['created_by']),
       status: json['status'] ?? 'draft',
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
@@ -200,7 +224,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'],
       createdAt: json['created_at'] != null 
@@ -245,7 +269,7 @@ class Company {
 
   factory Company.fromJson(Map<String, dynamic> json) {
     return Company(
-      id: json['id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'],
       phone: json['phone'],
@@ -292,7 +316,7 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
       title: json['title'] ?? '',
       description: json['description'],
       specialization: json['specialization'] != null 
@@ -331,7 +355,7 @@ class Specialization {
 
   factory Specialization.fromJson(Map<String, dynamic> json) {
     return Specialization(
-      id: json['id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
       name: json['name'] ?? '',
     );
   }
@@ -374,18 +398,18 @@ class PlanCourseAssignment {
 
   factory PlanCourseAssignment.fromJson(Map<String, dynamic> json) {
     return PlanCourseAssignment(
-      id: json['id'] ?? 0,
-      trainingPlanId: json['training_plan_id'] ?? 0,
-      companyId: json['company_id'] ?? 0,
-      courseId: json['course_id'] ?? 0,
-      trainingCenterBranchId: json['training_center_branch_id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
+      trainingPlanId: TrainingPlan._toInt(json['training_plan_id']),
+      companyId: TrainingPlan._toInt(json['company_id']),
+      courseId: TrainingPlan._toInt(json['course_id']),
+      trainingCenterBranchId: TrainingPlan._toInt(json['training_center_branch_id']),
       startDate: json['start_date'] != null 
           ? DateTime.parse(json['start_date']) 
           : null,
       endDate: json['end_date'] != null 
           ? DateTime.parse(json['end_date']) 
           : null,
-      seats: json['seats'],
+      seats: TrainingPlan._toIntNullable(json['seats']),
       company: json['company'] != null 
           ? Company.fromJson(json['company']) 
           : null,
@@ -429,7 +453,7 @@ class TrainingCenterBranch {
 
   factory TrainingCenterBranch.fromJson(Map<String, dynamic> json) {
     return TrainingCenterBranch(
-      id: json['id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
       name: json['name'] ?? '',
       trainingCenter: json['training_center'] != null 
           ? TrainingCenter.fromJson(json['training_center']) 
@@ -458,7 +482,7 @@ class TrainingCenter {
 
   factory TrainingCenter.fromJson(Map<String, dynamic> json) {
     return TrainingCenter(
-      id: json['id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
       name: json['name'] ?? '',
     );
   }
@@ -633,7 +657,7 @@ class TrainingPlanResponse {
       data: json['data'] != null ? TrainingPlan.fromJson(json['data']) : null,
       messageAr: json['m_ar'],
       messageEn: json['m_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: TrainingPlan._toInt(json['status_code'], defaultValue: 200),
       success: json['success'] ?? false,
     );
   }
@@ -666,7 +690,7 @@ class TrainingPlanListResponse {
       data: plans,
       messageAr: json['m_ar'],
       messageEn: json['m_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: TrainingPlan._toInt(json['status_code'], defaultValue: 200),
       success: json['success'] ?? false,
     );
   }
@@ -700,12 +724,12 @@ class ApprovedTrainingPlanWithCourses {
 
   factory ApprovedTrainingPlanWithCourses.fromJson(Map<String, dynamic> json) {
     return ApprovedTrainingPlanWithCourses(
-      id: json['id'] ?? 0,
-      year: json['year'] ?? DateTime.now().year,
+      id: TrainingPlan._toInt(json['id']),
+      year: TrainingPlan._toInt(json['year'], defaultValue: DateTime.now().year),
       title: json['title'] ?? '',
       description: json['description'],
       status: json['status'] ?? 'approved',
-      createdBy: json['created_by'] ?? 0,
+      createdBy: TrainingPlan._toInt(json['created_by']),
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -754,18 +778,18 @@ class PlanCourseAssignmentWithCourse {
 
   factory PlanCourseAssignmentWithCourse.fromJson(Map<String, dynamic> json) {
     return PlanCourseAssignmentWithCourse(
-      id: json['id'] ?? 0,
-      trainingPlanId: json['training_plan_id'] ?? 0,
-      companyId: json['company_id'] ?? 0,
-      courseId: json['course_id'] ?? 0,
-      trainingCenterBranchId: json['training_center_branch_id'] ?? 0,
+      id: TrainingPlan._toInt(json['id']),
+      trainingPlanId: TrainingPlan._toInt(json['training_plan_id']),
+      companyId: TrainingPlan._toInt(json['company_id']),
+      courseId: TrainingPlan._toInt(json['course_id']),
+      trainingCenterBranchId: TrainingPlan._toInt(json['training_center_branch_id']),
       startDate: json['start_date'] != null 
           ? DateTime.parse(json['start_date']) 
           : DateTime.now(),
       endDate: json['end_date'] != null 
           ? DateTime.parse(json['end_date']) 
           : DateTime.now(),
-      seats: json['seats'] ?? 0,
+      seats: TrainingPlan._toInt(json['seats']),
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
@@ -806,7 +830,7 @@ class ApprovedTrainingPlansWithCoursesResponse {
           .toList() ?? [],
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'] ?? 200,
+      statusCode: TrainingPlan._toInt(json['status_code'], defaultValue: 200),
     );
   }
 }

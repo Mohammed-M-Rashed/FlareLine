@@ -17,6 +17,7 @@ import 'package:get/get.dart';
 import 'package:toastification/toastification.dart';
 import 'dart:math';
 import 'dart:convert';
+import 'package:flareline/core/i18n/strings_ar.dart';
 
 class SpecializationManagementPage extends LayoutWidget {
   const SpecializationManagementPage({super.key});
@@ -133,7 +134,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                         SizedBox(
                           width: 120,
                           child: Obx(() => ButtonWidget(
-                            btnText: provider.isLoading ? 'Loading...' : 'Refresh',
+                            btnText: provider.isLoading ? StringsAr.loading : StringsAr.refresh,
                             type: 'secondary',
                             onTap: provider.isLoading ? null : () {
                               provider.refreshData();
@@ -144,7 +145,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                         SizedBox(
                           width: 140,
                           child: ButtonWidget(
-                            btnText: 'Add Specialization',
+                            btnText: 'إضافة تخصص',
                             type: 'primary',
                             onTap: () {
                               _showAddSpecializationForm(context, provider);
@@ -360,7 +361,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                                             onPressed: () {
                                               _showEditSpecializationForm(context, specialization, provider);
                                             },
-                                            tooltip: 'Edit Specialization',
+                                            tooltip: 'تعديل التخصص',
                                             style: IconButton.styleFrom(
                                               backgroundColor: Colors.blue.shade50,
                                               foregroundColor: Colors.blue.shade700,
@@ -439,7 +440,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Specialization',
+      title: 'إضافة تخصص جديد',
       showTitle: true,
       modalType: ModalType.medium,
       footer: StatefulBuilder(
@@ -452,7 +453,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: isSubmitting ? 'Creating...' : 'Save',
+                    btnText: isSubmitting ? StringsAr.creating : StringsAr.save,
                     onTap: isSubmitting ? null : () async {
                       if (formKey.currentState!.validate()) {
                         // Set loading state
@@ -669,7 +670,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Specialization',
+      title: 'تعديل التخصص',
       showTitle: true,
       modalType: ModalType.medium,
       footer: StatefulBuilder(
@@ -682,7 +683,7 @@ class _SpecializationManagementWidgetState extends State<SpecializationManagemen
                 SizedBox(
                   width: 120,
                   child: ButtonWidget(
-                    btnText: isSubmitting ? 'Updating...' : 'Save',
+                    btnText: isSubmitting ? StringsAr.updating : StringsAr.save,
                     onTap: isSubmitting ? null : () async {
                       if (formKey.currentState!.validate()) {
                         // Set loading state

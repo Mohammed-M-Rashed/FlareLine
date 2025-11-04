@@ -19,6 +19,10 @@ import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart';
+import 'package:file_picker/file_picker.dart'; // Added for PlatformFile
+import 'package:url_launcher/url_launcher.dart'; // Added for opening files in new tab
 
 class SpecialCourseRequestManagementPage extends LayoutWidget {
   const SpecialCourseRequestManagementPage({super.key});
@@ -504,17 +508,15 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           color: item.statusColor.withOpacity(0.15),
           borderRadius: BorderRadius.circular(5),
         ),
-        child: Flexible(
-          child: Text(
-            item.statusDisplay,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: item.statusColor,
-            ),
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
+        child: Text(
+          item.statusDisplay,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: item.statusColor,
           ),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
@@ -526,11 +528,30 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
         minWidth: 60,
         maxWidth: 80,
       ),
-      child: Icon(
-        item.hasFileAttachment ? Icons.attach_file : Icons.remove,
-        color: item.hasFileAttachment ? Colors.blue : Colors.grey,
-        size: 18,
-      ),
+      child: item.hasFileAttachment
+          ? Tooltip(
+              message: 'انقر لفتح الملف في تبويب جديد',
+              child: InkWell(
+                onTap: () => _openFileInNewTab(context, item.fileAttachment!),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Icon(
+                    Icons.attach_file,
+                    color: Colors.blue.shade700,
+                    size: 18,
+                  ),
+                ),
+              ),
+            )
+          : Icon(
+              Icons.remove,
+              color: Colors.grey,
+              size: 18,
+            ),
     );
   }
 
@@ -847,7 +868,55 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                         _buildStatusRow('Status', item.statusDisplay, item.statusColor),
                         if (item.rejectionReason != null && item.rejectionReason!.isNotEmpty)
                           _buildRejectionReasonRow('Rejection Reason', item.rejectionReason!),
-                        _buildDetailRow('File Attachment', item.hasFileAttachment ? 'Available' : 'None'),
+                        item.hasFileAttachment
+                            ? InkWell(
+                                onTap: () => _openFileInNewTab(context, item.fileAttachment!),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'File Attachment',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue.shade50,
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: Colors.blue.shade200),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.attach_file,
+                                              color: Colors.blue.shade700,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'انقر لفتح الملف',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.blue.shade700,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : _buildDetailRow('File Attachment', 'None'),
                         if (item.createdBy != null)
                           _buildDetailRow('Created By', item.createdBy!.toString()),
                         if (item.createdAt != null)
@@ -970,6 +1039,52 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
 
   String _formatDateTime(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Build full file URL from server file path
+  String _buildFileUrl(String filePath) {
+    const baseUrl = 'https://noc.justhost.ly/backend-api/storage/app/public/';
+    // Remove any leading slashes or spaces from filePath
+    final cleanFilePath = filePath.trim().replaceFirst(RegExp(r'^/'), '');
+    return '$baseUrl$cleanFilePath';
+  }
+
+  /// Opens file in a new tab with the given file path
+  Future<void> _openFileInNewTab(BuildContext context, String filePath) async {
+    try {
+      // Build full URL from file path
+      final fileUrl = _buildFileUrl(filePath);
+      final uri = Uri.parse(fileUrl);
+      
+      // Launch URL in a new tab (web) or default browser (desktop)
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication, // Opens in new tab/browser
+        );
+        print('✅ Opened file: $fileUrl');
+      } else {
+        print('❌ Could not launch file URL: $fileUrl');
+        // Show error message to user
+        if (mounted) {
+          NotificationService.showError(
+            context,
+            'تعذر فتح الملف. يرجى التأكد من وجود متصفح متاح.',
+            operationId: 'file_open_error',
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Error opening file: $e');
+      // Show error message to user
+      if (mounted) {
+        NotificationService.showError(
+          context,
+          'خطأ في فتح الملف: ${e.toString()}',
+          operationId: 'file_open_error',
+        );
+      }
+    }
   }
 
   void _forwardSpecialCourseRequest(BuildContext context, SpecialCourseRequest item) async {
@@ -1126,6 +1241,7 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
     final titleController = TextEditingController();
     final descriptionController = TextEditingController();
     String? fileAttachment;
+    PlatformFile? selectedFileAttachment; // Store selected file (for upload)
 
     // Check if user has permission to create special course requests
     if (!SpecialCourseRequestService.canCreateSpecialCourseRequests()) {
@@ -1317,6 +1433,9 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                                 onFileChanged: (base64File) {
                                   fileAttachment = base64File;
                                 },
+                                onFileAttachmentChanged: (PlatformFile? file) {
+                                  selectedFileAttachment = file;
+                                },
                                 width: double.infinity,
                                 height: 120,
                               ),
@@ -1432,7 +1551,10 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
               fileAttachment: fileAttachment,
             );
             
-            final response = await SpecialCourseRequestService.createSpecialCourseRequest(request);
+            final response = await SpecialCourseRequestService.createSpecialCourseRequest(
+              request,
+              fileAttachment: selectedFileAttachment,
+            );
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -1471,6 +1593,8 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
     final titleController = TextEditingController(text: specialCourseRequest.title);
     final descriptionController = TextEditingController(text: specialCourseRequest.description);
     String? fileAttachment = specialCourseRequest.fileAttachment;
+    PlatformFile? selectedFileAttachment; // Store new file attachment (for upload)
+    bool fileModified = false; // Track if user has modified the file
 
     // Check if user has permission to update special course requests
     if (!SpecialCourseRequestService.canUpdateSpecialCourseRequests()) {
@@ -1662,6 +1786,15 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
                                 initialFile: fileAttachment,
                                 onFileChanged: (base64File) {
                                   fileAttachment = base64File;
+                                  // Mark file as modified when user changes it
+                                  if (!fileModified) {
+                                    fileModified = true;
+                                  }
+                                },
+                                onFileAttachmentChanged: (PlatformFile? file) {
+                                  selectedFileAttachment = file;
+                                  // Mark file as modified when user selects/changes it
+                                  fileModified = true;
                                 },
                                 width: double.infinity,
                                 height: 120,
@@ -1764,16 +1897,23 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
           );
           
           try {
+            // Only include fileAttachment in request if user has modified it
+            // If fileModified is false, set fileAttachment to null to keep existing file on server
             final request = SpecialCourseRequestUpdateRequest(
               id: specialCourseRequest.id!,
               companyId: currentUserCompanyId,
               specializationId: selectedSpecializationId,
               title: titleController.text.trim(),
               description: descriptionController.text.trim(),
-              fileAttachment: fileAttachment,
+              fileAttachment: fileModified ? fileAttachment : null,
             );
             
-            final response = await SpecialCourseRequestService.updateSpecialCourseRequest(request);
+            // Only send file attachment (PlatformFile) if user has modified it
+            // If fileModified is false, send null to keep existing file on server
+            final response = await SpecialCourseRequestService.updateSpecialCourseRequest(
+              request,
+              fileAttachment: fileModified ? selectedFileAttachment : null,
+            );
             
             // Close loading dialog
             Navigator.of(context).pop();
@@ -1830,31 +1970,11 @@ class _SpecialCourseRequestManagementWidgetState extends State<SpecialCourseRequ
   }
 
   void _showSuccessToast(String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    NotificationService.showSuccess(context, message, operationId: 'special_request:success');
   }
 
   void _showErrorToast(String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    NotificationService.showError(context, message, operationId: 'special_request:error');
   }
 }
 

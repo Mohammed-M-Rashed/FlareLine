@@ -28,28 +28,53 @@ class Company {
   });
 
   factory Company.fromJson(Map<String, dynamic> json) {
-    int? _toInt(dynamic value) {
+    int? _toIntNullable(dynamic value) {
       if (value == null) return null;
       if (value is int) return value;
-      if (value is String) return int.tryParse(value);
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        return parsed;
+      }
+      if (value is double) return value.toInt();
       return null;
     }
+
+    // Safely extract country name
+    String? getCountryName(dynamic country) {
+      if (country == null) return null;
+      if (country is Map<String, dynamic>) {
+        return country['name'] as String?;
+      }
+      if (country is String) return country;
+      return null;
+    }
+
+    // Safely extract city name
+    String? getCityName(dynamic city) {
+      if (city == null) return null;
+      if (city is Map<String, dynamic>) {
+        return city['name'] as String?;
+      }
+      if (city is String) return city;
+      return null;
+    }
+
     return Company(
-      id: _toInt(json['id']),
+      id: _toIntNullable(json['id']),
       name: json['name'] ?? '',
       address: json['address'] ?? '',
       phone: json['phone'] ?? '',
       image: json['image'],
       apiUrl: json['api_url'],
-      countryId: _toInt(json['country_id']),
-      cityId: _toInt(json['city_id']),
-      countryName: json['country']?['name'],
-      cityName: json['city']?['name'],
+      countryId: _toIntNullable(json['country_id']),
+      cityId: _toIntNullable(json['city_id']),
+      countryName: getCountryName(json['country']),
+      cityName: getCityName(json['city']),
       createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+          ? DateTime.tryParse(json['created_at']) 
           : null,
       updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
+          ? DateTime.tryParse(json['updated_at']) 
           : null,
     );
   }
@@ -139,21 +164,51 @@ class CompanyListResponse {
   });
 
   factory CompanyListResponse.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic value) {
-      if (value == null) return 0;
+    int _toInt(dynamic value, {int defaultValue = 0}) {
+      if (value == null) return defaultValue;
       if (value is int) return value;
-      if (value is String) return int.tryParse(value) ?? 0;
-      return 0;
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        return parsed ?? defaultValue;
+      }
+      if (value is double) return value.toInt();
+      return defaultValue;
     }
+
+    List<Company> companies = [];
+    try {
+      if (json['data'] != null) {
+        if (json['data'] is List) {
+          companies = (json['data'] as List)
+              .map((item) {
+                try {
+                  if (item is Map<String, dynamic>) {
+                    return Company.fromJson(item);
+                  }
+                  return null;
+                } catch (e) {
+                  print('❌ Error parsing company: $e');
+                  print('❌ Company data: $item');
+                  return null;
+                }
+              })
+              .whereType<Company>()
+              .toList();
+        } else {
+          print('⚠️ CompanyListResponse: data is not a List, type: ${json['data'].runtimeType}');
+        }
+      }
+    } catch (e) {
+      print('❌ Error parsing companies list: $e');
+      print('❌ JSON data: $json');
+    }
+
     return CompanyListResponse(
       success: json['success'] ?? false,
-      data: (json['data'] as List<dynamic>?)
-              ?.map((item) => Company.fromJson(item))
-              .toList() ??
-          [],
+      data: companies,
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: _toInt(json['status_code']),
+      statusCode: _toInt(json['status_code'], defaultValue: 200),
     );
   }
 }
@@ -174,18 +229,37 @@ class CompanyResponse {
   });
 
   factory CompanyResponse.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic value) {
-      if (value == null) return 0;
+    int _toInt(dynamic value, {int defaultValue = 0}) {
+      if (value == null) return defaultValue;
       if (value is int) return value;
-      if (value is String) return int.tryParse(value) ?? 0;
-      return 0;
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        return parsed ?? defaultValue;
+      }
+      if (value is double) return value.toInt();
+      return defaultValue;
     }
+
+    Company? company;
+    try {
+      if (json['data'] != null) {
+        if (json['data'] is Map<String, dynamic>) {
+          company = Company.fromJson(json['data'] as Map<String, dynamic>);
+        } else {
+          print('⚠️ CompanyResponse: data is not a Map, type: ${json['data'].runtimeType}');
+        }
+      }
+    } catch (e) {
+      print('❌ Error parsing company: $e');
+      print('❌ JSON data: $json');
+    }
+
     return CompanyResponse(
       success: json['success'] ?? false,
-      data: json['data'] != null ? Company.fromJson(json['data']) : null,
+      data: company,
       messageAr: json['message_ar'] ?? '',
       messageEn: json['message_en'] ?? '',
-      statusCode: _toInt(json['status_code']),
+      statusCode: _toInt(json['status_code'], defaultValue: 200),
     );
   }
 }

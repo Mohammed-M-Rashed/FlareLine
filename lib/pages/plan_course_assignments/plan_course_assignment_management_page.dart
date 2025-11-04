@@ -27,6 +27,8 @@ import 'package:flareline/core/auth/auth_provider.dart';
 import 'package:get/get.dart';
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async';
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart' as notification_svc;
 
 import '../../core/config/api_endpoints.dart'; // Added for Completer
 
@@ -2481,31 +2483,11 @@ class _PlanCourseAssignmentManagementWidgetState extends State<PlanCourseAssignm
 
 
   void _showSuccessToast(String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    notification_svc.NotificationService.showSuccess(context, message, operationId: 'assignment:success');
   }
 
   void _showErrorToast(String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    notification_svc.NotificationService.showError(context, message, operationId: 'assignment:error');
   }
 
   void _showLoadingToast(String message) {

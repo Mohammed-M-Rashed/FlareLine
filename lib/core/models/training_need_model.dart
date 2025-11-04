@@ -35,21 +35,48 @@ class TrainingNeed {
     this.course,
   });
 
+  // Helper function to safely convert dynamic to int?
+  static int? _toIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed;
+    }
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper function to safely convert dynamic to int (non-nullable)
+  static int _toInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      return parsed ?? defaultValue;
+    }
+    if (value is double) return value.toInt();
+    return defaultValue;
+  }
+
   factory TrainingNeed.fromJson(Map<String, dynamic> json) {
-    final individualNeed = json['individual_need'] ?? 0;
-    final managementNeed = json['management_need'] ?? 0;
-    final jobNeed = json['job_need'] ?? 0;
-    final departmentNeed = json['department_need'] ?? 0;
+    final individualNeed = _toInt(json['individual_need']);
+    final managementNeed = _toInt(json['management_need']);
+    final jobNeed = _toInt(json['job_need']);
+    final departmentNeed = _toInt(json['department_need']);
     
     return TrainingNeed(
-      id: json['id'],
-      companyId: json['company_id'] ?? 0,
-      courseId: json['course_id'] ?? 0,
+      id: _toIntNullable(json['id']),
+      companyId: _toInt(json['company_id']),
+      courseId: _toInt(json['course_id']),
       individualNeed: individualNeed,
       managementNeed: managementNeed,
       jobNeed: jobNeed,
       departmentNeed: departmentNeed,
-      numberOfParticipants: json['number_of_participants'] ?? (individualNeed + managementNeed + jobNeed + departmentNeed),
+      numberOfParticipants: _toInt(
+        json['number_of_participants'], 
+        defaultValue: individualNeed + managementNeed + jobNeed + departmentNeed
+      ),
       status: json['status'] ?? 'pending',
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
@@ -210,7 +237,7 @@ class Company {
 
   factory Company.fromJson(Map<String, dynamic> json) {
     return Company(
-      id: json['id'] ?? 0,
+      id: TrainingNeed._toInt(json['id']),
       name: json['name'] ?? '',
       email: json['email'],
       phone: json['phone'],
@@ -247,10 +274,10 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] ?? 0,
+      id: TrainingNeed._toInt(json['id']),
       title: json['title'] ?? '',
       description: json['description'],
-      specializationId: json['specialization_id'],
+      specializationId: TrainingNeed._toIntNullable(json['specialization_id']),
       specialization: json['specialization'] != null 
           ? Specialization.fromJson(json['specialization']) 
           : null,
@@ -281,7 +308,7 @@ class Specialization {
 
   factory Specialization.fromJson(Map<String, dynamic> json) {
     return Specialization(
-      id: json['id'] ?? 0,
+      id: TrainingNeed._toInt(json['id']),
       name: json['name'] ?? '',
       description: json['description'],
     );
@@ -431,7 +458,7 @@ class TrainingNeedListResponse {
           [],
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'],
+      statusCode: TrainingNeed._toIntNullable(json['status_code']),
     );
   }
 
@@ -457,7 +484,7 @@ class TrainingNeedResponse {
       data: json['data'] != null ? TrainingNeed.fromJson(json['data']) : null,
       messageAr: json['message_ar'],
       messageEn: json['message_en'],
-      statusCode: json['status_code'],
+      statusCode: TrainingNeed._toIntNullable(json['status_code']),
     );
   }
 

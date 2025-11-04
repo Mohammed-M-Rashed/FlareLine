@@ -24,6 +24,8 @@ import 'package:get/get.dart';
 import 'dart:convert'; // Added for base64Decode
 import 'dart:typed_data'; // Added for Uint8List
 import 'dart:async'; // Added for Completer
+import 'package:flareline/core/i18n/strings_ar.dart';
+import 'package:flareline/core/ui/notification_service.dart';
 
 class TrainingNeedManagementPage extends LayoutWidget {
   const TrainingNeedManagementPage({super.key});
@@ -119,7 +121,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
                               return SizedBox(
                                 width: 140,
                                 child: ButtonWidget(
-                                  btnText: 'Add Training Need',
+                                  btnText: 'إضافة احتياج تدريبي',
                                   type: 'primary',
                                   onTap: () {
                                     _showAddTrainingNeedForm(context);
@@ -746,7 +748,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
             onPressed: () {
               _handleAction(context, 'edit', item);
             },
-            tooltip: 'Edit Draft Training Need',
+            tooltip: 'تعديل الاحتياج التدريبي',
             style: IconButton.styleFrom(
               backgroundColor: Colors.blue.shade50,
               foregroundColor: Colors.blue.shade700,
@@ -939,7 +941,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
   void _showViewTrainingNeedDialog(BuildContext context, TrainingNeed item) {
     ModalDialog.show(
       context: context,
-      title: 'Training Need Details',
+      title: 'تفاصيل الاحتياج التدريبي',
       showTitle: true,
       modalType: ModalType.large,
       showCancel: false, // Disable default buttons
@@ -1112,7 +1114,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Approval'),
+        title: const Text('تأكيد الموافقة'),
         content: Text('Are you sure you want to approve the training need for ${item.companyName}?'),
         actions: [
           TextButton(
@@ -1149,7 +1151,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reject Training Need'),
+        title: const Text('رفض الاحتياج التدريبي'),
         content: Form(
           key: formKey,
           child: Column(
@@ -1253,7 +1255,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Forward'),
+        title: const Text('تأكيد إعادة التوجيه'),
         content: Text('Are you sure you want to forward the training need for ${item.companyName} from Draft to Pending?'),
         actions: [
           TextButton(
@@ -1354,7 +1356,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
 
     ModalDialog.show(
       context: context,
-      title: 'Add New Training Need',
+      title: 'إضافة احتياج تدريبي جديد',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -1989,7 +1991,7 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
 
     ModalDialog.show(
       context: context,
-      title: 'Edit Training Need',
+      title: 'تعديل الاحتياج التدريبي',
       showTitle: true,
       modalType: ModalType.large,
       child: StatefulBuilder(
@@ -2588,31 +2590,11 @@ class _TrainingNeedManagementWidgetState extends State<TrainingNeedManagementWid
   }
 
   void _showSuccessToast(String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      title: Text('نجح', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 4),
-      icon: const Icon(Icons.check_circle, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
+    NotificationService.showSuccess(context, message, operationId: 'training_need:success');
   }
 
   void _showErrorToast(String message) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.error,
-      title: Text('خطأ', style: TextStyle(fontWeight: FontWeight.bold)),
-      description: Text(message),
-      autoCloseDuration: const Duration(seconds: 6),
-      icon: const Icon(Icons.error_outline, color: Colors.white),
-      style: ToastificationStyle.flatColored,
-      backgroundColor: Colors.red,
-      foregroundColor: Colors.white,
-    );
+    NotificationService.showError(context, message, operationId: 'training_need:error');
   }
 }
 
